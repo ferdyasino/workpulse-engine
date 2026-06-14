@@ -2,7 +2,7 @@
 /**
  * =====================================================
  * USERS / EMPLOYEES FRONTEND CONTROLLER
- * Apps Script UI Layer
+ * Apps Script UI Layer (CLEAN VERSION)
  * =====================================================
  */
 
@@ -13,40 +13,34 @@ const UsersUI = (() => {
     loading: false
   };
 
-  /**
-   * =============================
-   * INIT
-   * =============================
-   */
+  // =====================================================
+  // INIT
+  // =====================================================
   function init() {
-    loadUsers();
     bindEvents();
+    loadUsers();
   }
 
-  /**
-   * =============================
-   * EVENT BINDINGS
-   * =============================
-   */
+  // =====================================================
+  // EVENT BINDINGS (SINGLE SOURCE OF TRUTH)
+  // =====================================================
   function bindEvents() {
 
-    const addBtn = document.querySelector("#btnAddUser");
-    if (addBtn) {
-      addBtn.addEventListener("click", openAddUserModal);
-    }
+    document.querySelector("#btnAddUser")
+      ?.addEventListener("click", openCreateModal);
 
-    const refreshBtn = document.querySelector("#btnRefreshUsers");
-    if (refreshBtn) {
-      refreshBtn.addEventListener("click", loadUsers);
-    }
+    document.querySelector("#btnRefreshUsers")
+      ?.addEventListener("click", loadUsers);
+
+    document.querySelector("#employeeForm")
+      ?.addEventListener("submit", handleSubmit);
   }
 
-  /**
-   * =============================
-   * LOAD USERS FROM BACKEND
-   * =============================
-   */
+  // =====================================================
+  // LOAD USERS
+  // =====================================================
   function loadUsers() {
+
     setLoading(true);
 
     google.script.run
@@ -64,11 +58,9 @@ const UsersUI = (() => {
       .getUsers(getWorkspaceId());
   }
 
-  /**
-   * =============================
-   * RENDER TABLE
-   * =============================
-   */
+  // =====================================================
+  // RENDER TABLE
+  // =====================================================
   function renderTable() {
 
     const tbody = document.querySelector("#usersTableBody");
@@ -89,17 +81,27 @@ const UsersUI = (() => {
             ${user.status || "UNKNOWN"}
           </span>
         </td>
+
+        <td class="text-end">
+          <button class="btn btn-sm btn-glass"
+            onclick='UsersUI.openEditModal(${JSON.stringify(user)})'>
+            Edit
+          </button>
+
+          <button class="btn btn-sm btn-glass-danger"
+            onclick="UsersUI.openDeleteModal('${user.id}')">
+            Delete
+          </button>
+        </td>
       `;
 
       tbody.appendChild(row);
     });
   }
 
-  /**
-   * =============================
-   * UPDATE DASHBOARD STATS
-   * =============================
-   */
+  // =====================================================
+  // STATS
+  // =====================================================
   function updateStats() {
 
     const total = state.users.length;
@@ -109,43 +111,126 @@ const UsersUI = (() => {
     setText("#activeUsers", active);
   }
 
-  /**
-   * =============================
-   * CREATE USER
-   * =============================
-   */
-  function createUser(payload) {
+  // =====================================================
+  // CREATE / UPDATE SUBMIT
+  // =====================================================
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    const payload = {
+      id: document.getElementById("employeeId").value,
+      name: document.getElementById("employeeName").value,
+      email: document.getElementById("employeeEmail").value,
+      role: document.getElementById("employeeRole").value,
+      status: document.getElementById("employeeStatus").value
+    };
+
+    const isEdit = !!payload.id;
 
     setLoading(true);
 
     google.script.run
-      .withSuccessHandler((res) => {
+      .withSuccessHandler(() => {
 
-        showToast("User created successfully", "success");
+        showToast(
+          isEdit ? "User updated" : "User created",
+          "success"
+        );
 
-        loadUsers(); // refresh list
+        bootstrap.Modal.getInstance(
+          document.getElementById("employeeFormModal")
+        )?.hide();
+
+        loadUsers();
       })
       .withFailureHandler((err) => {
         console.error(err);
-        showToast(err.message || "Failed to create user", "error");
+        showToast(err.message || "Operation failed", "error");
         setLoading(false);
       })
       .createUser(getWorkspaceId(), payload);
   }
 
-  /**
-   * =============================
-   * UI HELPERS
-   * =============================
-   */
+  // =====================================================
+  // MODALS
+  // =====================================================
+
+  function openListModal() {
+    new bootstrap.Modal(
+      document.getElementById("employeeListModal")
+    ).show();
+  }
+
+  function openCreateModal() {
+
+    document.getElementById("employeeFormTitle").innerText = "Add Employee";
+    document.getElementById("employeeForm").reset();
+    document.getElementById("employeeId").value = "";
+
+    new bootstrap.Modal(
+      document.getElementById("employeeFormModal")
+    ).show();
+  }
+
+  function openEditModal(emp) {
+
+    document.getElementById("employeeFormTitle").innerText = "Edit Employee";
+
+    document.getElementById("employeeId").value = emp.id;
+    document.getElementById("employeeName").value = emp.name || emp.fullname || "";
+    document.getElementById("employeeEmail").value = emp.email || "";
+    document.getElementById("employeeRole").value = emp.role || "employee";
+    document.getElementById("employeeStatus").value = emp.status || "ACTIVE";
+
+    new bootstrap.Modal(
+      document.getElementById("employeeFormModal")
+    ).show();
+  }
+
+  function openDeleteModal(id) {
+
+    document.getElementById("deleteEmployeeId").value = id;
+
+    new bootstrap.Modal(
+      document.getElementById("employeeDeleteModal")
+    ).show();
+  }
+
+  function confirmDeleteEmployee() {
+
+    const id = document.getElementById("deleteEmployeeId").value;
+
+    setLoading(true);
+
+    google.script.run
+      .withSuccessHandler(() => {
+        showToast("User deleted", "success");
+        loadUsers();
+      })
+      .withFailureHandler((err) => {
+        console.error(err);
+        showToast("Delete failed", "error");
+        setLoading(false);
+      })
+      .deleteUser(getWorkspaceId(), id);
+
+    bootstrap.Modal.getInstance(
+      document.getElementById("employeeDeleteModal")
+    )?.hide();
+  }
+
+  // =====================================================
+  // HELPERS
+  // =====================================================
+
   function setLoading(isLoading) {
     state.loading = isLoading;
-    const btn = document.querySelector("#btnAddUser");
 
-    if (btn) {
-      btn.disabled = isLoading;
-      btn.innerText = isLoading ? "Loading..." : "Add User";
-    }
+    const btn = document.querySelector("#btnAddUser");
+    if (!btn) return;
+
+    btn.disabled = isLoading;
+    btn.innerText = isLoading ? "Loading..." : "Add User";
   }
 
   function setText(selector, value) {
@@ -170,43 +255,37 @@ const UsersUI = (() => {
       .replaceAll('"', "&quot;");
   }
 
-  /**
-   * =============================
-   * MODAL HANDLER (SKELETON)
-   * =============================
-   */
-  function openAddUserModal() {
-    // hook your modal here
-    console.log("Open Add User Modal");
-  }
-
-  /**
-   * =============================
-   * CONTEXT
-   * =============================
-   */
   function getWorkspaceId() {
-    return localStorage.getItem("workspace_id") || document.getElementById("sid").value;
+    return localStorage.getItem("workspace_id")
+      || document.getElementById("sid")?.value;
   }
 
   function showToast(message, type) {
     if (window.Toast) {
       window.Toast.show(message, type);
     } else {
-      alert(message);
+      console.log(`[${type}] ${message}`);
     }
   }
 
+  // =====================================================
+  // PUBLIC API
+  // =====================================================
   return {
     init,
     loadUsers,
-    createUser
+    openListModal,
+    openCreateModal,
+    openEditModal,
+    openDeleteModal,
+    confirmDeleteEmployee
   };
 
 })();
 
-/**
- * INIT ON LOAD
- */
+// =====================================================
+// INIT
+// =====================================================
 document.addEventListener("DOMContentLoaded", UsersUI.init);
+
 </script>

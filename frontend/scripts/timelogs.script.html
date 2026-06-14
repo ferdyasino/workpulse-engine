@@ -2,7 +2,7 @@
 
 /**
  * =====================================================
- * TIME LOGGER SYSTEM (SYNCED + SAFE VERSION)
+ * TIME LOGGER SYSTEM (PRODUCTION SAFE VERSION)
  * =====================================================
  */
 
@@ -19,53 +19,43 @@ function renderTimeLogger() {
       <div class="row g-3">
 
         <div class="col-6">
-          <button class="btn btn-success w-100"
-            onclick="logTime('time_in')">Time In</button>
+          <button class="btn btn-success w-100" onclick="logTime('time_in')">Time In</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-danger w-100"
-            onclick="logTime('time_out')">Time Out</button>
+          <button class="btn btn-danger w-100" onclick="logTime('time_out')">Time Out</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-warning w-100"
-            onclick="logTime('break_1_start')">B1 Start</button>
+          <button class="btn btn-warning w-100" onclick="logTime('break_1_start')">B1 Start</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-primary w-100"
-            onclick="logTime('break_1_end')">B1 End</button>
+          <button class="btn btn-primary w-100" onclick="logTime('break_1_end')">B1 End</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-warning w-100"
-            onclick="logTime('break_2_start')">B2 Start</button>
+          <button class="btn btn-warning w-100" onclick="logTime('break_2_start')">B2 Start</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-primary w-100"
-            onclick="logTime('break_2_end')">B2 End</button>
+          <button class="btn btn-primary w-100" onclick="logTime('break_2_end')">B2 End</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-warning w-100"
-            onclick="logTime('break_3_start')">B3 Start</button>
+          <button class="btn btn-warning w-100" onclick="logTime('break_3_start')">B3 Start</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-primary w-100"
-            onclick="logTime('break_3_end')">B3 End</button>
+          <button class="btn btn-primary w-100" onclick="logTime('break_3_end')">B3 End</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-dark w-100"
-            onclick="logTime('lunch_start')">Lunch Start</button>
+          <button class="btn btn-dark w-100" onclick="logTime('lunch_start')">Lunch Start</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-info w-100"
-            onclick="logTime('lunch_end')">Lunch End</button>
+          <button class="btn btn-info w-100" onclick="logTime('lunch_end')">Lunch End</button>
         </div>
 
       </div>
@@ -96,7 +86,8 @@ function logTime(action) {
     action,
     shift_id: "SHIFT-4",
     device_info: navigator.userAgent,
-    location: "home"
+    location: "home",
+    timestamp: new Date().toISOString()
   };
 
   showLoader?.();
@@ -106,14 +97,31 @@ function logTime(action) {
 
       hideLoader?.();
 
-      if (!res) {
-        showToast?.("Empty response from server", "error");
+      // =========================
+      // STRICT RESPONSE VALIDATION
+      // =========================
+      if (!res || typeof res !== "object") {
+        showToast?.("Invalid server response", "error");
         return;
       }
 
-      showToast?.(res.message || "Success", "success");
+      if (res.success !== true) {
+        showToast?.(res.message || "Action failed", "error");
+        return;
+      }
 
-      // refresh full state (SAFE RELOAD)
+      // =========================
+      // ONLY TRUE SUCCESS
+      // =========================
+      showToast?.(res.message || "Logged successfully", "success");
+
+      // OPTIMIZED UI UPDATE
+      appendLogToUI?.({
+        action,
+        timestamp: payload.timestamp
+      });
+
+      // background sync
       getLogs();
     })
     .withFailureHandler((err) => {
@@ -141,11 +149,14 @@ function getLogs() {
 
       const logs = Array.isArray(res) ? res : [];
 
+      if (!Array.isArray(res)) {
+        console.warn("Invalid logs response:", res);
+      }
+
       const state = buildTimeLogState(logs);
 
       renderTimeLogs(logs);
       renderTimeSummary(state);
-
     })
     .withFailureHandler((err) => {
       console.error("getLogs error:", err);
@@ -154,7 +165,7 @@ function getLogs() {
 }
 
 /* =========================
-   LEFT LOG LIST
+   LOG LIST
 ========================= */
 function renderTimeLogs(logs) {
 
@@ -166,21 +177,16 @@ function renderTimeLogs(logs) {
     return;
   }
 
-  container.innerHTML = logs.map(log => {
-
-    const time = formatTimeSafe(log.timestamp);
-
-    return `
-      <div class="d-flex justify-content-between border-bottom py-2">
-        <div>${formatLabel(log.action)}</div>
-        <div class="text-muted-custom">${time}</div>
-      </div>
-    `;
-  }).join("");
+  container.innerHTML = logs.map(log => `
+    <div class="d-flex justify-content-between border-bottom py-2">
+      <div>${formatLabel(log.action)}</div>
+      <div class="text-muted-custom">${formatTimeSafe(log.timestamp)}</div>
+    </div>
+  `).join("");
 }
 
 /* =========================
-   SUMMARY RENDER
+   SUMMARY
 ========================= */
 function renderTimeSummary(state) {
 
@@ -219,7 +225,7 @@ function renderTimeSummary(state) {
 }
 
 /* =========================
-   STATE ENGINE (FIXED)
+   STATE ENGINE (FIXED BREAK LOGIC)
 ========================= */
 function buildTimeLogState(timeLogs) {
 
@@ -231,13 +237,9 @@ function buildTimeLogState(timeLogs) {
     breaks: []
   };
 
-  let activeBreak = null;
-
   for (const log of timeLogs) {
 
-    const action = log.action;
-
-    switch (action) {
+    switch (log.action) {
 
       case "time_in":
         state.time_in = log.timestamp;
@@ -252,23 +254,21 @@ function buildTimeLogState(timeLogs) {
       case "break_1_start":
       case "break_2_start":
       case "break_3_start":
-        activeBreak = { in: log.timestamp, out: null };
-        state.breaks.push(activeBreak);
-        state.status = "ON_BREAK";
+        state.breaks.push({ in: log.timestamp, out: null });
+        state.status = "ON BREAK";
         break;
 
       case "break_1_end":
       case "break_2_end":
       case "break_3_end":
-        if (activeBreak) {
-          activeBreak.out = log.timestamp;
-        }
+        const lastBreak = state.breaks.findLast(b => !b.out);
+        if (lastBreak) lastBreak.out = log.timestamp;
         state.status = "WORKING";
         break;
 
       case "lunch_start":
         state.lunch.in = log.timestamp;
-        state.status = "AT_LUNCH";
+        state.status = "AT LUNCH";
         break;
 
       case "lunch_end":
@@ -282,7 +282,7 @@ function buildTimeLogState(timeLogs) {
 }
 
 /* =========================
-   APPEND SINGLE LOG (SAFE)
+   APPEND UI (OPTIMIZED)
 ========================= */
 function appendLogToUI(log) {
 
@@ -295,9 +295,7 @@ function appendLogToUI(log) {
 
   row.innerHTML = `
     <div>${formatLabel(log.action)}</div>
-    <div class="text-muted-custom">
-      ${formatTimeSafe(log.timestamp)}
-    </div>
+    <div class="text-muted-custom">${formatTimeSafe(log.timestamp)}</div>
   `;
 
   container.prepend(row);
@@ -307,7 +305,7 @@ function appendLogToUI(log) {
    HELPERS
 ========================= */
 function formatTimeSafe(ts) {
-  if (!ts) return "--";
+  if (!ts) return "--"; 
   const d = new Date(ts);
   return isNaN(d.getTime())
     ? "--"
