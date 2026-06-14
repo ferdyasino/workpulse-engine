@@ -1,0 +1,291 @@
+<script>
+/**
+ * =====================================================
+ * USERS / EMPLOYEES FRONTEND CONTROLLER
+ * Apps Script UI Layer (CLEAN VERSION)
+ * =====================================================
+ */
+
+const UsersUI = (() => {
+
+  let state = {
+    users: [],
+    loading: false
+  };
+
+  // =====================================================
+  // INIT
+  // =====================================================
+  function init() {
+    bindEvents();
+    loadUsers();
+  }
+
+  // =====================================================
+  // EVENT BINDINGS (SINGLE SOURCE OF TRUTH)
+  // =====================================================
+  function bindEvents() {
+
+    document.querySelector("#btnAddUser")
+      ?.addEventListener("click", openCreateModal);
+
+    document.querySelector("#btnRefreshUsers")
+      ?.addEventListener("click", loadUsers);
+
+    document.querySelector("#employeeForm")
+      ?.addEventListener("submit", handleSubmit);
+  }
+
+  // =====================================================
+  // LOAD USERS
+  // =====================================================
+  function loadUsers() {
+
+    setLoading(true);
+
+    google.script.run
+      .withSuccessHandler((res) => {
+        state.users = res || [];
+        renderTable();
+        updateStats();
+        setLoading(false);
+      })
+      .withFailureHandler((err) => {
+        console.error(err);
+        showToast("Failed to load users", "error");
+        setLoading(false);
+      })
+      .getUsers(getWorkspaceId());
+  }
+
+  // =====================================================
+  // RENDER TABLE
+  // =====================================================
+  function renderTable() {
+
+    const tbody = document.querySelector("#usersTableBody");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    state.users.forEach(user => {
+
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td>${escapeHtml(user.fullname || "")}</td>
+        <td>${escapeHtml(user.email || "")}</td>
+        <td>${escapeHtml(user.role || "")}</td>
+        <td>
+          <span class="badge ${getStatusClass(user.status)}">
+            ${user.status || "UNKNOWN"}
+          </span>
+        </td>
+
+        <td class="text-end">
+          <button class="btn btn-sm btn-glass"
+            onclick='UsersUI.openEditModal(${JSON.stringify(user)})'>
+            Edit
+          </button>
+
+          <button class="btn btn-sm btn-glass-danger"
+            onclick="UsersUI.openDeleteModal('${user.id}')">
+            Delete
+          </button>
+        </td>
+      `;
+
+      tbody.appendChild(row);
+    });
+  }
+
+  // =====================================================
+  // STATS
+  // =====================================================
+  function updateStats() {
+
+    const total = state.users.length;
+    const active = state.users.filter(u => u.status === "ACTIVE").length;
+
+    setText("#totalUsers", total);
+    setText("#activeUsers", active);
+  }
+
+  // =====================================================
+  // CREATE / UPDATE SUBMIT
+  // =====================================================
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    const payload = {
+      id: document.getElementById("employeeId").value,
+      name: document.getElementById("employeeName").value,
+      email: document.getElementById("employeeEmail").value,
+      role: document.getElementById("employeeRole").value,
+      status: document.getElementById("employeeStatus").value
+    };
+
+    const isEdit = !!payload.id;
+
+    setLoading(true);
+
+    google.script.run
+      .withSuccessHandler(() => {
+
+        showToast(
+          isEdit ? "User updated" : "User created",
+          "success"
+        );
+
+        bootstrap.Modal.getInstance(
+          document.getElementById("employeeFormModal")
+        )?.hide();
+
+        loadUsers();
+      })
+      .withFailureHandler((err) => {
+        console.error(err);
+        showToast(err.message || "Operation failed", "error");
+        setLoading(false);
+      })
+      .createUser(getWorkspaceId(), payload);
+  }
+
+  // =====================================================
+  // MODALS
+  // =====================================================
+
+  function openListModal() {
+    new bootstrap.Modal(
+      document.getElementById("employeeListModal")
+    ).show();
+  }
+
+  function openCreateModal() {
+
+    document.getElementById("employeeFormTitle").innerText = "Add Employee";
+    document.getElementById("employeeForm").reset();
+    document.getElementById("employeeId").value = "";
+
+    new bootstrap.Modal(
+      document.getElementById("employeeFormModal")
+    ).show();
+  }
+
+  function openEditModal(emp) {
+
+    document.getElementById("employeeFormTitle").innerText = "Edit Employee";
+
+    document.getElementById("employeeId").value = emp.id;
+    document.getElementById("employeeName").value = emp.name || emp.fullname || "";
+    document.getElementById("employeeEmail").value = emp.email || "";
+    document.getElementById("employeeRole").value = emp.role || "employee";
+    document.getElementById("employeeStatus").value = emp.status || "ACTIVE";
+
+    new bootstrap.Modal(
+      document.getElementById("employeeFormModal")
+    ).show();
+  }
+
+  function openDeleteModal(id) {
+
+    document.getElementById("deleteEmployeeId").value = id;
+
+    new bootstrap.Modal(
+      document.getElementById("employeeDeleteModal")
+    ).show();
+  }
+
+  function confirmDeleteEmployee() {
+
+    const id = document.getElementById("deleteEmployeeId").value;
+
+    setLoading(true);
+
+    google.script.run
+      .withSuccessHandler(() => {
+        showToast("User deleted", "success");
+        loadUsers();
+      })
+      .withFailureHandler((err) => {
+        console.error(err);
+        showToast("Delete failed", "error");
+        setLoading(false);
+      })
+      .deleteUser(getWorkspaceId(), id);
+
+    bootstrap.Modal.getInstance(
+      document.getElementById("employeeDeleteModal")
+    )?.hide();
+  }
+
+  // =====================================================
+  // HELPERS
+  // =====================================================
+
+  function setLoading(isLoading) {
+    state.loading = isLoading;
+
+    const btn = document.querySelector("#btnAddUser");
+    if (!btn) return;
+
+    btn.disabled = isLoading;
+    btn.innerText = isLoading ? "Loading..." : "Add User";
+  }
+
+  function setText(selector, value) {
+    const el = document.querySelector(selector);
+    if (el) el.innerText = value;
+  }
+
+  function getStatusClass(status) {
+    switch ((status || "").toUpperCase()) {
+      case "ACTIVE": return "badge-success";
+      case "PENDING": return "badge-warning";
+      case "INACTIVE": return "badge-danger";
+      default: return "badge-secondary";
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  function getWorkspaceId() {
+    return localStorage.getItem("workspace_id")
+      || document.getElementById("sid")?.value;
+  }
+
+  function showToast(message, type) {
+    if (window.Toast) {
+      window.Toast.show(message, type);
+    } else {
+      console.log(`[${type}] ${message}`);
+    }
+  }
+
+  // =====================================================
+  // PUBLIC API
+  // =====================================================
+  return {
+    init,
+    loadUsers,
+    openListModal,
+    openCreateModal,
+    openEditModal,
+    openDeleteModal,
+    confirmDeleteEmployee
+  };
+
+})();
+
+// =====================================================
+// INIT
+// =====================================================
+document.addEventListener("DOMContentLoaded", UsersUI.init);
+
+</script>

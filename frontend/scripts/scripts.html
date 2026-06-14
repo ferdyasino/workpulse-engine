@@ -56,6 +56,51 @@ const PAGE_TITLES = {
   login: "Login"
 };
 
+function bootApp() {
+
+  const page = APP.currentPage || "login";
+
+  // restore correct UI state
+  go(page);
+
+  // ONLY sync if dashboard is active
+  if (page === "dashboard") {
+    syncDashboard();
+  }
+}
+
+function syncDashboard() {
+
+  const email = localStorage.getItem("email");
+  const workspaceId =
+    localStorage.getItem("workspaceId") ||
+    document.getElementById("sid")?.value;
+
+  if (!email || !workspaceId) return;
+
+  showLoader?.();
+
+  google.script.run
+    .withSuccessHandler((res) => {
+
+      hideLoader?.();
+
+      const logs = Array.isArray(res) ? res : [];
+
+      const state = buildTimeLogState(logs);
+
+      renderTimeLogger?.();
+      renderTimeLogs(logs);
+      renderTimeSummary(state);
+
+    })
+    .withFailureHandler((err) => {
+      hideLoader?.();
+      console.error("syncDashboard error:", err);
+    })
+    .findTimeLogs(workspaceId, { email });
+}
+
 // =====================================================
 // ROUTER
 // =====================================================
@@ -119,7 +164,11 @@ function applyUIState(page) {
   }
 
   if (page === "dashboard") {
+
     renderTimeLogger?.();
+
+    // IMPORTANT: always resync when entering dashboard
+    syncDashboard();
   }
 }
 
@@ -188,8 +237,11 @@ function toggleDashboard() {
 // =====================================================
 
 window.addEventListener("DOMContentLoaded", () => {
+
   restoreSession();
-  getLogs();
+
+  // only initialize shell, NOT data
+  bootApp();
 });
 
 function formatTime(ts) {

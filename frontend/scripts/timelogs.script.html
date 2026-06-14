@@ -1,6 +1,16 @@
 <script>
 
+/**
+ * =====================================================
+ * TIME LOGGER SYSTEM (PRODUCTION SAFE VERSION)
+ * =====================================================
+ */
+
+/* =========================
+   RENDER LOGGER UI
+========================= */
 function renderTimeLogger() {
+
   const container = document.getElementById("dashboardTimelogsList");
   if (!container) return;
 
@@ -9,53 +19,43 @@ function renderTimeLogger() {
       <div class="row g-3">
 
         <div class="col-6">
-          <button class="btn btn-success w-100"
-            onclick="logTime('time_in')">Time In</button>
+          <button class="btn btn-success w-100" onclick="logTime('time_in')">Time In</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-danger w-100"
-            onclick="logTime('time_out')">Time Out</button>
+          <button class="btn btn-danger w-100" onclick="logTime('time_out')">Time Out</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-warning w-100"
-            onclick="logTime('break_1_start')">B1 Start</button>
+          <button class="btn btn-warning w-100" onclick="logTime('break_1_start')">B1 Start</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-primary w-100"
-            onclick="logTime('break_1_end')">B1 End</button>
+          <button class="btn btn-primary w-100" onclick="logTime('break_1_end')">B1 End</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-warning w-100"
-            onclick="logTime('break_2_start')">B2 Start</button>
+          <button class="btn btn-warning w-100" onclick="logTime('break_2_start')">B2 Start</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-primary w-100"
-            onclick="logTime('break_2_end')">B2 End</button>
+          <button class="btn btn-primary w-100" onclick="logTime('break_2_end')">B2 End</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-warning w-100"
-            onclick="logTime('break_3_start')">B3 Start</button>
+          <button class="btn btn-warning w-100" onclick="logTime('break_3_start')">B3 Start</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-primary w-100"
-            onclick="logTime('break_3_end')">B3 End</button>
+          <button class="btn btn-primary w-100" onclick="logTime('break_3_end')">B3 End</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-dark w-100"
-            onclick="logTime('lunch_start')">Lunch Start</button>
+          <button class="btn btn-dark w-100" onclick="logTime('lunch_start')">Lunch Start</button>
         </div>
 
         <div class="col-6">
-          <button class="btn btn-info w-100"
-            onclick="logTime('lunch_end')">Lunch End</button>
+          <button class="btn btn-info w-100" onclick="logTime('lunch_end')">Lunch End</button>
         </div>
 
       </div>
@@ -63,20 +63,22 @@ function renderTimeLogger() {
   `;
 }
 
+/* =========================
+   LOG TIME EVENT
+========================= */
 function logTime(action) {
 
   const email = localStorage.getItem("email");
-  const workspaceId = localStorage.getItem("workspaceId") || document.getElementById("sid").value;
+  const workspaceId =
+    localStorage.getItem("workspaceId") ||
+    document.getElementById("sid")?.value;
+
   const userId = localStorage.getItem("user_id");
-  const sid = document.getElementById("sid").value;
 
-  console.log("sid",sid);
-  console.log("workspaceId",workspaceId);
-
-  // if (!email || !workspaceId || !userId) {
-  //   showToast("error", "Session expired. Please login again.");
-  //   return;
-  // }
+  if (!email || !workspaceId || !userId) {
+    showToast?.("Session expired. Please login again.", "error");
+    return;
+  }
 
   const payload = {
     user_id: userId,
@@ -84,93 +86,108 @@ function logTime(action) {
     action,
     shift_id: "SHIFT-4",
     device_info: navigator.userAgent,
-    location: "home"
+    location: "home",
+    timestamp: new Date().toISOString()
   };
 
-  console.log("payload", payload);
-
-  showLoader();
+  showLoader?.();
 
   google.script.run
     .withSuccessHandler((res) => {
-      console.log("res", res)
 
-      // hideLoader();
+      hideLoader?.();
 
-      // if (!res) {
-      //   toastError("Empty response from server");
-      //   return;
-      // }
+      // =========================
+      // STRICT RESPONSE VALIDATION
+      // =========================
+      if (!res || typeof res !== "object") {
+        showToast?.("Invalid server response", "error");
+        return;
+      }
 
-      // if (!res.success) {
-      //   toastError(res.message || "Action failed");
-      //   return;
-      // }
+      if (res.success !== true) {
+        showToast?.(res.message || "Action failed", "error");
+        return;
+      }
 
-      // toastSuccess(res.state || "Success");
+      // =========================
+      // ONLY TRUE SUCCESS
+      // =========================
+      showToast?.(res.message || "Logged successfully", "success");
 
-      // refreshTimeLogState(res.state);
+      // OPTIMIZED UI UPDATE
+      appendLogToUI?.({
+        action,
+        timestamp: payload.timestamp
+      });
+
+      // background sync
+      getLogs();
     })
-    // .withFailureHandler((err) => {
+    .withFailureHandler((err) => {
 
-    //   hideLoader();
-
-    //   const msg = err?.message || "Unexpected server error";
-
-    //   toastError(msg);
-    // })
+      hideLoader?.();
+      showToast?.(err?.message || "Server error", "error");
+    })
     .insertTimeLog(workspaceId, payload);
 }
 
+/* =========================
+   FETCH LOGS
+========================= */
 function getLogs() {
 
   const email = localStorage.getItem("email");
   const workspaceId =
     localStorage.getItem("workspaceId") ||
-    document.getElementById("sid").value;
+    document.getElementById("sid")?.value;
 
-    console.log("email",email);
-    console.log("workspaceId",workspaceId);
+  if (!workspaceId || !email) return;
 
-    google.script.run
-      .withSuccessHandler((res) => {
-       console.log("timeLogs",{res});
-       const state = buildTimeLogState(res);
-        renderTimeLogs(res);
-        renderTimeSummary(state);
+  google.script.run
+    .withSuccessHandler((res) => {
 
-        const newLog = res;
-        appendLogToUI(newLog);
-      })
-      .findTimeLogs(workspaceId,{email});
+      const logs = Array.isArray(res) ? res : [];
+
+      if (!Array.isArray(res)) {
+        console.warn("Invalid logs response:", res);
+      }
+
+      const state = buildTimeLogState(logs);
+
+      renderTimeLogs(logs);
+      renderTimeSummary(state);
+    })
+    .withFailureHandler((err) => {
+      console.error("getLogs error:", err);
+    })
+    .findTimeLogs(workspaceId, { email });
 }
 
-
+/* =========================
+   LOG LIST
+========================= */
 function renderTimeLogs(logs) {
 
-  const container =
-    document.getElementById("leftTimelogsList");
-
+  const container = document.getElementById("leftTimelogsList");
   if (!container) return;
 
-  if (!logs.length) {
-    container.innerHTML =
-      `<div class="text-muted-custom">No logs yet</div>`;
+  if (!Array.isArray(logs) || logs.length === 0) {
+    container.innerHTML = `<div class="text-muted-custom">No logs yet</div>`;
     return;
   }
 
   container.innerHTML = logs.map(log => `
     <div class="d-flex justify-content-between border-bottom py-2">
-      <div>${log.action}</div>
-      <div class="text-muted-custom">
-        ${new Date(log.timestamp)
-          .toLocaleTimeString()}
-      </div>
+      <div>${formatLabel(log.action)}</div>
+      <div class="text-muted-custom">${formatTimeSafe(log.timestamp)}</div>
     </div>
   `).join("");
-
 }
 
+/* =========================
+   SUMMARY
+========================= */
 function renderTimeSummary(state) {
 
   const summary = document.getElementById("dashboardSummaryList");
@@ -187,26 +204,11 @@ function renderTimeSummary(state) {
   const items = [];
 
   if (state.time_in) {
-    items.push(["Time In", formatTime(state.time_in)]);
+    items.push(["Time In", formatTimeSafe(state.time_in)]);
   }
-
-  if (state.lunch?.in) {
-    items.push(["Lunch Start", formatTime(state.lunch.in)]);
-  }
-
-  if (state.lunch?.out) {
-    items.push(["Lunch End", formatTime(state.lunch.out)]);
-  }
-
-  (state.breaks || []).forEach((b, i) => {
-    items.push([`Break ${i + 1} Start`, formatTime(b.in)]);
-    if (b.out) {
-      items.push([`Break ${i + 1} End`, formatTime(b.out)]);
-    }
-  });
 
   if (state.time_out) {
-    items.push(["Time Out", formatTime(state.time_out)]);
+    items.push(["Time Out", formatTimeSafe(state.time_out)]);
   }
 
   if (items.length === 0) {
@@ -222,6 +224,9 @@ function renderTimeSummary(state) {
   `).join("");
 }
 
+/* =========================
+   STATE ENGINE (FIXED BREAK LOGIC)
+========================= */
 function buildTimeLogState(timeLogs) {
 
   const state = {
@@ -232,9 +237,7 @@ function buildTimeLogState(timeLogs) {
     breaks: []
   };
 
-  let currentBreak = null;
-
-  timeLogs.forEach(log => {
+  for (const log of timeLogs) {
 
     switch (log.action) {
 
@@ -243,72 +246,85 @@ function buildTimeLogState(timeLogs) {
         state.status = "WORKING";
         break;
 
-      case "break_in":
-        currentBreak = {
-          in: log.timestamp,
-          out: null
-        };
-
-        state.breaks.push(currentBreak);
-        state.status = "ON_BREAK";
-        break;
-
-      case "break_out":
-        if (currentBreak) {
-          currentBreak.out = log.timestamp;
-        }
-        state.status = "WORKING";
-        break;
-
-      case "lunch_in":
-        state.lunch.in = log.timestamp;
-        state.status = "AT_LUNCH";
-        break;
-
-      case "lunch_out":
-        state.lunch.out = log.timestamp;
-        state.status = "WORKING";
-        break;
-
       case "time_out":
         state.time_out = log.timestamp;
         state.status = "CLOCKED_OUT";
         break;
-    }
 
-  });
+      case "break_1_start":
+      case "break_2_start":
+      case "break_3_start":
+        state.breaks.push({ in: log.timestamp, out: null });
+        state.status = "ON BREAK";
+        break;
+
+      case "break_1_end":
+      case "break_2_end":
+      case "break_3_end":
+        const lastBreak = state.breaks.findLast(b => !b.out);
+        if (lastBreak) lastBreak.out = log.timestamp;
+        state.status = "WORKING";
+        break;
+
+      case "lunch_start":
+        state.lunch.in = log.timestamp;
+        state.status = "AT LUNCH";
+        break;
+
+      case "lunch_end":
+        state.lunch.out = log.timestamp;
+        state.status = "WORKING";
+        break;
+    }
+  }
 
   return state;
 }
 
+/* =========================
+   APPEND UI (OPTIMIZED)
+========================= */
 function appendLogToUI(log) {
 
-  const container =
-    document.getElementById("leftTimelogsList");
-
-  if (!container) return;
+  const container = document.getElementById("leftTimelogsList");
+  if (!container || !log) return;
 
   const row = document.createElement("div");
 
-  row.className =
-    "d-flex justify-content-between border-bottom py-2";
+  row.className = "d-flex justify-content-between border-bottom py-2";
 
   row.innerHTML = `
-    <div>${log.action}</div>
-    <div class="text-muted-custom">
-      ${new Date(log.timestamp).toLocaleTimeString()}
-    </div>
+    <div>${formatLabel(log.action)}</div>
+    <div class="text-muted-custom">${formatTimeSafe(log.timestamp)}</div>
   `;
 
   container.prepend(row);
 }
 
-function clearAllCache(){
+/* =========================
+   HELPERS
+========================= */
+function formatTimeSafe(ts) {
+  if (!ts) return "--"; 
+  const d = new Date(ts);
+  return isNaN(d.getTime())
+    ? "--"
+    : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function formatLabel(action) {
+  return (action || "")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/* =========================
+   CACHE
+========================= */
+function clearAllCache() {
   google.script.run
-  .withSuccessHandler(res =>{
-    console.log(res);
-  })
-  .clearAllCache();
+    .withSuccessHandler(res => console.log(res))
+    .clearAllCache();
 }
 
 </script>
