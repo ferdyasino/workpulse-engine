@@ -1,0 +1,142 @@
+<script>
+
+document.getElementById('loginForm')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById('email')?.value;
+  const sid = document.getElementById('sid')?.value;
+
+  console.log("sid", sid);
+  if (!email) {
+    showToast?.("Email is required", "warning");
+    return;
+  }
+
+  showLoader?.();
+  showToast?.("Logging in...", "info");
+
+  google.script.run
+    .withSuccessHandler(handleLoginSuccess)
+    .withFailureHandler(handleLoginError)
+    .loginResolver(sid, email);
+});
+
+// =====================================================
+// LOGIN SUCCESS
+// =====================================================
+
+function handleLoginSuccess(result) {
+
+  hideLoader?.();
+
+  if (!result) {
+    showToast?.("Invalid login response", "error");
+    return;
+  }
+
+  console.log("LOGIN RESULT:", result);
+
+  APP.user = {
+    email: result.email,
+    name: result.name || ""
+  };
+
+  APP.role = (result.role || "guest").toLowerCase();
+
+  // =====================================================
+  // SESSION STORAGE (FIXED + CLEANED)
+  // =====================================================
+
+  const userId = result.user_id || result.owner_id || "";
+  const workspaceId = result.workspaceId || result.owner_spreadsheet_id || "";
+
+  localStorage.setItem("user_id", userId);
+  localStorage.setItem("workspaceId", workspaceId);
+  localStorage.setItem("name", result.name || "");
+  localStorage.setItem("email", result.email);
+  localStorage.setItem("role", APP.role);
+
+  // =====================================================
+  // UX FEEDBACK
+  // =====================================================
+
+  showToast("Login successful", "success");
+
+  applyRoleUI?.();
+
+  // =====================================================
+  // ROUTE
+  // =====================================================
+
+  if (APP.role === "admin" || APP.role === "owner") {
+    showToast("Welcome Admin Panel", "info");
+  } else {
+    showToast("Welcome Dashboard", "success");
+  }
+  go("dashboard");
+}
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+function logout() {
+
+  if (!confirm("Are you sure you want to logout?")) return;
+
+  localStorage.clear();
+
+  APP.user = null;
+  APP.role = "guest";
+  APP.currentPage = "login";
+
+  showToast("Logged out successfully", "info");
+
+  go("login");
+}
+
+// =====================================================
+// LOGIN ERROR
+// =====================================================
+
+function handleLoginError(err) {
+
+  hideLoader?.();
+
+  console.error("LOGIN ERROR:", err);
+
+  showToast("Login failed. Please try again.", "error");
+
+  go("login");
+}
+
+// =====================================================
+// SESSION RESTORE
+// =====================================================
+
+function restoreSession() {
+
+  const email = localStorage.getItem("email");
+
+  if (!email) {
+    showToast("Please login to continue", "info");
+    go("login");
+    return;
+  }
+
+  APP.user = {
+    email,
+    name: localStorage.getItem("name") || ""
+  };
+
+  APP.role = (localStorage.getItem("role") || "guest").toLowerCase();
+
+  console.log(localStorage.getItem("role"));
+
+  showToast("Welcome back", "success");
+
+  applyRoleUI?.();
+  go("dashboard");
+}
+
+</script>

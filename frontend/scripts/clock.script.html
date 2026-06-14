@@ -1,0 +1,94 @@
+<script>
+
+function updateLoginClock() {
+
+    const timeEl = document.getElementById("loginClockTime");
+    const dateEl = document.getElementById("loginClockDate");
+
+    if (!timeEl || !dateEl) return;
+
+    const now = new Date();
+
+    const time = now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+    });
+
+    const date = now.toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+    });
+
+    timeEl.textContent = time;
+    dateEl.textContent = date;
+}
+
+function updateDashboardClock() {
+
+    const timeEl = document.getElementById("dashboardClockTime");
+    const dateEl = document.getElementById("dashboardClockDate");
+
+    if (!timeEl || !dateEl) return;
+
+    const now = new Date();
+
+    const time = now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+    });
+
+    const date = now.toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+    });
+
+    timeEl.textContent = time;
+    dateEl.textContent = date;
+}
+
+function updateTopbarClock() {
+
+    const timeEl = document.getElementById("adminClockTime");
+    const dateEl = document.getElementById("adminClockDate");
+
+    // FIX: check both, not just one
+    if (!timeEl && !dateEl) return;
+
+    const now = new Date();
+
+    const time = now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+    });
+
+    const date = now.toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+    });
+
+    if (timeEl) timeEl.textContent = time;
+    if (dateEl) dateEl.textContent = date;
+}
+
+function tickAllClocks() {
+    updateLoginClock();
+    updateDashboardClock();
+    updateTopbarClock();
+}
+
+// run safely once DOM is ready
+window.addEventListener("DOMContentLoaded", () => {
+    tickAllClocks();
+    setInterval(tickAllClocks, 1000);
+});
+
+</script>

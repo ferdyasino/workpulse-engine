@@ -1,0 +1,83 @@
+<div class="container min-vh-100 d-flex align-items-center justify-content-center">
+
+  <div class="glass glass-card glass-strong w-100" style="max-width:450px;">
+
+    <!-- =====================================================
+         BIG LOGIN CLOCK
+    ====================================================== -->
+    <div class="text-center mb-4">
+
+      <div id="loginClockTime"
+           style="font-size:56px;font-weight:800;letter-spacing:1px;">
+        00:00:00
+      </div>
+
+      <div id="loginClockDate"
+           class="text-muted-custom"
+           style="font-size:14px;margin-top:6px;">
+        Loading date...
+      </div>
+
+    </div>
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+    <div class="text-center mb-4">
+      <h2 class="fw-bold">Attendance System</h2>
+      <p class="text-muted-custom mb-0">
+        Sign in to continue
+      </p>
+    </div>
+
+    <!-- =====================================================
+         LOGIN FORM
+    ====================================================== -->
+    <form id="loginForm">
+
+      <!-- Hidden SID -->
+      <input
+        type="hidden"
+        id="sid"
+        name="sid"
+        value="1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA">
+
+      <!-- EMAIL -->
+      <div class="mb-3">
+        <label class="form-label">Email Address</label>
+
+        <input
+          type="email"
+          id="email"
+          class="form-control"
+          placeholder="you@example.com"
+          required>
+      </div>
+
+      <!-- LOGIN BUTTON -->
+      <button
+        type="submit"
+        class="btn btn-primary w-100 mb-2">
+        Login
+      </button>
+
+      <!-- TEST BUTTONS (DEV ONLY)
+      <button
+        type="button"
+        class="btn btn-outline-light w-100 mb-2"
+        onclick="mockLogin('employee')">
+        Test Employee
+      </button>
+
+      <button
+        type="button" 
+        class="btn btn-dark w-100"
+        onclick="mockLogin('admin')">
+        Test Admin
+      </button> -->
+
+    </form>
+
+  </div>
+
+</div>

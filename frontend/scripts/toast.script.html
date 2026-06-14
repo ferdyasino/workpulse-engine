@@ -1,0 +1,44 @@
+<script>
+
+    function showToast(message, type = "info") {
+        const toastEl = document.getElementById("appToast");
+        const body = document.getElementById("toastBody");
+
+        // HARD GUARD (must be first line of defense)
+        if (!toastEl || !body) {
+            console.warn("Toast not mounted in DOM yet.");
+            return;
+        }
+
+        const typeMap = {
+            success: "bg-success",
+            error: "bg-danger",
+            warning: "bg-warning",
+            info: "bg-info"
+        };
+
+        // reset classes safely
+        toastEl.classList.remove("bg-success", "bg-danger", "bg-warning", "bg-info");
+
+        toastEl.classList.add(typeMap[type] || "bg-info");
+
+        body.textContent = String(message ?? "No message");
+
+        // Bootstrap instance safety
+        let instance = bootstrap.Toast.getInstance(toastEl);
+
+        if (!instance) {
+            instance = new bootstrap.Toast(toastEl, {
+                delay: 3000,
+                autohide: true
+            });
+        }
+
+        instance.show();
+    }
+
+    const toastSuccess = (msg) => showToast(msg, "success");
+    const toastError   = (msg) => showToast(msg, "error");
+    const toastInfo    = (msg) => showToast(msg, "info");
+    const toastWarning = (msg) => showToast(msg, "warning");
+</script>

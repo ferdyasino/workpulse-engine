@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Attendance System</title>
+
+  <?!= include("frontend/layouts/styles"); ?>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       TOPBAR
+  ====================================================== -->
+
+  <header
+    id="appTopbar"
+    class="app-topbar glass d-none">
+
+    <?!= include("frontend/layouts/topbar"); ?>
+
+  </header>
+
+  <!-- =====================================================
+       GLOBAL COMPONENTS
+  ====================================================== -->
+
+  
+  <?!= include("frontend/components/toast"); ?>
+
+  
+  
+  <!-- =====================================================
+  SHARED CLOCK
+  (moves between dashboard and topbar)
+  ====================================================== -->
+  
+  <?!= include("frontend/components/clock"); ?>
+  
+  <!-- =====================================================
+  APPLICATION
+  ====================================================== -->
+  
+  <main id="app">
+    
+    <!-- LOGIN -->
+    <section
+    id="page-login"
+    class="app-page">
+    
+    <?!= include("frontend/pages/login"); ?>
+    <?!= include("frontend/components/loader"); ?>
+    
+  </section>
+  
+  <!-- HOME -->
+  <section
+      id="page-home"
+      class="app-page d-none">
+      
+      <?!= include("frontend/pages/home"); ?>
+      
+    </section>
+    
+    <!-- USER DASHBOARD -->
+    <section
+    id="page-dashboard"
+    class="app-page d-none">
+    
+    <?!= include("frontend/pages/dashboard"); ?>
+    
+  </section>
+  
+  <!-- ADMIN DASHBOARD -->
+  <section
+  id="page-admin-dashboard"
+  class="app-page d-none">
+  
+  <?!= include("frontend/pages/adminDashboard"); ?>
+  
+</section>
+
+<!-- ERROR -->
+<section
+id="page-error"
+      class="app-page d-none">
+      
+      <?!= include("frontend/pages/error"); ?>
+      
+    </section>
+
+  </main>
+  
+  <!-- =====================================================
+  FOOTER
+  ====================================================== -->
+  
+  <?!= include("frontend/layouts/footer"); ?>
+  
+  <!-- =====================================================
+  SCRIPTS
+  ====================================================== -->
+  
+  <?!= include("frontend/scripts/scripts"); ?>
+  <?!= include("frontend/scripts/clock.script"); ?>
+  <?!= include("frontend/scripts/login.script"); ?>
+  <?!= include("frontend/scripts/timelogs.script"); ?>
+  <?!= include("frontend/scripts/toast.script"); ?>
+
+</body>
+
+</html>

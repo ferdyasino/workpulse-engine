@@ -1,0 +1,314 @@
+<script>
+
+function renderTimeLogger() {
+  const container = document.getElementById("dashboardTimelogsList");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div id="timeLogger" class="glass-card mb-4">
+      <div class="row g-3">
+
+        <div class="col-6">
+          <button class="btn btn-success w-100"
+            onclick="logTime('time_in')">Time In</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-danger w-100"
+            onclick="logTime('time_out')">Time Out</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-warning w-100"
+            onclick="logTime('break_1_start')">B1 Start</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-primary w-100"
+            onclick="logTime('break_1_end')">B1 End</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-warning w-100"
+            onclick="logTime('break_2_start')">B2 Start</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-primary w-100"
+            onclick="logTime('break_2_end')">B2 End</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-warning w-100"
+            onclick="logTime('break_3_start')">B3 Start</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-primary w-100"
+            onclick="logTime('break_3_end')">B3 End</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-dark w-100"
+            onclick="logTime('lunch_start')">Lunch Start</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-info w-100"
+            onclick="logTime('lunch_end')">Lunch End</button>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+function logTime(action) {
+
+  const email = localStorage.getItem("email");
+  const workspaceId = localStorage.getItem("workspaceId") || document.getElementById("sid").value;
+  const userId = localStorage.getItem("user_id");
+  const sid = document.getElementById("sid").value;
+
+  console.log("sid",sid);
+  console.log("workspaceId",workspaceId);
+
+  // if (!email || !workspaceId || !userId) {
+  //   showToast("error", "Session expired. Please login again.");
+  //   return;
+  // }
+
+  const payload = {
+    user_id: userId,
+    email,
+    action,
+    shift_id: "SHIFT-4",
+    device_info: navigator.userAgent,
+    location: "home"
+  };
+
+  console.log("payload", payload);
+
+  showLoader();
+
+  google.script.run
+    .withSuccessHandler((res) => {
+      console.log("res", res)
+
+      // hideLoader();
+
+      // if (!res) {
+      //   toastError("Empty response from server");
+      //   return;
+      // }
+
+      // if (!res.success) {
+      //   toastError(res.message || "Action failed");
+      //   return;
+      // }
+
+      // toastSuccess(res.state || "Success");
+
+      // refreshTimeLogState(res.state);
+    })
+    // .withFailureHandler((err) => {
+
+    //   hideLoader();
+
+    //   const msg = err?.message || "Unexpected server error";
+
+    //   toastError(msg);
+    // })
+    .insertTimeLog(workspaceId, payload);
+}
+
+function getLogs() {
+
+  const email = localStorage.getItem("email");
+  const workspaceId =
+    localStorage.getItem("workspaceId") ||
+    document.getElementById("sid").value;
+
+    console.log("email",email);
+    console.log("workspaceId",workspaceId);
+
+    google.script.run
+      .withSuccessHandler((res) => {
+       console.log("timeLogs",{res});
+       const state = buildTimeLogState(res);
+        renderTimeLogs(res);
+        renderTimeSummary(state);
+
+        const newLog = res;
+        appendLogToUI(newLog);
+      })
+      .findTimeLogs(workspaceId,{email});
+}
+
+
+function renderTimeLogs(logs) {
+
+  const container =
+    document.getElementById("leftTimelogsList");
+
+  if (!container) return;
+
+  if (!logs.length) {
+    container.innerHTML =
+      `<div class="text-muted-custom">No logs yet</div>`;
+    return;
+  }
+
+  container.innerHTML = logs.map(log => `
+    <div class="d-flex justify-content-between border-bottom py-2">
+      <div>${log.action}</div>
+      <div class="text-muted-custom">
+        ${new Date(log.timestamp)
+          .toLocaleTimeString()}
+      </div>
+    </div>
+  `).join("");
+
+}
+
+function renderTimeSummary(state) {
+
+  const summary = document.getElementById("dashboardSummaryList");
+  const statusLabel = document.getElementById("logStatusLabel");
+
+  if (!summary) return;
+
+  state = state || {};
+
+  if (statusLabel) {
+    statusLabel.textContent = state.status || "NOT_STARTED";
+  }
+
+  const items = [];
+
+  if (state.time_in) {
+    items.push(["Time In", formatTime(state.time_in)]);
+  }
+
+  if (state.lunch?.in) {
+    items.push(["Lunch Start", formatTime(state.lunch.in)]);
+  }
+
+  if (state.lunch?.out) {
+    items.push(["Lunch End", formatTime(state.lunch.out)]);
+  }
+
+  (state.breaks || []).forEach((b, i) => {
+    items.push([`Break ${i + 1} Start`, formatTime(b.in)]);
+    if (b.out) {
+      items.push([`Break ${i + 1} End`, formatTime(b.out)]);
+    }
+  });
+
+  if (state.time_out) {
+    items.push(["Time Out", formatTime(state.time_out)]);
+  }
+
+  if (items.length === 0) {
+    summary.innerHTML = `<div class="text-muted-custom">No activity yet</div>`;
+    return;
+  }
+
+  summary.innerHTML = items.map(([label, time]) => `
+    <div class="d-flex justify-content-between py-2 border-bottom">
+      <span>${label}</span>
+      <span class="text-muted-custom">${time}</span>
+    </div>
+  `).join("");
+}
+
+function buildTimeLogState(timeLogs) {
+
+  const state = {
+    status: "NOT_STARTED",
+    time_in: null,
+    time_out: null,
+    lunch: {},
+    breaks: []
+  };
+
+  let currentBreak = null;
+
+  timeLogs.forEach(log => {
+
+    switch (log.action) {
+
+      case "time_in":
+        state.time_in = log.timestamp;
+        state.status = "WORKING";
+        break;
+
+      case "break_in":
+        currentBreak = {
+          in: log.timestamp,
+          out: null
+        };
+
+        state.breaks.push(currentBreak);
+        state.status = "ON_BREAK";
+        break;
+
+      case "break_out":
+        if (currentBreak) {
+          currentBreak.out = log.timestamp;
+        }
+        state.status = "WORKING";
+        break;
+
+      case "lunch_in":
+        state.lunch.in = log.timestamp;
+        state.status = "AT_LUNCH";
+        break;
+
+      case "lunch_out":
+        state.lunch.out = log.timestamp;
+        state.status = "WORKING";
+        break;
+
+      case "time_out":
+        state.time_out = log.timestamp;
+        state.status = "CLOCKED_OUT";
+        break;
+    }
+
+  });
+
+  return state;
+}
+
+function appendLogToUI(log) {
+
+  const container =
+    document.getElementById("leftTimelogsList");
+
+  if (!container) return;
+
+  const row = document.createElement("div");
+
+  row.className =
+    "d-flex justify-content-between border-bottom py-2";
+
+  row.innerHTML = `
+    <div>${log.action}</div>
+    <div class="text-muted-custom">
+      ${new Date(log.timestamp).toLocaleTimeString()}
+    </div>
+  `;
+
+  container.prepend(row);
+}
+
+function clearAllCache(){
+  google.script.run
+  .withSuccessHandler(res =>{
+    console.log(res);
+  })
+  .clearAllCache();
+}
+
+</script>
