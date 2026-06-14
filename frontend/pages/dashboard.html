@@ -24,33 +24,48 @@
         </div>
       </div>
 
-      <!-- SUMMARY -->
+      <!-- TODAY SUMMARY -->
       <div id="dashboardSummaryHost" class="mt-4">
 
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h5 class="mb-0">Today Summary</h5>
-          <span id="logStatusLabel" class="text-muted-custom"></span>
+          <span id="logStatusLabel" class="text-muted-custom">NOT STARTED</span>
         </div>
 
         <div class="glass glass-card p-3">
 
           <div id="dashboardSummaryList">
-            <div class="text-muted-custom">No activity yet</div>
+
+            <div class="d-flex justify-content-between py-1">
+              <span>Status</span>
+              <strong id="summaryStatus">--</strong>
+            </div>
+
+            <div class="d-flex justify-content-between py-1">
+              <span>Time In</span>
+              <strong id="summaryTimeIn">--</strong>
+            </div>
+
+            <div class="d-flex justify-content-between py-1">
+              <span>Time Out</span>
+              <strong id="summaryTimeOut">--</strong>
+            </div>
+
           </div>
 
         </div>
 
       </div>
 
-      <!-- RECENT ACTIVITY -->
+      <!-- BREAK ACTIVITY (FIXED NAME) -->
       <div id="dashboardRecentHost" class="mt-4">
 
-        <h5 class="mb-2">Recent Activity</h5>
+        <h5 class="mb-2">Break Activity</h5>
 
         <div class="glass glass-card p-3">
 
           <div id="leftTimelogsList">
-            <div class="text-muted-custom">No recent logs</div>
+            <div class="text-muted-custom">No breaks yet</div>
           </div>
 
         </div>
@@ -85,7 +100,7 @@
             <h5 class="mb-0">Full Timeline</h5>
 
             <span class="text-muted-custom small">
-              Live updates
+              All activity logs
             </span>
 
           </div>

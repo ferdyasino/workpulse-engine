@@ -73,11 +73,15 @@
                 onclick="clearAllCache()">
           Clear Cache
         </button>
-
-        <button class="btn btn-primary btn-sm">
-          Add User
+        
+        <button id="btnRefreshUsers" class="btn btn-primary btn-sm">
+          Refresh
         </button>
 
+        <button id="btnAddUser" class="btn btn-primary btn-sm">
+          Add User
+        </button>
+        
       </div>
 
     </div>
@@ -95,7 +99,7 @@
           </tr>
         </thead>
 
-        <tbody>
+        <tbody id="usersTableBody">
 
           <tr>
             <td>John Doe</td>

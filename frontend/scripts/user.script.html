@@ -1,0 +1,212 @@
+<script>
+/**
+ * =====================================================
+ * USERS / EMPLOYEES FRONTEND CONTROLLER
+ * Apps Script UI Layer
+ * =====================================================
+ */
+
+const UsersUI = (() => {
+
+  let state = {
+    users: [],
+    loading: false
+  };
+
+  /**
+   * =============================
+   * INIT
+   * =============================
+   */
+  function init() {
+    loadUsers();
+    bindEvents();
+  }
+
+  /**
+   * =============================
+   * EVENT BINDINGS
+   * =============================
+   */
+  function bindEvents() {
+
+    const addBtn = document.querySelector("#btnAddUser");
+    if (addBtn) {
+      addBtn.addEventListener("click", openAddUserModal);
+    }
+
+    const refreshBtn = document.querySelector("#btnRefreshUsers");
+    if (refreshBtn) {
+      refreshBtn.addEventListener("click", loadUsers);
+    }
+  }
+
+  /**
+   * =============================
+   * LOAD USERS FROM BACKEND
+   * =============================
+   */
+  function loadUsers() {
+    setLoading(true);
+
+    google.script.run
+      .withSuccessHandler((res) => {
+        state.users = res || [];
+        renderTable();
+        updateStats();
+        setLoading(false);
+      })
+      .withFailureHandler((err) => {
+        console.error(err);
+        showToast("Failed to load users", "error");
+        setLoading(false);
+      })
+      .getUsers(getWorkspaceId());
+  }
+
+  /**
+   * =============================
+   * RENDER TABLE
+   * =============================
+   */
+  function renderTable() {
+
+    const tbody = document.querySelector("#usersTableBody");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    state.users.forEach(user => {
+
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td>${escapeHtml(user.fullname || "")}</td>
+        <td>${escapeHtml(user.email || "")}</td>
+        <td>${escapeHtml(user.role || "")}</td>
+        <td>
+          <span class="badge ${getStatusClass(user.status)}">
+            ${user.status || "UNKNOWN"}
+          </span>
+        </td>
+      `;
+
+      tbody.appendChild(row);
+    });
+  }
+
+  /**
+   * =============================
+   * UPDATE DASHBOARD STATS
+   * =============================
+   */
+  function updateStats() {
+
+    const total = state.users.length;
+    const active = state.users.filter(u => u.status === "ACTIVE").length;
+
+    setText("#totalUsers", total);
+    setText("#activeUsers", active);
+  }
+
+  /**
+   * =============================
+   * CREATE USER
+   * =============================
+   */
+  function createUser(payload) {
+
+    setLoading(true);
+
+    google.script.run
+      .withSuccessHandler((res) => {
+
+        showToast("User created successfully", "success");
+
+        loadUsers(); // refresh list
+      })
+      .withFailureHandler((err) => {
+        console.error(err);
+        showToast(err.message || "Failed to create user", "error");
+        setLoading(false);
+      })
+      .createUser(getWorkspaceId(), payload);
+  }
+
+  /**
+   * =============================
+   * UI HELPERS
+   * =============================
+   */
+  function setLoading(isLoading) {
+    state.loading = isLoading;
+    const btn = document.querySelector("#btnAddUser");
+
+    if (btn) {
+      btn.disabled = isLoading;
+      btn.innerText = isLoading ? "Loading..." : "Add User";
+    }
+  }
+
+  function setText(selector, value) {
+    const el = document.querySelector(selector);
+    if (el) el.innerText = value;
+  }
+
+  function getStatusClass(status) {
+    switch ((status || "").toUpperCase()) {
+      case "ACTIVE": return "badge-success";
+      case "PENDING": return "badge-warning";
+      case "INACTIVE": return "badge-danger";
+      default: return "badge-secondary";
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  /**
+   * =============================
+   * MODAL HANDLER (SKELETON)
+   * =============================
+   */
+  function openAddUserModal() {
+    // hook your modal here
+    console.log("Open Add User Modal");
+  }
+
+  /**
+   * =============================
+   * CONTEXT
+   * =============================
+   */
+  function getWorkspaceId() {
+    return localStorage.getItem("workspace_id") || document.getElementById("sid").value;
+  }
+
+  function showToast(message, type) {
+    if (window.Toast) {
+      window.Toast.show(message, type);
+    } else {
+      alert(message);
+    }
+  }
+
+  return {
+    init,
+    loadUsers,
+    createUser
+  };
+
+})();
+
+/**
+ * INIT ON LOAD
+ */
+document.addEventListener("DOMContentLoaded", UsersUI.init);
+</script>

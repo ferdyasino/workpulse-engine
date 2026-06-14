@@ -15,6 +15,11 @@ function generateEmployeeNo() {
   return generateId("EMP");
 }
 
+function getUsers(workspaceId) {
+  const db = getWorkspaceDb(workspaceId);
+  return find(workspaceId, TABLES.USERS);
+}
+
 /**
  * GENERAL USER CREATION (DOMAIN-AWARE + MASTER SYNC SAFE)
  */

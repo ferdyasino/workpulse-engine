@@ -1,6 +1,16 @@
 <script>
 
+/**
+ * =====================================================
+ * TIME LOGGER SYSTEM (SYNCED + SAFE VERSION)
+ * =====================================================
+ */
+
+/* =========================
+   RENDER LOGGER UI
+========================= */
 function renderTimeLogger() {
+
   const container = document.getElementById("dashboardTimelogsList");
   if (!container) return;
 
@@ -63,20 +73,22 @@ function renderTimeLogger() {
   `;
 }
 
+/* =========================
+   LOG TIME EVENT
+========================= */
 function logTime(action) {
 
   const email = localStorage.getItem("email");
-  const workspaceId = localStorage.getItem("workspaceId") || document.getElementById("sid").value;
+  const workspaceId =
+    localStorage.getItem("workspaceId") ||
+    document.getElementById("sid")?.value;
+
   const userId = localStorage.getItem("user_id");
-  const sid = document.getElementById("sid").value;
 
-  console.log("sid",sid);
-  console.log("workspaceId",workspaceId);
-
-  // if (!email || !workspaceId || !userId) {
-  //   showToast("error", "Session expired. Please login again.");
-  //   return;
-  // }
+  if (!email || !workspaceId || !userId) {
+    showToast?.("Session expired. Please login again.", "error");
+    return;
+  }
 
   const payload = {
     user_id: userId,
@@ -87,90 +99,89 @@ function logTime(action) {
     location: "home"
   };
 
-  console.log("payload", payload);
-
-  showLoader();
+  showLoader?.();
 
   google.script.run
     .withSuccessHandler((res) => {
-      console.log("res", res)
 
-      // hideLoader();
+      hideLoader?.();
 
-      // if (!res) {
-      //   toastError("Empty response from server");
-      //   return;
-      // }
+      if (!res) {
+        showToast?.("Empty response from server", "error");
+        return;
+      }
 
-      // if (!res.success) {
-      //   toastError(res.message || "Action failed");
-      //   return;
-      // }
+      showToast?.(res.message || "Success", "success");
 
-      // toastSuccess(res.state || "Success");
-
-      // refreshTimeLogState(res.state);
+      // refresh full state (SAFE RELOAD)
+      getLogs();
     })
-    // .withFailureHandler((err) => {
+    .withFailureHandler((err) => {
 
-    //   hideLoader();
-
-    //   const msg = err?.message || "Unexpected server error";
-
-    //   toastError(msg);
-    // })
+      hideLoader?.();
+      showToast?.(err?.message || "Server error", "error");
+    })
     .insertTimeLog(workspaceId, payload);
 }
 
+/* =========================
+   FETCH LOGS
+========================= */
 function getLogs() {
 
   const email = localStorage.getItem("email");
   const workspaceId =
     localStorage.getItem("workspaceId") ||
-    document.getElementById("sid").value;
+    document.getElementById("sid")?.value;
 
-    console.log("email",email);
-    console.log("workspaceId",workspaceId);
+  if (!workspaceId || !email) return;
 
-    google.script.run
-      .withSuccessHandler((res) => {
-       console.log("timeLogs",{res});
-       const state = buildTimeLogState(res);
-        renderTimeLogs(res);
-        renderTimeSummary(state);
+  google.script.run
+    .withSuccessHandler((res) => {
 
-        const newLog = res;
-        appendLogToUI(newLog);
-      })
-      .findTimeLogs(workspaceId,{email});
+      const logs = Array.isArray(res) ? res : [];
+
+      const state = buildTimeLogState(logs);
+
+      renderTimeLogs(logs);
+      renderTimeSummary(state);
+
+    })
+    .withFailureHandler((err) => {
+      console.error("getLogs error:", err);
+    })
+    .findTimeLogs(workspaceId, { email });
 }
 
-
+/* =========================
+   LEFT LOG LIST
+========================= */
 function renderTimeLogs(logs) {
 
-  const container =
-    document.getElementById("leftTimelogsList");
-
+  const container = document.getElementById("leftTimelogsList");
   if (!container) return;
 
-  if (!logs.length) {
-    container.innerHTML =
-      `<div class="text-muted-custom">No logs yet</div>`;
+  if (!Array.isArray(logs) || logs.length === 0) {
+    container.innerHTML = `<div class="text-muted-custom">No logs yet</div>`;
     return;
   }
 
-  container.innerHTML = logs.map(log => `
-    <div class="d-flex justify-content-between border-bottom py-2">
-      <div>${log.action}</div>
-      <div class="text-muted-custom">
-        ${new Date(log.timestamp)
-          .toLocaleTimeString()}
-      </div>
-    </div>
-  `).join("");
+  container.innerHTML = logs.map(log => {
 
+    const time = formatTimeSafe(log.timestamp);
+
+    return `
+      <div class="d-flex justify-content-between border-bottom py-2">
+        <div>${formatLabel(log.action)}</div>
+        <div class="text-muted-custom">${time}</div>
+      </div>
+    `;
+  }).join("");
 }
 
+/* =========================
+   SUMMARY RENDER
+========================= */
 function renderTimeSummary(state) {
 
   const summary = document.getElementById("dashboardSummaryList");
@@ -187,26 +198,11 @@ function renderTimeSummary(state) {
   const items = [];
 
   if (state.time_in) {
-    items.push(["Time In", formatTime(state.time_in)]);
+    items.push(["Time In", formatTimeSafe(state.time_in)]);
   }
-
-  if (state.lunch?.in) {
-    items.push(["Lunch Start", formatTime(state.lunch.in)]);
-  }
-
-  if (state.lunch?.out) {
-    items.push(["Lunch End", formatTime(state.lunch.out)]);
-  }
-
-  (state.breaks || []).forEach((b, i) => {
-    items.push([`Break ${i + 1} Start`, formatTime(b.in)]);
-    if (b.out) {
-      items.push([`Break ${i + 1} End`, formatTime(b.out)]);
-    }
-  });
 
   if (state.time_out) {
-    items.push(["Time Out", formatTime(state.time_out)]);
+    items.push(["Time Out", formatTimeSafe(state.time_out)]);
   }
 
   if (items.length === 0) {
@@ -222,6 +218,9 @@ function renderTimeSummary(state) {
   `).join("");
 }
 
+/* =========================
+   STATE ENGINE (FIXED)
+========================= */
 function buildTimeLogState(timeLogs) {
 
   const state = {
@@ -232,41 +231,16 @@ function buildTimeLogState(timeLogs) {
     breaks: []
   };
 
-  let currentBreak = null;
+  let activeBreak = null;
 
-  timeLogs.forEach(log => {
+  for (const log of timeLogs) {
 
-    switch (log.action) {
+    const action = log.action;
+
+    switch (action) {
 
       case "time_in":
         state.time_in = log.timestamp;
-        state.status = "WORKING";
-        break;
-
-      case "break_in":
-        currentBreak = {
-          in: log.timestamp,
-          out: null
-        };
-
-        state.breaks.push(currentBreak);
-        state.status = "ON_BREAK";
-        break;
-
-      case "break_out":
-        if (currentBreak) {
-          currentBreak.out = log.timestamp;
-        }
-        state.status = "WORKING";
-        break;
-
-      case "lunch_in":
-        state.lunch.in = log.timestamp;
-        state.status = "AT_LUNCH";
-        break;
-
-      case "lunch_out":
-        state.lunch.out = log.timestamp;
         state.status = "WORKING";
         break;
 
@@ -274,41 +248,85 @@ function buildTimeLogState(timeLogs) {
         state.time_out = log.timestamp;
         state.status = "CLOCKED_OUT";
         break;
-    }
 
-  });
+      case "break_1_start":
+      case "break_2_start":
+      case "break_3_start":
+        activeBreak = { in: log.timestamp, out: null };
+        state.breaks.push(activeBreak);
+        state.status = "ON_BREAK";
+        break;
+
+      case "break_1_end":
+      case "break_2_end":
+      case "break_3_end":
+        if (activeBreak) {
+          activeBreak.out = log.timestamp;
+        }
+        state.status = "WORKING";
+        break;
+
+      case "lunch_start":
+        state.lunch.in = log.timestamp;
+        state.status = "AT_LUNCH";
+        break;
+
+      case "lunch_end":
+        state.lunch.out = log.timestamp;
+        state.status = "WORKING";
+        break;
+    }
+  }
 
   return state;
 }
 
+/* =========================
+   APPEND SINGLE LOG (SAFE)
+========================= */
 function appendLogToUI(log) {
 
-  const container =
-    document.getElementById("leftTimelogsList");
-
-  if (!container) return;
+  const container = document.getElementById("leftTimelogsList");
+  if (!container || !log) return;
 
   const row = document.createElement("div");
 
-  row.className =
-    "d-flex justify-content-between border-bottom py-2";
+  row.className = "d-flex justify-content-between border-bottom py-2";
 
   row.innerHTML = `
-    <div>${log.action}</div>
+    <div>${formatLabel(log.action)}</div>
     <div class="text-muted-custom">
-      ${new Date(log.timestamp).toLocaleTimeString()}
+      ${formatTimeSafe(log.timestamp)}
     </div>
   `;
 
   container.prepend(row);
 }
 
-function clearAllCache(){
+/* =========================
+   HELPERS
+========================= */
+function formatTimeSafe(ts) {
+  if (!ts) return "--";
+  const d = new Date(ts);
+  return isNaN(d.getTime())
+    ? "--"
+    : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function formatLabel(action) {
+  return (action || "")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/* =========================
+   CACHE
+========================= */
+function clearAllCache() {
   google.script.run
-  .withSuccessHandler(res =>{
-    console.log(res);
-  })
-  .clearAllCache();
+    .withSuccessHandler(res => console.log(res))
+    .clearAllCache();
 }
 
 </script>
