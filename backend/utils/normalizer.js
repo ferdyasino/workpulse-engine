@@ -59,3 +59,12 @@ function normalizeRecord(record = {}) {
 
   return data;
 }
+
+function normalize(field, value) {
+
+  const normalizer = NORMALIZERS[field];
+
+  return typeof normalizer === "function"
+    ? normalizer(value)
+    : value;
+}

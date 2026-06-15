@@ -89,7 +89,7 @@ const UsersUI = (() => {
           </button>
 
           <button class="btn btn-sm btn-glass-danger"
-            onclick="UsersUI.openDeleteModal('${user.id}')">
+            onclick="UsersUI.openDeleteModal('${user.user_id}')">
             Delete
           </button>
         </td>
@@ -115,41 +115,69 @@ const UsersUI = (() => {
   // CREATE / UPDATE SUBMIT
   // =====================================================
   function handleSubmit(e) {
-    e.preventDefault();
 
-    const payload = {
-      id: document.getElementById("employeeId").value,
-      name: document.getElementById("employeeName").value,
-      email: document.getElementById("employeeEmail").value,
-      role: document.getElementById("employeeRole").value,
-      status: document.getElementById("employeeStatus").value
-    };
+  e.preventDefault();
 
-    const isEdit = !!payload.id;
+  const payload = {
+    user_id: document.getElementById("employeeId").value,
+    fullname: document.getElementById("employeeName").value,
+    email: document.getElementById("employeeEmail").value,
+    role: document.getElementById("employeeRole").value,
+    status: document.getElementById("employeeStatus").value
+  };
 
-    setLoading(true);
+  const isEdit = !!payload.user_id;
 
-    google.script.run
-      .withSuccessHandler(() => {
+  setLoading(true);
 
-        showToast(
-          isEdit ? "User updated" : "User created",
-          "success"
-        );
+  const runner = google.script.run
+    .withSuccessHandler(() => {
 
-        bootstrap.Modal.getInstance(
-          document.getElementById("employeeFormModal")
-        )?.hide();
+      showToast(
+        isEdit
+          ? "User updated"
+          : "User created",
+        "success"
+      );
 
-        loadUsers();
-      })
-      .withFailureHandler((err) => {
-        console.error(err);
-        showToast(err.message || "Operation failed", "error");
-        setLoading(false);
-      })
-      .createUser(getWorkspaceId(), payload);
+      bootstrap.Modal.getInstance(
+        document.getElementById("employeeFormModal")
+      )?.hide();
+
+      loadUsers();
+
+    })
+    .withFailureHandler((err) => {
+
+      console.error(err);
+
+      showToast(
+        err.message || "Operation failed",
+        "error"
+      );
+
+      setLoading(false);
+
+    });
+
+  if (isEdit) {
+
+    runner.updateUser(
+      getWorkspaceId(),
+      payload.user_id,
+      payload
+    );
+
+  } else {
+
+    runner.createUser(
+      getWorkspaceId(),
+      payload
+    );
+
   }
+
+}
 
   // =====================================================
   // MODALS
@@ -176,7 +204,7 @@ const UsersUI = (() => {
 
     document.getElementById("employeeFormTitle").innerText = "Edit Employee";
 
-    document.getElementById("employeeId").value = emp.id;
+    document.getElementById("employeeId").value = emp.user_id;
     document.getElementById("employeeName").value = emp.name || emp.fullname || "";
     document.getElementById("employeeEmail").value = emp.email || "";
     document.getElementById("employeeRole").value = emp.role || "employee";
@@ -196,28 +224,49 @@ const UsersUI = (() => {
     ).show();
   }
 
-  function confirmDeleteEmployee() {
+function confirmDeleteEmployee(mode) {
 
-    const id = document.getElementById("deleteEmployeeId").value;
+  const id = document.getElementById("deleteEmployeeId").value;
 
-    setLoading(true);
+  setLoading(true);
 
-    google.script.run
-      .withSuccessHandler(() => {
-        showToast("User deleted", "success");
-        loadUsers();
-      })
-      .withFailureHandler((err) => {
-        console.error(err);
-        showToast("Delete failed", "error");
-        setLoading(false);
-      })
-      .deleteUser(getWorkspaceId(), id);
+  let runner = google.script.run
+    .withSuccessHandler(() => {
 
-    bootstrap.Modal.getInstance(
-      document.getElementById("employeeDeleteModal")
-    )?.hide();
+      showToast(
+        mode === "DELETE"
+          ? "User deleted"
+          : "User deactivated",
+        "success"
+      );
+
+      loadUsers();
+
+    })
+    .withFailureHandler((err) => {
+
+      console.error(err);
+      showToast(err.message || "Operation failed", "error");
+      setLoading(false);
+
+    });
+
+  // =========================
+  // ROUTE ACTION
+  // =========================
+  if (mode === "DELETE") {
+
+    runner.deleteUser(getWorkspaceId(), id);
+
+  } else {
+
+    runner.deactivateUser(getWorkspaceId(), id);
   }
+
+  bootstrap.Modal.getInstance(
+    document.getElementById("employeeDeleteModal")
+  )?.hide();
+}
 
   // =====================================================
   // HELPERS

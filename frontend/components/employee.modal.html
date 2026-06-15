@@ -76,16 +76,16 @@
           <div class="mb-3">
             <label class="form-label">Role</label>
             <select id="employeeRole" class="form-select">
-              <option value="employee">Employee</option>
-              <option value="admin">Admin</option>
+              <option value="EMPLOYEE">Employee</option>
+              <option value="ADMIN">Admin</option>  
             </select>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Status</label>
             <select id="employeeStatus" class="form-select">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
             </select>
           </div>
 
@@ -113,7 +113,7 @@
     <div class="modal-content glass">
 
       <div class="modal-header">
-        <h5 class="modal-title">Delete Employee</h5>
+        <h5 class="modal-title">Deactivate Employee</h5>
         <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
 
@@ -129,7 +129,15 @@
           <button class="btn btn-glass" data-bs-dismiss="modal">
             Cancel
           </button>
-          <button class="btn btn-glass-danger" onclick="confirmDeleteEmployee()">
+          <!-- SOFT DELETE -->
+          <button class="btn btn-warning"
+                  onclick="UsersUI.confirmDeleteEmployee('INACTIVE')">
+            Deactivate
+          </button>
+
+          <!-- HARD DELETE -->
+          <button class="btn btn-danger"
+                  onclick="UsersUI.confirmDeleteEmployee('DELETE')">
             Delete
           </button>
         </div>
