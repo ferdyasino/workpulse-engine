@@ -1,0 +1,228 @@
+<script>
+const CrudList = (() => {
+
+  const state = {
+    data: {},
+    activeEntity: null,
+    loading: false
+  };
+
+  /* ==========================================
+     INIT (optional future use)
+  ========================================== */
+  function init() {
+    // reserved for global boot if needed
+  }
+
+  /* ==========================================
+     OPEN LIST MODAL
+  ========================================== */
+  function open(entity) {
+
+    const config = CRUD_CONFIG?.[entity];
+    if (!config) throw new Error("Invalid entity: " + entity);
+
+    state.activeEntity = entity;
+
+    document.getElementById("crudListTitle").textContent =
+      config.title || "Records";
+
+    load(entity);
+
+    new bootstrap.Modal(
+      document.getElementById("crudListModal")
+    ).show();
+  }
+
+  /* ==========================================
+     LOAD DATA
+  ========================================== */
+  function load(entity) {
+
+    const config = CRUD_CONFIG[entity];
+    if (!config) return;
+
+    setLoading(true);
+
+    google.script.run
+      .withSuccessHandler(res => {
+
+        state.data[entity] = res || [];
+
+        renderTable(entity);
+        renderHeader(entity);
+
+        setLoading(false);
+      })
+      .withFailureHandler(err => {
+
+        console.error(err);
+        showToast(err?.message || "Failed to load data", "error");
+
+        setLoading(false);
+      })
+      [config.listFn](getWorkspaceId());
+  }
+
+  /* ==========================================
+     RELOAD
+  ========================================== */
+  function reload(entity) {
+    load(entity);
+  }
+
+  /* ==========================================
+     TABLE HEADER
+  ========================================== */
+  function renderHeader(entity) {
+
+    const config = CRUD_CONFIG[entity];
+    const thead = document.getElementById("crudTableHead");
+
+    if (!thead) return;
+
+    const cols = config.columns || [];
+
+    thead.innerHTML = `
+      <tr>
+        ${cols.map(c => `<th>${capitalize(c)}</th>`).join("")}
+        <th class="text-end">Actions</th>
+      </tr>
+    `;
+  }
+
+  /* ==========================================
+     TABLE BODY
+  ========================================== */
+  function renderTable(entity) {
+
+    const tbody = document.getElementById("crudTableBody");
+    const config = CRUD_CONFIG[entity];
+
+    if (!tbody || !config) return;
+
+    const rows = state.data[entity] || [];
+
+    if (!rows.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="${config.columns.length + 1}"
+              class="text-center text-muted">
+            No records found
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(row => {
+
+      return `
+        <tr>
+          ${config.columns.map(col => `
+            <td>${escapeHtml(row[col])}</td>
+          `).join("")}
+
+          <td class="text-end">
+
+            <button class="btn btn-sm btn-glass"
+              onclick="CrudList.edit('${entity}', '${row.id || row.user_id}')">
+              Edit
+            </button>
+
+            <button class="btn btn-sm btn-glass-danger"
+              onclick="CrudList.remove('${entity}', '${row.id || row.user_id}')">
+              Delete
+            </button>
+
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  /* ==========================================
+     EDIT
+  ========================================== */
+  function edit(entity, id) {
+
+    const list = state.data[entity] || [];
+    const item = list.find(x =>
+      (x.id || x.user_id) == id
+    );
+
+    if (!item) return;
+
+    CrudModal.open(entity, { ...item });
+  }
+
+  /* ==========================================
+     DELETE
+  ========================================== */
+  function remove(entity, id) {
+
+    const config = CRUD_CONFIG[entity];
+    if (!config) return;
+
+    if (!confirm("Are you sure you want to delete this record?")) {
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(() => {
+
+        showToast("Deleted successfully", "success");
+        reload(entity);
+      })
+      .withFailureHandler(err => {
+
+        console.error(err);
+        showToast(err?.message || "Delete failed", "error");
+      })
+      [config.deleteFn](getWorkspaceId(), id);
+  }
+
+  /* ==========================================
+     UTILITIES
+  ========================================== */
+  function setLoading(flag) {
+    state.loading = flag;
+  }
+
+  function getWorkspaceId() {
+    return localStorage.getItem("workspace_id")
+      || document.getElementById("sid")?.value;
+  }
+
+  function showToast(message, type) {
+    window.showToast?.(message, type);
+  }
+
+  function escapeHtml(str) {
+    return String(str || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  function capitalize(str) {
+    return String(str || "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  /* ==========================================
+     PUBLIC API
+  ========================================== */
+  return {
+    init,
+    open,
+    load,
+    reload,
+    edit,
+    remove
+  };
+
+})();
+</script>

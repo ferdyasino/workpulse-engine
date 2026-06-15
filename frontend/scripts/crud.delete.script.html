@@ -1,0 +1,53 @@
+<script>
+    const CrudDelete = (() => {
+
+  function open(entity, id) {
+
+    document.getElementById("crudDeleteId").value = id;
+    document.getElementById("crudDeleteEntity").value = entity;
+
+    document.getElementById("crudDeleteTitle").innerText =
+      `Delete ${CRUD_CONFIG[entity].title}`;
+
+    new bootstrap.Modal(
+      document.getElementById("crudDeleteModal")
+    ).show();
+  }
+
+  function confirm() {
+
+    const id = document.getElementById("crudDeleteId").value;
+    const entity = document.getElementById("crudDeleteEntity").value;
+
+    const config = CRUD_CONFIG[entity];
+
+    google.script.run
+      .withSuccessHandler(() => {
+
+        window.showToast?.("Deleted successfully", "success");
+
+        bootstrap.Modal.getInstance(
+          document.getElementById("crudDeleteModal")
+        )?.hide();
+
+        CrudList.reload(entity);
+      })
+      .withFailureHandler(err => {
+        console.error(err);
+        window.showToast?.(err.message || "Delete failed", "error");
+      })
+      [config.deleteFn](getWorkspaceId(), id);
+  }
+
+  function getWorkspaceId() {
+    return localStorage.getItem("workspace_id")
+      || document.getElementById("sid")?.value;
+  }
+
+  return {
+    open,
+    confirm
+  };
+
+})();
+</script>

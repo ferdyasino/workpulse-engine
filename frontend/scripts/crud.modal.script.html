@@ -1,0 +1,196 @@
+<script>
+const CrudModal = (() => {
+
+  const cache = {
+    shifts: [],
+    departments: []
+  };
+
+  /* =========================================
+     INIT LOOKUPS
+  ========================================= */
+  function initLookups() {
+
+    google.script.run
+      .withSuccessHandler(res => {
+
+        cache.shifts = res?.shifts || [];
+        cache.departments = res?.departments || [];
+
+      })
+      .getCrudLookups(); // ❌ no optional chaining
+  }
+
+  /* =========================================
+     OPEN MODAL
+  ========================================= */
+  function open(entity, data = null) {
+
+    const config = window.CRUD_CONFIG?.[entity];
+    if (!config) throw new Error("Invalid entity: " + entity);
+
+    resetForm();
+
+    document.getElementById("crudEntity").value = entity;
+    document.getElementById("crudId").value =
+      data?.user_id || data?.id || "";
+
+    document.getElementById("crudModalTitle").innerText =
+      (data ? "Edit " : "Create ") + config.title;
+
+    renderFields(config, data);
+
+    new bootstrap.Modal(
+      document.getElementById("crudModal")
+    ).show();
+  }
+
+  /* =========================================
+     RESET FORM (IMPORTANT FIX)
+  ========================================= */
+  function resetForm() {
+
+    const form = document.getElementById("crudForm");
+    form?.reset();
+
+    document.getElementById("crudFields").innerHTML = "";
+  }
+
+  /* =========================================
+     RENDER FIELDS
+  ========================================= */
+  function renderFields(config, data) {
+
+    const container = document.getElementById("crudFields");
+    container.innerHTML = "";
+
+    config.fields.forEach(field => {
+
+      const value = escapeHtml(data?.[field.name] ?? "");
+
+      let html = "";
+
+      /* ================= TEXT INPUT ================= */
+      if (["text", "email", "number", "time"].includes(field.type)) {
+
+        html = `
+          <div class="mb-3">
+            <label class="form-label">${field.label}</label>
+            <input
+              type="${field.type}"
+              class="form-control"
+              id="field_${field.name}"
+              value="${value}"
+              ${field.required ? "required" : ""}
+            />
+          </div>
+        `;
+      }
+
+      /* ================= SELECT ================= */
+      if (field.type === "select") {
+
+        let options = [];
+
+        if (field.source === "shifts") options = cache.shifts;
+        else if (field.source === "departments") options = cache.departments;
+        else options = field.options || [];
+
+        html = `
+          <div class="mb-3">
+            <label class="form-label">${field.label}</label>
+            <select class="form-select" id="field_${field.name}">
+              ${options.map(opt => {
+
+                const val = opt.shift_id || opt.id || opt;
+                const label = opt.shift_name || opt.name || opt;
+
+                return `
+                  <option value="${val}" ${val == data?.[field.name] ? "selected" : ""}>
+                    ${label}
+                  </option>
+                `;
+              }).join("")}
+            </select>
+          </div>
+        `;
+      }
+
+      container.insertAdjacentHTML("beforeend", html);
+    });
+  }
+
+  /* =========================================
+     SUBMIT
+  ========================================= */
+  function bindSubmit() {
+
+    document.getElementById("crudForm").addEventListener("submit", e => {
+
+      e.preventDefault();
+
+      const entity = document.getElementById("crudEntity").value;
+      const id = document.getElementById("crudId").value;
+      const config = window.CRUD_CONFIG?.[entity];
+
+      const payload = {};
+
+      config.fields.forEach(field => {
+
+        const el = document.getElementById("field_" + field.name);
+
+        payload[field.name] =
+          el ? el.value.trim() : "";
+      });
+
+      payload.id = id || null;
+
+      google.script.run
+        .withSuccessHandler(() => {
+
+          bootstrap.Modal.getInstance(
+            document.getElementById("crudModal")
+          )?.hide();
+
+          window.CrudList?.reload?.(entity);
+
+        })
+        .withFailureHandler(err => {
+
+          console.error(err);
+          alert(err?.message || "Save failed");
+
+        })
+        [config.saveFn](getWorkspaceId(), payload);
+    });
+  }
+
+  /* =========================================
+     WORKSPACE
+  ========================================= */
+  function getWorkspaceId() {
+
+    return localStorage.getItem("workspace_id")
+      || document.getElementById("sid")?.value;
+  }
+
+  /* =========================================
+     SAFE HTML ESCAPE
+  ========================================= */
+  function escapeHtml(str) {
+
+    return String(str || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  return {
+    open,
+    initLookups,
+    bindSubmit
+  };
+
+})();
+</script>

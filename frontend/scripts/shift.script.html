@@ -1,0 +1,90 @@
+<script>
+/**
+ * =====================================================
+ * SHIFT LIST RENDERER (NORMALIZED + SAFE)
+ * =====================================================
+ */
+
+function renderShiftList(shifts) {
+
+  const el = document.getElementById("shiftList");
+  if (!el) return;
+
+  if (!Array.isArray(shifts) || shifts.length === 0) {
+    el.innerHTML = `<div class="text-muted">No shifts found</div>`;
+    return;
+  }
+
+  el.innerHTML = shifts.map(normalizeShift).map(s => `
+
+    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+
+      <div>
+        <strong>${escapeHtml(s.shift_name)}</strong><br>
+        <small class="text-muted">
+          ${formatTime(s.start_time)} - ${formatTime(s.end_time)}
+        </small>
+      </div>
+
+      <div class="text-end">
+        <span class="badge ${getShiftStatusClass(s.status)}">
+          ${s.status}
+        </span>
+      </div>
+
+    </div>
+
+  `).join("");
+}
+
+/* =========================
+   NORMALIZER (FRONTEND SAFE LAYER)
+========================= */
+function normalizeShift(s) {
+  return {
+    shift_id: s.shift_id || "",
+    shift_name: s.shift_name || "UNKNOWN",
+    start_time: s.start_time || "--",
+    end_time: s.end_time || "--",
+
+    status: (s.status || "ACTIVE").toUpperCase()
+  };
+}
+
+/* =========================
+   STATUS STYLE
+========================= */
+function getShiftStatusClass(status) {
+
+  switch ((status || "").toUpperCase()) {
+
+    case "ACTIVE":
+      return "badge-success";
+
+    case "INACTIVE":
+      return "badge-danger";
+
+    default:
+      return "badge-secondary";
+  }
+}
+
+/* =========================
+   TIME FORMAT SAFETY
+========================= */
+function formatTime(t) {
+  if (!t) return "--";
+  return t;
+}
+
+/* =========================
+   HTML ESCAPE SAFETY
+========================= */
+function escapeHtml(str) {
+  return String(str || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+</script>
