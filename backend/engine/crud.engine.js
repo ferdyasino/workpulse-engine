@@ -4,6 +4,7 @@
  * =====================================================
  */
 function insert(dbRef, table, data, schema = null) {
+  data = normalizeRecord(data);
   const db = resolveDb(dbRef);
   const sheet = db.getSheetByName(table.sheet);
 
@@ -38,6 +39,7 @@ function findOne(dbRef, table, filters = {}) {
 }
 
 function update(dbRef, table, id, updates) {
+  updates = normalizeRecord(updates);
   const db = resolveDb(dbRef);
   const sheet = db.getSheetByName(table.sheet);
   if (!sheet) throw new Error(`Sheet not found: ${table.sheet}`);

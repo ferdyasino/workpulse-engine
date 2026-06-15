@@ -116,7 +116,6 @@ const AUTH_TABLES = {
     schema: AUTH_SCHEMA.USERS,
     mode: "WRITE_ON_INIT"
   }
-
   
 };
 

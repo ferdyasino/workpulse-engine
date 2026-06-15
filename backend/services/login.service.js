@@ -2,10 +2,13 @@ function loginResolver(workspaceId, email) {
   if (!workspaceId) throw new Error("workspaceId is required");
   if (!email) throw new Error("email is required");
 
-  const normalizedEmail = normalizeEmail(email);
+  // =========================
+  // NORMALIZE INPUT
+  // =========================
+  const normalizedEmail = normalize("email", email);
 
   // =========================
-  // 1. LOAD WORKSPACE FIRST
+  // 1. LOAD WORKSPACE
   // =========================
   const workspace = getWorkspace(workspaceId);
 
@@ -18,7 +21,7 @@ function loginResolver(workspaceId, email) {
   );
 
   // =========================
-  // 2. FIND USER INSIDE WORKSPACE (PRIMARY SOURCE)
+  // 2. FIND USER (WORKSPACE DB)
   // =========================
   const workspaceUser = findOne(
     workspaceDb,
@@ -30,12 +33,17 @@ function loginResolver(workspaceId, email) {
     throw new Error("User not found in workspace");
   }
 
-  if (workspaceUser.status !== "ACTIVE") {
+  // =========================
+  // STATUS CHECK (NORMALIZED)
+  // =========================
+  const status = normalize("status", workspaceUser.status);
+
+  if (status !== "ACTIVE") {
     throw new Error("User is not active");
   }
 
   // =========================
-  // 3. LOAD MASTER CONTEXT (OPTIONAL ENRICHMENT)
+  // 3. MASTER CONTEXT (OPTIONAL)
   // =========================
   const masterDb = getMasterDatabase();
 
@@ -46,15 +54,15 @@ function loginResolver(workspaceId, email) {
   );
 
   // =========================
-  // 4. RETURN FULL AUTH CONTEXT
+  // 4. RETURN AUTH CONTEXT
   // =========================
   return {
     success: true,
     user_id: workspaceUser.user_id,
     email: workspaceUser.email,
-    name: workspaceUser.name,
+    fullname: workspaceUser.fullname,
     role: workspaceUser.role,
-    status: workspaceUser.status,
+    status,
     workspace_id: workspaceId,
     workspace_url: workspace.workspace_url,
     timelog_spreadsheet_id: workspace.timelog_spreadsheet_id
