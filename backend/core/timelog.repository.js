@@ -12,17 +12,17 @@
    SAFE WORKSPACE RESOLVER
 ========================= */
 
-function getTimelogDb(workspaceId) {
+function getTimelogDb(workspace_id) {
 
-  if (!workspaceId) {
-    throw new Error("workspaceId is required");
+  if (!workspace_id) {
+    throw new Error("workspace_id is required");
   }
 
-  const workspace = getWorkspace(workspaceId);
+  const workspace = getWorkspace(workspace_id);
 
   if (!workspace || !workspace.timelog_spreadsheet_id) {
     throw new Error(
-      `TimeLog DB missing for workspace: ${workspaceId}`
+      `TimeLog DB missing for workspace: ${workspace_id}`
     );
   }
 
@@ -74,13 +74,13 @@ function getTimeLogHeaders(sheet) {
    INSERT SINGLE TIME LOG
 ========================= */
 
-function insertTimeLog(workspaceId, payload) {
+function insertTimeLog(workspace_id, payload) {
 
-  const db = getTimelogDb(workspaceId);
+  const db = getTimelogDb(workspace_id);
   const sheet = getTimeLogSheet(db);
   const headers = getTimeLogHeaders(sheet);
 
-  const log = normalizeTimeLog(payload, workspaceId);
+  const log = normalizeTimeLog(payload, workspace_id);
 
   const row = headers.map(h => log[h] ?? "");
 
@@ -92,7 +92,7 @@ function insertTimeLog(workspaceId, payload) {
     success: true,
     message: buildActionMessage(action),
     log_id: log.log_id,
-    workspaceId
+    workspace_id
   };
 }
 
@@ -101,13 +101,13 @@ function insertTimeLog(workspaceId, payload) {
    NORMALIZATION LAYER (FIXED)
 ========================= */
 
-function normalizeTimeLog(data, workspaceId) {
+function normalizeTimeLog(data, workspace_id) {
 
   const now = new Date();
 
   return {
     log_id: data.log_id || generateId("LOG"),
-    workspace_id: workspaceId || data.workspace_id,
+    workspace_id: workspace_id || data.workspace_id,
     user_id: data.user_id || "",
     email: data.email || "",
     action: data.action || "",
@@ -129,9 +129,9 @@ function normalizeTimeLog(data, workspaceId) {
    QUERY ENGINE (FIXED + SAFE)
 ========================= */
 
-function findTimeLogs(workspaceId, filters = {}) {
+function findTimeLogs(workspace_id, filters = {}) {
 
-  const db = getTimelogDb(workspaceId);
+  const db = getTimelogDb(workspace_id);
   const sheet = getTimeLogSheet(db);
 
   const values = sheet.getDataRange().getValues();
@@ -175,8 +175,8 @@ function findTimeLogs(workspaceId, filters = {}) {
    SINGLE QUERY
 ========================= */
 
-function findOneTimeLog(workspaceId, filters = {}) {
-  return findTimeLogs(workspaceId, filters)[0] || null;
+function findOneTimeLog(workspace_id, filters = {}) {
+  return findTimeLogs(workspace_id, filters)[0] || null;
 }
 
 
@@ -184,18 +184,18 @@ function findOneTimeLog(workspaceId, filters = {}) {
    BATCH INSERT (OPTIMIZED)
 ========================= */
 
-function insertManyTimeLogs(workspaceId, logs) {
+function insertManyTimeLogs(workspace_id, logs) {
 
   if (!Array.isArray(logs) || logs.length === 0) {
     throw new Error("logs must be a non-empty array");
   }
 
-  const db = getTimelogDb(workspaceId);
+  const db = getTimelogDb(workspace_id);
   const sheet = getTimeLogSheet(db);
   const headers = getTimeLogHeaders(sheet);
 
   const rows = logs.map(log => {
-    const normalized = normalizeTimeLog(log, workspaceId);
+    const normalized = normalizeTimeLog(log, workspace_id);
     return headers.map(h => normalized[h] ?? "");
   });
 
@@ -207,7 +207,7 @@ function insertManyTimeLogs(workspaceId, logs) {
     success: true,
     message: "Batch insert completed",
     inserted: rows.length,
-    workspaceId
+    workspace_id
   };
 }
 
@@ -216,9 +216,9 @@ function insertManyTimeLogs(workspaceId, logs) {
    TODAY HELPERS
 ========================= */
 
-function getLatestTodayTimeLogByEmail(workspaceId, email) {
+function getLatestTodayTimeLogByEmail(workspace_id, email) {
 
-  const logs = getTodayTimeLogsByEmail(workspaceId, email);
+  const logs = getTodayTimeLogsByEmail(workspace_id, email);
 
   if (!logs.length) return null;
 
@@ -232,14 +232,14 @@ function getLatestTodayTimeLogByEmail(workspaceId, email) {
    TODAY QUERY
 ========================= */
 
-function getTodayTimeLogsByEmail(workspaceId, email) {
+function getTodayTimeLogsByEmail(workspace_id, email) {
 
-  if (!workspaceId) throw new Error("workspaceId is required");
+  if (!workspace_id) throw new Error("workspace_id is required");
   if (!email) throw new Error("email is required");
 
   const today = formatDateKey(new Date());
 
-  return findTimeLogs(workspaceId, {
+  return findTimeLogs(workspace_id, {
     email,
     date: today
   });

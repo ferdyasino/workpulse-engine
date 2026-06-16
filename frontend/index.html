@@ -106,7 +106,10 @@ id="page-error"
   <!-- =====================================================
   SCRIPTS
   ====================================================== -->
-  
+  <script>
+  window.SERVER_DATA =
+    '<?= JSON.stringify(SERVER_DATA) ?>';
+</script>
   <?!= include("frontend/scripts/scripts"); ?>
   <?!= include("frontend/scripts/clock.script"); ?>
   <?!= include("frontend/scripts/login.script"); ?>

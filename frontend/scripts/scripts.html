@@ -56,7 +56,20 @@ const PAGE_TITLES = {
   login: "Login"
 };
 
+function initApp(params){
+  const data = JSON.parse(params);
+  google.script.run
+    .withSuccessHandler(res => {
+      console.log("res",res);
+      localStorage.setItem("workspace_id", res.workspace_id);
+    })
+    .getOwnerById(data.workspaceSlug);
+}
+
 function bootApp() {
+  if(window.SERVER_DATA){
+    initApp(window.SERVER_DATA);
+  }
 
   const page = APP.currentPage || "login";
 
@@ -72,11 +85,11 @@ function bootApp() {
 function syncDashboard() {
 
   const email = localStorage.getItem("email");
-  const workspaceId =
-    localStorage.getItem("workspaceId") ||
+  const workspace_id =
+    localStorage.getItem("workspace_id") ||
     document.getElementById("sid")?.value;
 
-  if (!email || !workspaceId) return;
+  if (!email || !workspace_id) return;
 
   showLoader?.();
 
@@ -98,7 +111,7 @@ function syncDashboard() {
       hideLoader?.();
       console.error("syncDashboard error:", err);
     })
-    .findTimeLogs(workspaceId, { email });
+    .findTimeLogs(workspace_id, { email });
 }
 
 // =====================================================

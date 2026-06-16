@@ -64,8 +64,8 @@ function safeGetHeaders(db, sheetName) {
  * =========================
  */
 
-function getWorkspace(workspaceId) {
-  if (!workspaceId) throw new Error("workspaceId is required");
+function getWorkspace(workspace_id) {
+  if (!workspace_id) throw new Error("workspace_id is required");
 
   ensureOwnersSheet();
 
@@ -75,11 +75,11 @@ function getWorkspace(workspaceId) {
     db,
     AUTH_TABLES.OWNERS.sheet,
     "workspace_id",
-    workspaceId
+    workspace_id
   );
 
   if (!result) {
-    throw new Error(`Workspace not found: ${workspaceId}`);
+    throw new Error(`Workspace not found: ${workspace_id}`);
   }
 
   const headers = safeGetHeaders(db, AUTH_TABLES.OWNERS.sheet);
@@ -87,17 +87,17 @@ function getWorkspace(workspaceId) {
 }
 
 
-function getWorkspaceDb(workspaceId) {
-  if (!workspaceId) throw new Error("workspaceId is required");
-  return SpreadsheetApp.openById(workspaceId);
+function getWorkspaceDb(workspace_id) {
+  if (!workspace_id) throw new Error("workspace_id is required");
+  return SpreadsheetApp.openById(workspace_id);
 }
 
 
-function getTimelogDb(workspaceId) {
-  const workspace = getWorkspace(workspaceId);
+function getTimelogDb(workspace_id) {
+  const workspace = getWorkspace(workspace_id);
 
   if (!workspace.timelog_spreadsheet_id) {
-    throw new Error(`Missing timelog DB: ${workspaceId}`);
+    throw new Error(`Missing timelog DB: ${workspace_id}`);
   }
 
   return SpreadsheetApp.openById(workspace.timelog_spreadsheet_id);
@@ -127,8 +127,8 @@ function getWorkspaceByEmail(email) {
 }
 
 
-function workspaceExists(workspaceId) {
-  if (!workspaceId) return false;
+function workspaceExists(workspace_id) {
+  if (!workspace_id) return false;
 
   ensureOwnersSheet();
 
@@ -138,7 +138,7 @@ function workspaceExists(workspaceId) {
     db,
     AUTH_TABLES.OWNERS.sheet,
     "workspace_id",
-    workspaceId
+    workspace_id
   );
 }
 
@@ -150,7 +150,7 @@ function workspaceExists(workspaceId) {
  */
 function registerOwnerWorkspace(
   ownerKey,
-  workspaceId,
+  workspace_id,
   workspaceUrl,
   timelogId,
   timelogUrl
@@ -175,8 +175,8 @@ function registerOwnerWorkspace(
 
     return update(db, table, existing.owner_id, {
       email: existing.email || ownerKey,
-      workspace_id: workspaceId,
-      workspace_spreadsheet_id: workspaceId,
+      workspace_id: workspace_id,
+      workspace_spreadsheet_id: workspace_id,
       workspace_url: workspaceUrl,
       timelog_spreadsheet_id: timelogId,
       timelog_url: timelogUrl,
@@ -191,8 +191,8 @@ function registerOwnerWorkspace(
     owner_id: ownerKey,
     email: ownerKey,
     fullname: "",
-    workspace_id: workspaceId,
-    workspace_spreadsheet_id: workspaceId,
+    workspace_id: workspace_id,
+    workspace_spreadsheet_id: workspace_id,
     workspace_url: workspaceUrl,
     timelog_spreadsheet_id: timelogId,
     timelog_url: timelogUrl,
@@ -244,7 +244,7 @@ function createWorkspace(email) {
     const ss = SpreadsheetApp.create(workspaceName);
     const timelogSS = SpreadsheetApp.create(`${workspaceName} - TimeLogs`);
 
-    const workspaceId = ss.getId();
+    const workspace_id = ss.getId();
     const timelogId = timelogSS.getId();
 
     // 4. setup workspace sheets
@@ -277,7 +277,7 @@ function createWorkspace(email) {
     settings.getRange(1, 1, 1, 2).setValues([["key", "value"]]);
 
     settings.getRange(2, 1, 5, 2).setValues([
-      ["WORKSPACE_ID", workspaceId],
+      ["WORKSPACE_ID", workspace_id],
       ["OWNER_EMAIL", normalizedEmail],
       ["OWNER_NAME", owner.fullname || ""],
       ["CREATED_AT", createdAt],
@@ -293,7 +293,7 @@ function createWorkspace(email) {
       .setValues([EXTERNAL_SCHEMA.TIME_LOGS]);
 
     // 7. seed
-    const seedResult = seedWorkspace(workspaceId, {
+    const seedResult = seedWorkspace(workspace_id, {
       email: normalizedEmail,
       fullname: owner.fullname || ""
     });
@@ -301,17 +301,17 @@ function createWorkspace(email) {
     // 8. register owner
     registerOwnerWorkspace(
       normalizedEmail,
-      workspaceId,
+      workspace_id,
       ss.getUrl(),
       timelogId,
       timelogSS.getUrl()
     );
 
-    console.info(`✅ Workspace created: ${workspaceId}`);
+    console.info(`✅ Workspace created: ${workspace_id}`);
 
     return {
       success: true,
-      workspace: { workspaceId, url: ss.getUrl(), name: workspaceName },
+      workspace: { workspace_id, url: ss.getUrl(), name: workspaceName },
       timelogs: { timelogId, url: timelogSS.getUrl() },
       seeded: seedResult.seeded
     };

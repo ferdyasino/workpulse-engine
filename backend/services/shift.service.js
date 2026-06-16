@@ -3,7 +3,7 @@ const SHIFT_TABLE = TABLES.SHIFTS;
 /**
  * SHIFT CREATION - With overlap protection
  */
-function createShift(workspaceId, payload) {
+function createShift(workspace_id, payload) {
 
   // =========================
   // 1. VALIDATION
@@ -27,7 +27,7 @@ function createShift(workspaceId, payload) {
   // =========================
   // 2. LOAD EXISTING SHIFTS
   // =========================
-  const existingShifts = find(workspaceId, SHIFT_TABLE)
+  const existingShifts = find(workspace_id, SHIFT_TABLE)
     .map(normalizeShift)
     .filter(Boolean);
 
@@ -75,22 +75,22 @@ if (existingShift) {
     created_at: new Date().toISOString()
   };
 
-  return insert(workspaceId, SHIFT_TABLE);
+  return insert(workspace_id, SHIFT_TABLE);
 }
 
 /**
  * GET SHIFT BY ID
  */
-function getShiftById(workspaceId, shiftId) {
-  const result = find(workspaceId, SHIFT_TABLE, { shift_id: shiftId });
+function getShiftById(workspace_id, shiftId) {
+  const result = find(workspace_id, SHIFT_TABLE, { shift_id: shiftId });
   return result.length ? normalizeShift(result[0]) : null;
 }
 
 /**
  * GET ALL SHIFTS
  */
-function getAllShifts(workspaceId) {
-  return find(workspaceId, SHIFT_TABLE)
+function getAllShifts(workspace_id) {
+  return find(workspace_id, SHIFT_TABLE)
     .map(normalizeShift)
     .filter(Boolean);
 }
@@ -98,13 +98,13 @@ function getAllShifts(workspaceId) {
 /**
  * UPDATE SHIFT
  */
-function updateShift(workspaceId, shiftId, updates) {
+function updateShift(workspace_id, shiftId, updates) {
 
   if (updates.shift_name) {
 
     const newName = updates.shift_name.trim().toUpperCase();
 
-    const existingShifts = find(workspaceId, SHIFT_TABLE)
+    const existingShifts = find(workspace_id, SHIFT_TABLE)
       .map(normalizeShift)
       .filter(Boolean);
 
@@ -124,7 +124,7 @@ function updateShift(workspaceId, shiftId, updates) {
     updates.shift_name = newName;
   }
 
-  const shift = getShiftById(workspaceId, shiftId);
+  const shift = getShiftById(workspace_id, shiftId);
   if (!shift) throw new Error("Shift not found");
 
   // =========================
@@ -149,17 +149,17 @@ function updateShift(workspaceId, shiftId, updates) {
     throw new Error("Invalid time format (expected HH:mm)");
   }
 
-  return update(workspaceId, SHIFT_TABLE, shiftId, updates);
+  return update(workspace_id, SHIFT_TABLE, shiftId, updates);
 }
 
 /**
  * DEACTIVATE SHIFT
  */
-function deactivateShift(workspaceId, shiftId) {
-  const shift = getShiftById(workspaceId, shiftId);
+function deactivateShift(workspace_id, shiftId) {
+  const shift = getShiftById(workspace_id, shiftId);
   if (!shift) throw new Error("Shift not found");
 
-  return update(workspaceId, SHIFT_TABLE, shiftId, { status: "INACTIVE" });
+  return update(workspace_id, SHIFT_TABLE, shiftId, { status: "INACTIVE" });
 }
 
 /* ====================== TIME UTILITIES ====================== */

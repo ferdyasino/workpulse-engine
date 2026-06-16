@@ -3,9 +3,9 @@ function test(){
     Logger.log(res);
 }
 function testInsertTimeLog() {
-  const workspaceId = "1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA";
+  const workspace_id = "1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA";
 
-  const result = insertTimeLog(workspaceId, {
+  const result = insertTimeLog(workspace_id, {
     user_id: "U001",
     email: "test@example.com",
     action: "time_out",
@@ -19,16 +19,16 @@ function testInsertTimeLog() {
 }
 function testGetLog(){
   const email = "ferdyasino@gmail.com";
-  const workspaceId = "1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA";
-  const timelogs = findTimeLogs(workspaceId, {email});
-  // const logsNow = getTodayTimeLogsByEmail(workspaceId,email);
+  const workspace_id = "1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA";
+  const timelogs = findTimeLogs(workspace_id, {email});
+  // const logsNow = getTodayTimeLogsByEmail(workspace_id,email);
   console.log("logSheet",timelogs);
 }
 
 function testInsertEmployee() {
-  const workspaceId = "1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA";
+  const workspace_id = "1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA";
 
-  const result = createUser(workspaceId, {
+  const result = createUser(workspace_id, {
     email: "carlos.billones.jr@example.com",
     first_name: "Carlos",
     last_name: "Billones Jr",
@@ -41,7 +41,7 @@ function testInsertEmployee() {
 
 function testImportUsers() {
 
-  const workspaceId = "1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA";
+  const workspace_id = "1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA";
 
   const users = [
     {
@@ -70,7 +70,7 @@ function testImportUsers() {
     }
   ];
 
-  const result = importUsers(workspaceId, users, {
+  const result = importUsers(workspace_id, users, {
     skipIfExists: true
   });
 
@@ -78,10 +78,10 @@ function testImportUsers() {
 }
 
 function testlogin(){
-    const workspaceId = "1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA";
+    const workspace_id = "1SltJ7TVMSIF4ubqr-KuY3l1QM6xWoaLnRlko7Sy1gSA";
     const email = "ferdyasino@gmail.com";
 
-    const login = loginResolver(workspaceId, email);
+    const login = loginResolver(workspace_id, email);
     Logger.log(login);
     console.log("login", login);
 }

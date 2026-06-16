@@ -7,8 +7,8 @@ function generateEmployeeNo() {
   return generateId("EMP");
 }
 
-function getUsers(workspaceId) {
-  return find(workspaceId, USER_TABLE);
+function getUsers(workspace_id) {
+  return find(workspace_id, USER_TABLE);
 }
 
 /**
@@ -16,7 +16,7 @@ function getUsers(workspaceId) {
  * GENERAL USER CREATION
  * =====================================================
  */
-function createUser(workspaceId, payload, options = {}) {
+function createUser(workspace_id, payload, options = {}) {
 
   const { skipIfExists = false } = options;
 
@@ -65,7 +65,7 @@ function createUser(workspaceId, payload, options = {}) {
   // DUPLICATE CHECK
   // =========================
 
-  const existing = find(workspaceId, USER_TABLE)
+  const existing = find(workspace_id, USER_TABLE)
     .filter(user =>
       normalize("email", user.email) === email
     );
@@ -127,7 +127,7 @@ function createUser(workspaceId, payload, options = {}) {
   // =========================
 
   const result = insert(
-    workspaceId,
+    workspace_id,
     USER_TABLE,
     user
   );
@@ -148,7 +148,7 @@ function createUser(workspaceId, payload, options = {}) {
         email: user.email,
         fullname: user.fullname,
         role: user.role,
-        workspace_id: workspaceId,
+        workspace_id: workspace_id,
         status: user.status,
         created_at: user.created_at,
         updated_at: new Date().toISOString()
@@ -168,7 +168,7 @@ function createUser(workspaceId, payload, options = {}) {
 }
 
 function updateUser(
-  workspaceId,
+  workspace_id,
   userId,
   updates = {}
 ) {
@@ -178,7 +178,7 @@ function updateUser(
   }
 
   const existing = findOne(
-    workspaceId,
+    workspace_id,
     USER_TABLE,
     { user_id: userId }
   );
@@ -198,7 +198,7 @@ function updateUser(
       updates.email
     );
 
-    const duplicate = find(workspaceId, USER_TABLE)
+    const duplicate = find(workspace_id, USER_TABLE)
       .find(user =>
         user.user_id !== userId &&
         normalize("email", user.email) === email
@@ -264,7 +264,7 @@ function updateUser(
   // =========================
 
   const success = update(
-    workspaceId,
+    workspace_id,
     USER_TABLE,
     userId,
     updates
@@ -329,7 +329,7 @@ function updateUser(
  * =====================================================
  */
 function importUsers(
-  workspaceId,
+  workspace_id,
   users = [],
   options = {}
 ) {
@@ -347,7 +347,7 @@ function importUsers(
     try {
 
       const result = createUser(
-        workspaceId,
+        workspace_id,
         payload,
         {
           skipIfExists:
@@ -380,13 +380,13 @@ function importUsers(
   };
 }
 
-function deactivateUser(workspaceId, userId) {
+function deactivateUser(workspace_id, userId) {
 
   const status = normalize("status", "INACTIVE");
 
   // 1. Workspace DB update
   const workspaceOk = update(
-    workspaceId,
+    workspace_id,
     TABLES.USERS,
     userId,
     { status }
@@ -427,7 +427,7 @@ function deactivateUser(workspaceId, userId) {
   };
 }
 
-function deleteUser(workspaceId, userId) {
+function deleteUser(workspace_id, userId) {
 
   if (!userId) {
     throw new Error("userId is required");
@@ -437,7 +437,7 @@ function deleteUser(workspaceId, userId) {
   // 1. CHECK LOCAL EXISTENCE
   // =========================
   const existing = findOne(
-    workspaceId,
+    workspace_id,
     TABLES.USERS,
     { user_id: userId }
   );
@@ -450,7 +450,7 @@ function deleteUser(workspaceId, userId) {
   // 2. HARD DELETE LOCAL WORKSPACE
   // =========================
   const workspaceOk = remove(
-    workspaceId,
+    workspace_id,
     TABLES.USERS,
     userId
   );

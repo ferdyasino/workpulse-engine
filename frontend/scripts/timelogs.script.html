@@ -69,13 +69,13 @@ function renderTimeLogger() {
 function logTime(action) {
 
   const email = localStorage.getItem("email");
-  const workspaceId =
-    localStorage.getItem("workspaceId") ||
+  const workspace_id =
+    localStorage.getItem("workspace_id") ||
     document.getElementById("sid")?.value;
 
   const userId = localStorage.getItem("user_id");
 
-  if (!email || !workspaceId || !userId) {
+  if (!email || !workspace_id || !userId) {
     showToast?.("Session expired. Please login again.", "error");
     return;
   }
@@ -129,7 +129,7 @@ function logTime(action) {
       hideLoader?.();
       showToast?.(err?.message || "Server error", "error");
     })
-    .insertTimeLog(workspaceId, payload);
+    .insertTimeLog(workspace_id, payload);
 }
 
 /* =========================
@@ -138,11 +138,11 @@ function logTime(action) {
 function getLogs() {
 
   const email = localStorage.getItem("email");
-  const workspaceId =
-    localStorage.getItem("workspaceId") ||
+  const workspace_id =
+    localStorage.getItem("workspace_id") ||
     document.getElementById("sid")?.value;
 
-  if (!workspaceId || !email) return;
+  if (!workspace_id || !email) return;
 
   google.script.run
     .withSuccessHandler((res) => {
@@ -161,7 +161,7 @@ function getLogs() {
     .withFailureHandler((err) => {
       console.error("getLogs error:", err);
     })
-    .findTimeLogs(workspaceId, { email });
+    .findTimeLogs(workspace_id, { email });
 }
 
 /* =========================

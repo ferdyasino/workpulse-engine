@@ -5,32 +5,32 @@
  * Run this after workspace creation to populate initial data
  */
 
-function seedWorkspace(workspaceId, ownerMeta = {}) {
+function seedWorkspace(workspace_id, ownerMeta = {}) {
 
-  if (!workspaceId) throw new Error("workspaceId is required");
+  if (!workspace_id) throw new Error("workspace_id is required");
 
   const result = {};
 
-  console.info(`🌱 Seeding default data for workspace: ${workspaceId}`);
+  console.info(`🌱 Seeding default data for workspace: ${workspace_id}`);
 
   // =========================
   // 1. DEPARTMENTS
   // =========================
-  result.departments = seedDepartments(workspaceId);
+  result.departments = seedDepartments(workspace_id);
 
   const defaultDeptId = result.departments[0]?.department_id;
 
   // =========================
   // 2. SHIFTS
   // =========================
-  result.shifts = seedShifts(workspaceId);
+  result.shifts = seedShifts(workspace_id);
 
   const defaultShiftId = result.shifts[0]?.shift_id;
 
   // =========================
   // 3. OWNER USER (Using Service Layer)
   // =========================
-  result.owner = createOwnerUser(workspaceId, {
+  result.owner = createOwnerUser(workspace_id, {
     email: ownerMeta.email,
     fullname: ownerMeta.fullname || ownerMeta.first_name + " " + (ownerMeta.last_name || ""),
     first_name: ownerMeta.first_name || "Owner",
@@ -43,20 +43,20 @@ function seedWorkspace(workspaceId, ownerMeta = {}) {
   // =========================
   // 4. PERIOD TYPES / SETTINGS
   // =========================
-  result.periodTypes = seedPeriodTypes(workspaceId);
+  result.periodTypes = seedPeriodTypes(workspace_id);
 
-  console.info(`✅ Seeding completed for workspace: ${workspaceId}`);
+  console.info(`✅ Seeding completed for workspace: ${workspace_id}`);
 
   return {
     success: true,
-    workspaceId,
+    workspace_id,
     seeded: result
   };
 }
 
 /* ====================== SEED HELPERS ====================== */
 
-function seedDepartments(workspaceId) {
+function seedDepartments(workspace_id) {
   const departments = [
     { department_name: "Operations", description: "Core operations team" },
     { department_name: "HR",         description: "Human Resources" },
@@ -64,11 +64,11 @@ function seedDepartments(workspaceId) {
   ];
 
   return departments.map(dep => 
-    createDepartment(workspaceId, dep, { skipIfExists: true })
+    createDepartment(workspace_id, dep, { skipIfExists: true })
   );
 }
 
-function seedShifts(workspaceId) {
+function seedShifts(workspace_id) {
   const shifts = [
     { shift_name: "MORNING", start_time: "06:00", end_time: "14:00", grace_minutes: 10 },
     { shift_name: "MID",     start_time: "14:00", end_time: "22:00", grace_minutes: 10 },
@@ -76,15 +76,15 @@ function seedShifts(workspaceId) {
   ];
 
   return shifts.map(shift => 
-    createShift(workspaceId, shift)   // createShift already has overlap check
+    createShift(workspace_id, shift)   // createShift already has overlap check
   );
 }
 
 /**
  * Add default configuration to Settings sheet
  */
-function seedPeriodTypes(workspaceId) {
-  const db = getWorkspaceDb(workspaceId);
+function seedPeriodTypes(workspace_id) {
+  const db = getWorkspaceDb(workspace_id);
   const sheet = db.getSheetByName("Settings");
 
   if (!sheet) throw new Error("Settings sheet not found");

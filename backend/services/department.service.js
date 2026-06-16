@@ -22,7 +22,7 @@ function sanitizeDepartment(row) {
 /**
  * CREATE DEPARTMENT - IDEMPOTENT + SAFE
  */
-function createDepartment(workspaceId, payload, options = {}) {
+function createDepartment(workspace_id, payload, options = {}) {
 
   const { skipIfExists = false } = options;
 
@@ -42,7 +42,7 @@ function createDepartment(workspaceId, payload, options = {}) {
   // =========================
   // 2. DUPLICATE CHECK (Normalized)
   // =========================
-  const existing = find(workspaceId, DEPT_TABLE)
+  const existing = find(workspace_id, DEPT_TABLE)
     .map(sanitizeDepartment)
     .filter(d => d.department_name === name);
 
@@ -66,22 +66,22 @@ function createDepartment(workspaceId, payload, options = {}) {
   // =========================
   // 4. PERSIST
   // =========================
-  return insert(workspaceId, DEPT_TABLE, department);
+  return insert(workspace_id, DEPT_TABLE, department);
 }
 
 /**
  * GET DEPARTMENT BY ID
  */
-function getDepartmentById(workspaceId, departmentId) {
-  const result = find(workspaceId, DEPT_TABLE, { department_id: departmentId });
+function getDepartmentById(workspace_id, departmentId) {
+  const result = find(workspace_id, DEPT_TABLE, { department_id: departmentId });
   return result.length ? result[0] : null;
 }
 
 /**
  * GET ALL DEPARTMENTS (Sanitized)
  */
-function getAllDepartments(workspaceId) {
-  return find(workspaceId, DEPT_TABLE)
+function getAllDepartments(workspace_id) {
+  return find(workspace_id, DEPT_TABLE)
     .map(sanitizeDepartment)
     .filter(Boolean);
 }
@@ -89,9 +89,9 @@ function getAllDepartments(workspaceId) {
 /**
  * UPDATE DEPARTMENT
  */
-function updateDepartment(workspaceId, departmentId, updates) {
+function updateDepartment(workspace_id, departmentId, updates) {
 
-  const dept = getDepartmentById(workspaceId, departmentId);
+  const dept = getDepartmentById(workspace_id, departmentId);
   if (!dept) throw new Error("Department not found");
 
   const safeUpdates = { ...updates };
@@ -107,24 +107,24 @@ function updateDepartment(workspaceId, departmentId, updates) {
     safeUpdates.department_name = name;
   }
 
-  return update(workspaceId, DEPT_TABLE, departmentId, safeUpdates);
+  return update(workspace_id, DEPT_TABLE, departmentId, safeUpdates);
 }
 
 /**
  * DELETE DEPARTMENT - With safety check
  */
-function deleteDepartment(workspaceId, departmentId) {
+function deleteDepartment(workspace_id, departmentId) {
 
-  const dept = getDepartmentById(workspaceId, departmentId);
+  const dept = getDepartmentById(workspace_id, departmentId);
   if (!dept) throw new Error("Department not found");
 
   // Prevent deletion if users are assigned
-  const usersInDept = find(workspaceId, TABLES.USERS)
+  const usersInDept = find(workspace_id, TABLES.USERS)
     .filter(u => u.department_id === departmentId);
 
   if (usersInDept.length > 0) {
     throw new Error("Cannot delete department: Active users are assigned to it");
   }
 
-  return remove(workspaceId, DEPT_TABLE, departmentId);
+  return remove(workspace_id, DEPT_TABLE, departmentId);
 }

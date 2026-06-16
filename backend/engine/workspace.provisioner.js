@@ -57,7 +57,7 @@ function provisionMultipleWorkspaces(identifierList = []) {
         identifier: id,
         success: true,
         alreadyExists: !!result.alreadyExists,
-        workspaceId: result.workspace?.workspaceId || null,
+        workspace_id: result.workspace?.workspace_id || null,
         result
       });
 

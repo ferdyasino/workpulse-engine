@@ -48,10 +48,10 @@ function handleLoginSuccess(result) {
   // =====================================================
 
   const userId = result.user_id || result.owner_id || "";
-  const workspaceId = result.workspaceId || result.owner_spreadsheet_id || "";
+  const workspace_id = result.workspace_id || result.owner_spreadsheet_id || "";
 
   localStorage.setItem("user_id", userId);
-  localStorage.setItem("workspaceId", workspaceId);
+  localStorage.setItem("workspace_id", workspace_id);
   localStorage.setItem("name", result.name || "");
   localStorage.setItem("email", result.email);
   localStorage.setItem("role", APP.role);

@@ -1,5 +1,5 @@
-function loginResolver(workspaceId, email) {
-  if (!workspaceId) throw new Error("workspaceId is required");
+function loginResolver(workspace_id, email) {
+  if (!workspace_id) throw new Error("workspace_id is required");
   if (!email) throw new Error("email is required");
 
   // =========================
@@ -10,14 +10,14 @@ function loginResolver(workspaceId, email) {
   // =========================
   // 1. LOAD WORKSPACE
   // =========================
-  const workspace = getWorkspace(workspaceId);
+  const workspace = getWorkspace(workspace_id);
 
   if (!workspace) {
     throw new Error("Invalid workspace");
   }
 
   const workspaceDb = SpreadsheetApp.openById(
-    workspace.workspace_spreadsheet_id || workspaceId
+    workspace.workspace_spreadsheet_id || workspace_id
   );
 
   // =========================
@@ -63,7 +63,7 @@ function loginResolver(workspaceId, email) {
     fullname: workspaceUser.fullname,
     role: workspaceUser.role,
     status,
-    workspace_id: workspaceId,
+    workspace_id: workspace_id,
     workspace_url: workspace.workspace_url,
     timelog_spreadsheet_id: workspace.timelog_spreadsheet_id
   };
