@@ -34,31 +34,9 @@ function handleLoginSuccess(result) {
     return;
   }
 
-  console.log("LOGIN RESULT:", result);
+  const user = setCurrentUser(result);
 
-  APP.user = {
-    email: result.email,
-    name: result.name || ""
-  };
-
-  APP.role = (result.role || "guest").toLowerCase();
-
-  // =====================================================
-  // SESSION STORAGE (FIXED + CLEANED)
-  // =====================================================
-
-  const userId = result.user_id || result.owner_id || "";
-  const workspace_id = result.workspace_id || result.owner_spreadsheet_id || "";
-
-  localStorage.setItem("user_id", userId);
-  localStorage.setItem("workspace_id", workspace_id);
-  localStorage.setItem("name", result.name || "");
-  localStorage.setItem("email", result.email);
-  localStorage.setItem("role", APP.role);
-
-  // =====================================================
-  // UX FEEDBACK
-  // =====================================================
+  console.log("CURRENT USER:", user);
 
   showToast("Login successful", "success");
 
@@ -137,6 +115,67 @@ function restoreSession() {
 
   applyRoleUI?.();
   go("dashboard");
+}
+
+function setCurrentUser(result) {
+
+  if (!result) return;
+
+  const user = {
+    user_id: result.user_id || "",
+    email: result.email || "",
+    name: result.fullname || result.name || "",
+    role: (result.role || "guest").toLowerCase(),
+    workspace_id: result.workspace_id || "",
+    timelog_spreadsheet_id: result.timelog_spreadsheet_id || ""
+  };
+
+  // runtime state
+  APP.user = user;
+  APP.role = user.role;
+
+  // persistence
+  localStorage.setItem("user_id", user.user_id);
+  localStorage.setItem("email", user.email);
+  localStorage.setItem("name", user.name);
+  localStorage.setItem("role", user.role);
+  localStorage.setItem("workspace_id", user.workspace_id);
+  localStorage.setItem("timelog_spreadsheet_id", user.timelog_spreadsheet_id);
+
+  return user;
+}
+
+function getCurrentUser() {
+  return APP.user || {
+    user_id: localStorage.getItem("user_id"),
+    email: localStorage.getItem("email"),
+    name: localStorage.getItem("name"),
+    role: localStorage.getItem("role"),
+    workspace_id: localStorage.getItem("workspace_id"),
+    timelog_spreadsheet_id: localStorage.getItem("timelog_spreadsheet_id")
+  };
+}
+
+function renderUserHeader() {
+
+  const user = getCurrentUser();
+
+  const name = user.name || "Guest User";
+
+  document.getElementById("currUsername").textContent = name;
+
+  const initials = name
+    .split(" ")
+    .map(n => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
+
+  const initialsEl = document.getElementById("currInitials");
+  if (initialsEl) initialsEl.textContent = initials;
+
+  document.getElementById("currWorkStatus").textContent =
+    APP.workStatus || "Not Started";
 }
 
 </script>

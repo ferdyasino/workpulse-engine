@@ -115,12 +115,6 @@ function logTime(action) {
       // =========================
       showToast?.(res.message || "Logged successfully", "success");
 
-      // OPTIMIZED UI UPDATE
-      appendLogToUI?.({
-        action,
-        timestamp: payload.timestamp
-      });
-
       // background sync
       getLogs();
     })
@@ -149,35 +143,58 @@ function getLogs() {
 
       const logs = Array.isArray(res) ? res : [];
 
-      if (!Array.isArray(res)) {
-        console.warn("Invalid logs response:", res);
-      }
+      // OPTIONAL: dedupe safety layer
+      const unique = Array.from(
+        new Map(logs.map(l => [`${l.action}_${l.timestamp}`, l])).values()
+      );
 
-      const state = buildTimeLogState(logs);
+      const state = buildTimeLogState(unique);
 
-      renderTimeLogs(logs);
       renderTimeSummary(state);
+      renderBreakActivity(unique);
+
     })
-    .withFailureHandler((err) => {
-      console.error("getLogs error:", err);
-    })
+    .withFailureHandler(console.error)
     .findTimeLogs(workspace_id, { email });
 }
 
 /* =========================
    LOG LIST
 ========================= */
-function renderTimeLogs(logs) {
+// function renderTimeLogs(logs) {
+
+//   const container = document.getElementById("dashboardSummaryList");
+//   if (!container) return;
+
+//   if (!Array.isArray(logs) || logs.length === 0) {
+//     container.innerHTML = `<div class="text-muted-custom">No logs yet</div>`;
+//     return;
+//   }
+
+//   container.innerHTML = logs.map(log => `
+//     <div class="d-flex justify-content-between border-bottom py-2">
+//       <div>${formatLabel(log.action)}</div>
+//       <div class="text-muted-custom">${formatTimeSafe(log.timestamp)}</div>
+//     </div>
+//   `).join("");
+// }
+
+function renderBreakActivity(logs) {
 
   const container = document.getElementById("leftTimelogsList");
   if (!container) return;
 
-  if (!Array.isArray(logs) || logs.length === 0) {
-    container.innerHTML = `<div class="text-muted-custom">No logs yet</div>`;
+  const filtered = logs.filter(log =>
+    log.action.startsWith("break_") ||
+    log.action.startsWith("lunch_")
+  );
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="text-muted-custom">No break activity yet</div>`;
     return;
   }
 
-  container.innerHTML = logs.map(log => `
+  container.innerHTML = filtered.map(log => `
     <div class="d-flex justify-content-between border-bottom py-2">
       <div>${formatLabel(log.action)}</div>
       <div class="text-muted-custom">${formatTimeSafe(log.timestamp)}</div>
@@ -190,38 +207,30 @@ function renderTimeLogs(logs) {
 ========================= */
 function renderTimeSummary(state) {
 
-  const summary = document.getElementById("dashboardSummaryList");
-  const statusLabel = document.getElementById("logStatusLabel");
+  const currWorkStatus = document.getElementById("currWorkStatus");
+  const summaryTimeIn = document.getElementById("summaryTimeIn");
+  const summaryTimeOut = document.getElementById("summaryTimeOut");
+  const summaryStatus = document.getElementById("summaryStatus");
 
-  if (!summary) return;
-
-  state = state || {};
-
-  if (statusLabel) {
-    statusLabel.textContent = state.status || "NOT_STARTED";
+  if (summaryStatus) {
+    summaryStatus.textContent = state.status || "NOT_STARTED";
   }
 
-  const items = [];
-
-  if (state.time_in) {
-    items.push(["Time In", formatTimeSafe(state.time_in)]);
+  if (summaryTimeIn) {
+    summaryTimeIn.textContent = state.time_in
+      ? formatTimeSafe(state.time_in)
+      : "--";
   }
 
-  if (state.time_out) {
-    items.push(["Time Out", formatTimeSafe(state.time_out)]);
+  if (summaryTimeOut) {
+    summaryTimeOut.textContent = state.time_out
+      ? formatTimeSafe(state.time_out)
+      : "--";
   }
 
-  if (items.length === 0) {
-    summary.innerHTML = `<div class="text-muted-custom">No activity yet</div>`;
-    return;
+  if (currWorkStatus) {
+    currWorkStatus.textContent = state.status || "NOT_STARTED";
   }
-
-  summary.innerHTML = items.map(([label, time]) => `
-    <div class="d-flex justify-content-between py-2 border-bottom">
-      <span>${label}</span>
-      <span class="text-muted-custom">${time}</span>
-    </div>
-  `).join("");
 }
 
 /* =========================
@@ -248,7 +257,7 @@ function buildTimeLogState(timeLogs) {
 
       case "time_out":
         state.time_out = log.timestamp;
-        state.status = "CLOCKED_OUT";
+        state.status = "CLOCKED OUT";
         break;
 
       case "break_1_start":
@@ -279,26 +288,6 @@ function buildTimeLogState(timeLogs) {
   }
 
   return state;
-}
-
-/* =========================
-   APPEND UI (OPTIMIZED)
-========================= */
-function appendLogToUI(log) {
-
-  const container = document.getElementById("leftTimelogsList");
-  if (!container || !log) return;
-
-  const row = document.createElement("div");
-
-  row.className = "d-flex justify-content-between border-bottom py-2";
-
-  row.innerHTML = `
-    <div>${formatLabel(log.action)}</div>
-    <div class="text-muted-custom">${formatTimeSafe(log.timestamp)}</div>
-  `;
-
-  container.prepend(row);
 }
 
 /* =========================

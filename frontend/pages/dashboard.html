@@ -29,7 +29,6 @@
 
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h5 class="mb-0">Today Summary</h5>
-          <span id="logStatusLabel" class="text-muted-custom">NOT STARTED</span>
         </div>
 
         <div class="glass glass-card p-3">
@@ -79,16 +78,41 @@
     ========================== -->
     <div class="col-lg-8">
 
-      <!-- HEADER -->
-      <div class="glass glass-card mb-4 p-3">
+  <!-- HEADER -->
+  <div class="glass glass-card mb-4 p-4">
 
-        <h4 id="dashboardTitle" class="mb-1">Dashboard</h4>
+    <div class="d-flex align-items-center justify-content-between">
 
-        <p class="text-muted-custom mb-0">
-          Track your attendance activity in real time
-        </p>
+      <!-- LEFT: USER INFO -->
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
 
+          <div class="avatar-circle">
+            <span id="currInitials">GU</span>
+          </div>
+
+          <h3 id="currUsername" class="mb-0 fw-bold">
+            GUEST USER
+          </h3>
+
+        </div>
+
+        <div class="text-muted-custom">
+          <i class="bi bi-circle-fill me-1 small"></i>
+          <span id="currWorkStatus">Not Started</span>
+        </div>
       </div>
+
+      <!-- RIGHT: BADGE -->
+      <div class="text-end">
+        <span class="badge bg-success px-3 py-2">
+          Active Session
+        </span>
+      </div>
+
+    </div>
+
+  </div>
 
       <!-- TIMELINE -->
       <div id="dashboardTimelineHost">
@@ -98,10 +122,6 @@
           <div class="d-flex justify-content-between align-items-center mb-3">
 
             <h5 class="mb-0">Full Timeline</h5>
-
-            <span class="text-muted-custom small">
-              All activity logs
-            </span>
 
           </div>
 

@@ -60,8 +60,9 @@ function initApp(params){
   const data = JSON.parse(params);
   google.script.run
     .withSuccessHandler(res => {
-      console.log("res",res);
       localStorage.setItem("workspace_id", res.workspace_id);
+      document.getElementById("sid").value = res.workspace_id;
+      document.getElementById("email").value = data.email;
     })
     .getOwnerById(data.workspaceSlug);
 }
@@ -103,7 +104,8 @@ function syncDashboard() {
       const state = buildTimeLogState(logs);
 
       renderTimeLogger?.();
-      renderTimeLogs(logs);
+      // renderTimeLogs(logs);
+      renderBreakActivity(logs);  
       renderTimeSummary(state);
 
     })
@@ -252,8 +254,7 @@ function toggleDashboard() {
 window.addEventListener("DOMContentLoaded", () => {
 
   restoreSession();
-
-  // only initialize shell, NOT data
+  renderUserHeader();
   bootApp();
 });
 
