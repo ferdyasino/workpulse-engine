@@ -32,15 +32,7 @@ function seedWorkspace(workspace_id, ownerMeta = {}) {
   // =========================
   // 3. OWNER USER (Using Service Layer)
   // =========================
-  result.owner = createOwnerUser(workspace_id, {
-    email: ownerMeta.email,
-    fullname: ownerMeta.fullname || ownerMeta.first_name + " " + (ownerMeta.last_name || ""),
-    first_name: ownerMeta.first_name || "Owner",
-    last_name: ownerMeta.last_name || "",
-    department_id: defaultDeptId,
-    shift_id: defaultShiftId,
-    employee_no: "OWNER-001"
-  });
+  result.owner = seedOwnerUser(workspace_id, ownerMeta)
 
   // =========================
   // 4. PERIOD TYPES / SETTINGS
@@ -57,6 +49,12 @@ function seedWorkspace(workspace_id, ownerMeta = {}) {
 }
 
 /* ====================== SEED HELPERS ====================== */
+function seedOwnerUser(workspace_id, ownerMeta) {
+  return {
+    seeded: true,
+    owner: createOwnerUser(workspace_id, ownerMeta)
+  };
+}
 
 function seedDepartments(workspace_id) {
   const departments = [

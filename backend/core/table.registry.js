@@ -26,7 +26,6 @@ const AUTH_SCHEMA = {
     "email",
     "fullname",
     "workspace_id",
-    "workspace_spreadsheet_id",
     "workspace_url",
     "timelog_spreadsheet_id",
     "timelog_url",

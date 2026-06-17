@@ -114,7 +114,6 @@ function registerOwnerWorkspace(
     return update(db, table, existing.owner_id, {
       email: existing.email || ownerKey,
       workspace_id: workspace_id,
-      workspace_spreadsheet_id: workspace_id,
       workspace_url: workspaceUrl,
       timelog_spreadsheet_id: timelogId,
       timelog_url: timelogUrl,
@@ -130,7 +129,6 @@ function registerOwnerWorkspace(
     email: ownerKey,
     fullname: "",
     workspace_id: workspace_id,
-    workspace_spreadsheet_id: workspace_id,
     workspace_url: workspaceUrl,
     timelog_spreadsheet_id: timelogId,
     timelog_url: timelogUrl,

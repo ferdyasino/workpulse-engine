@@ -444,3 +444,110 @@ function deleteUser(workspace_id, userId) {
     master_status: "INACTIVE"
   };
 }
+
+function createOwnerUser(workspace_id, ownerMeta = {}) {
+  if (!workspace_id) throw new Error("workspace_id is required");
+  if (!ownerMeta.email) throw new Error("owner email is required");
+
+  const masterDb = getMasterDatabase();
+
+  const email = normalize("email", ownerMeta.email);
+  const fullname = normalize("fullname", ownerMeta.fullname || "");
+
+  const now = new Date().toISOString();
+
+  // =====================================================
+  // 1. CHECK IF OWNER ALREADY EXISTS (IDEMPOTENT)
+  // =====================================================
+  let existingOwner = findOne(
+    masterDb,
+    AUTH_TABLES.OWNERS,
+    { email }
+  );
+
+  const owner_id = existingOwner?.owner_id || generateId("OWN");
+
+  // =====================================================
+  // 2. RESOLVE WORKSPACE DB
+  // =====================================================
+  const workspaceDb = SpreadsheetApp.openById(workspace_id);
+
+  // =====================================================
+  // 3. CREATE DEFAULT RELATIONS (SAFE FALLBACKS)
+  // =====================================================
+  const defaultDept = findOne(workspaceDb, TABLES.DEPARTMENTS, {})?.department_id || "";
+  const defaultShift = findOne(workspaceDb, TABLES.SHIFTS, {})?.shift_id || "";
+  const defaultPosition = findOne(workspaceDb, TABLES.POSITIONS, {})?.position_id || "";
+
+  // =====================================================
+  // 4. CREATE WORKSPACE USER (SOURCE OF TRUTH)
+  // =====================================================
+  const userPayload = {
+    user_id: owner_id,              // SLUG = OWNER ID
+    employee_no: owner_id,          // same identity
+    email,
+    fullname,
+    role: "OWNER",
+    department_id: defaultDept,
+    shift_id: defaultShift,
+    position_id: defaultPosition,
+    status: "ACTIVE",
+    created_at: now
+  };
+
+  // ensure no duplicate workspace user
+  const existingWorkspaceUser = findOne(workspaceDb, TABLES.USERS, { email });
+
+  if (!existingWorkspaceUser) {
+    insert(workspaceDb, TABLES.USERS, userPayload);
+  }
+
+  // =====================================================
+  // 5. UPSERT MASTER OWNER RECORD
+  // =====================================================
+  const ownerRecord = {
+    owner_id,
+    email,
+    fullname,
+    workspace_id,
+    workspace_spreadsheet_id: workspace_id,
+    workspace_url: SpreadsheetApp.openById(workspace_id).getUrl(),
+    timelog_spreadsheet_id: ownerMeta.timelogId || "",
+    timelog_url: ownerMeta.timelogUrl || "",
+    status: "ACTIVE",
+    created_at: existingOwner?.created_at || now,
+    updated_at: now
+  };
+
+  if (existingOwner) {
+    update(masterDb, AUTH_TABLES.OWNERS, owner_id, ownerRecord);
+  } else {
+    insert(masterDb, AUTH_TABLES.OWNERS, ownerRecord);
+  }
+
+  // =====================================================
+  // 6. ENSURE AUTH USERS TABLE SYNC (OPTIONAL CONSISTENCY)
+  // =====================================================
+  const existingAuthUser = findOne(masterDb, AUTH_TABLES.USERS, { email });
+
+  if (!existingAuthUser) {
+    insert(masterDb, AUTH_TABLES.USERS, {
+      user_id: owner_id,
+      email,
+      fullname,
+      role: "OWNER",
+      workspace_id,
+      status: "ACTIVE",
+      created_at: now,
+      updated_at: now
+    });
+  }
+
+  return {
+    owner_id,
+    workspace_id,
+    email,
+    fullname,
+    status: "ACTIVE"
+  };
+}

@@ -8,7 +8,7 @@ function createWorkspace(email) {
   // 1. duplicate check
   const existing = getWorkspaceByEmail(normalizedEmail);
 
-  if (existing?.workspace_id && existing?.workspace_spreadsheet_id) {
+  if (existing?.workspace_id) {
     console.info(`✅ Workspace exists: ${normalizedEmail}`);
 
     return {
@@ -24,7 +24,7 @@ function createWorkspace(email) {
     throw new Error(`Email not authorized: ${normalizedEmail}`);
   }
 
-  const workspaceName = owner.fullname || "Unnamed Workspace";
+  const workspaceName = `Workspace - ${owner.fullname || "Unnamed"}`;
   const createdAt = new Date().toISOString();
 
   console.info(`🚀 Creating workspace: ${normalizedEmail}`);
@@ -43,6 +43,7 @@ function createWorkspace(email) {
       Users: SCHEMA.USERS,
       Departments: SCHEMA.DEPARTMENTS,
       Shifts: SCHEMA.SHIFTS,
+      Positions: SCHEMA.POSITIONS,
       "Attendance Index": SCHEMA.ATTENDANCE_INDEX,
       Reports: null,
       "Audit Logs": null

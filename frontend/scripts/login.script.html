@@ -3,7 +3,9 @@
 document.getElementById('loginForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
 
-  const email = document.getElementById('email')?.value;
+  const data = JSON.parse(window.SERVER_DATA);
+  const workspaceSlug = data.workspaceSlug;
+  const email = document.getElementById('email')?.value || data.email;
   const sid = document.getElementById('sid')?.value;
 
   console.log("sid", sid);
@@ -18,7 +20,7 @@ document.getElementById('loginForm')?.addEventListener('submit', (e) => {
   google.script.run
     .withSuccessHandler(handleLoginSuccess)
     .withFailureHandler(handleLoginError)
-    .loginResolver(sid, email);
+    .loginResolver(workspaceSlug, email);
 });
 
 // =====================================================
