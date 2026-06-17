@@ -41,7 +41,6 @@ function createUser(workspace_id, payload, options = {}) {
     role === "ADMIN";
 
   if (requiresFullProfile) {
-
     if (
       !payload.first_name &&
       !payload.last_name &&
@@ -49,16 +48,39 @@ function createUser(workspace_id, payload, options = {}) {
     ) {
       throw new Error(`Full name is required for role: ${role}`);
     }
-
-    // if (!payload.department_id) {
-    //   throw new Error(`department_id is required for role: ${role}`);
-    // }
-
   }
 
   if (role === "OWNER") {
     payload.first_name = payload.first_name || "Owner";
     payload.last_name = payload.last_name || "";
+  }
+
+  // =========================
+  // VALIDATE RELATIONS (SAFE GUARDS)
+  // =========================
+
+  if (payload.department_id) {
+    const dept = findOne(workspace_id, TABLES.DEPARTMENTS, {
+      department_id: payload.department_id
+    });
+
+    if (!dept) throw new Error("Invalid department_id");
+  }
+
+  if (payload.position_id) {
+    const pos = findOne(workspace_id, TABLES.POSITIONS, {
+      position_id: payload.position_id
+    });
+
+    if (!pos) throw new Error("Invalid position_id");
+  }
+
+  if (payload.shift_id) {
+    const shift = findOne(workspace_id, TABLES.SHIFTS, {
+      shift_id: payload.shift_id
+    });
+
+    if (!shift) throw new Error("Invalid shift_id");
   }
 
   // =========================
@@ -71,15 +93,9 @@ function createUser(workspace_id, payload, options = {}) {
     );
 
   if (existing.length > 0) {
+    if (skipIfExists) return existing[0];
 
-    if (skipIfExists) {
-      return existing[0];
-    }
-
-    throw new Error(
-      "User already exists with this email"
-    );
-
+    throw new Error("User already exists with this email");
   }
 
   // =========================
@@ -89,11 +105,8 @@ function createUser(workspace_id, payload, options = {}) {
   let fullname = payload.fullname || "";
 
   if (!fullname) {
-
     fullname =
-      `${payload.first_name || ""} ${payload.last_name || ""}`
-        .trim();
-
+      `${payload.first_name || ""} ${payload.last_name || ""}`.trim();
   }
 
   fullname = normalize("fullname", fullname);
@@ -104,8 +117,7 @@ function createUser(workspace_id, payload, options = {}) {
 
   const user = {
     user_id: generateId("USR"),
-    employee_no:
-      payload.employee_no || generateEmployeeNo(),
+    employee_no: payload.employee_no || generateEmployeeNo(),
 
     email,
     fullname,
@@ -114,6 +126,7 @@ function createUser(workspace_id, payload, options = {}) {
     last_name: payload.last_name || "",
 
     department_id: payload.department_id || "",
+    position_id: payload.position_id || "",
     shift_id: payload.shift_id || "",
 
     role,
@@ -126,111 +139,100 @@ function createUser(workspace_id, payload, options = {}) {
   // SAVE WORKSPACE USER
   // =========================
 
-  const result = insert(
-    workspace_id,
-    USER_TABLE,
-    user
-  );
+  const result = insert(workspace_id, USER_TABLE, user);
 
   // =========================
-  // SYNC MASTER USER
+  // MASTER SYNC
   // =========================
 
   try {
-
     const masterDb = getMasterDatabase();
 
-    insert(
-      masterDb,
-      AUTH_TABLES.USERS,
-      {
-        user_id: user.user_id,
-        email: user.email,
-        fullname: user.fullname,
-        role: user.role,
-        workspace_id: workspace_id,
-        status: user.status,
-        created_at: user.created_at,
-        updated_at: new Date().toISOString()
-      }
-    );
+    insert(masterDb, AUTH_TABLES.USERS, {
+      user_id: user.user_id,
+      email: user.email,
+      fullname: user.fullname,
+      role: user.role,
+      workspace_id,
+      status: user.status,
+      created_at: user.created_at,
+      updated_at: new Date().toISOString()
+    });
 
   } catch (err) {
-
-    console.error(
-      "⚠️ Master sync failed (non-blocking):",
-      err.toString()
-    );
-
+    console.error("⚠️ Master sync failed (non-blocking):", err.toString());
   }
 
   return result;
 }
 
-function updateUser(
-  workspace_id,
-  userId,
-  updates = {}
-) {
+function updateUser(workspace_id, userId, updates = {}) {
 
-  if (!userId) {
-    throw new Error("userId is required");
-  }
+  if (!userId) throw new Error("userId is required");
 
-  const existing = findOne(
-    workspace_id,
-    USER_TABLE,
-    { user_id: userId }
-  );
+  const existing = findOne(workspace_id, USER_TABLE, {
+    user_id: userId
+  });
 
-  if (!existing) {
-    throw new Error("User not found");
-  }
+  if (!existing) throw new Error("User not found");
 
   // =========================
-  // EMAIL CHANGE CHECK
+  // EMAIL CHECK
   // =========================
-
   if (updates.email) {
-
-    const email = normalize(
-      "email",
-      updates.email
-    );
+    const email = normalize("email", updates.email);
 
     const duplicate = find(workspace_id, USER_TABLE)
-      .find(user =>
-        user.user_id !== userId &&
-        normalize("email", user.email) === email
+      .find(u =>
+        u.user_id !== userId &&
+        normalize("email", u.email) === email
       );
 
     if (duplicate) {
-      throw new Error(
-        "User already exists with this email"
-      );
+      throw new Error("User already exists with this email");
     }
 
     updates.email = email;
   }
 
   // =========================
+  // RELATION VALIDATION (SAFE EXTENSION)
+  // =========================
+
+  if (updates.department_id !== undefined) {
+    if (updates.department_id) {
+      const dept = findOne(workspace_id, TABLES.DEPARTMENTS, {
+        department_id: updates.department_id
+      });
+      if (!dept) throw new Error("Invalid department_id");
+    }
+  }
+
+  if (updates.position_id !== undefined) {
+    if (updates.position_id) {
+      const pos = findOne(workspace_id, TABLES.POSITIONS, {
+        position_id: updates.position_id
+      });
+      if (!pos) throw new Error("Invalid position_id");
+    }
+  }
+
+  if (updates.shift_id !== undefined) {
+    if (updates.shift_id) {
+      const shift = findOne(workspace_id, TABLES.SHIFTS, {
+        shift_id: updates.shift_id
+      });
+      if (!shift) throw new Error("Invalid shift_id");
+    }
+  }
+
+  // =========================
   // FULLNAME REBUILD
   // =========================
 
-  if (
-    updates.first_name !== undefined ||
-    updates.last_name !== undefined
-  ) {
-
-    const firstName =
-      updates.first_name ??
-      existing.first_name ??
-      "";
-
-    const lastName =
-      updates.last_name ??
-      existing.last_name ??
-      "";
+  if (updates.first_name !== undefined || updates.last_name !== undefined) {
+    const firstName = updates.first_name ?? existing.first_name ?? "";
+    const lastName = updates.last_name ?? existing.last_name ?? "";
 
     updates.fullname = normalize(
       "fullname",
@@ -239,82 +241,30 @@ function updateUser(
   }
 
   if (updates.fullname) {
-    updates.fullname = normalize(
-      "fullname",
-      updates.fullname
-    );
+    updates.fullname = normalize("fullname", updates.fullname);
   }
 
-  if (updates.role) {
-    updates.role = normalize(
-      "role",
-      updates.role
-    );
-  }
+  if (updates.role) updates.role = normalize("role", updates.role);
+  if (updates.status) updates.status = normalize("status", updates.status);
 
-  if (updates.status) {
-    updates.status = normalize(
-      "status",
-      updates.status
-    );
-  }
+  const success = update(workspace_id, USER_TABLE, userId, updates);
 
-  // =========================
-  // WORKSPACE UPDATE
-  // =========================
-
-  const success = update(
-    workspace_id,
-    USER_TABLE,
-    userId,
-    updates
-  );
-
-  if (!success) {
-    throw new Error(
-      "Failed to update user"
-    );
-  }
+  if (!success) throw new Error("Failed to update user");
 
   // =========================
   // MASTER SYNC
   // =========================
 
   try {
-
-    update(
-      getMasterDatabase(),
-      AUTH_TABLES.USERS,
-      userId,
-      {
-        email:
-          updates.email ??
-          existing.email,
-
-        fullname:
-          updates.fullname ??
-          existing.fullname,
-
-        role:
-          updates.role ??
-          existing.role,
-
-        status:
-          updates.status ??
-          existing.status,
-
-        updated_at:
-          new Date().toISOString()
-      }
-    );
-
+    update(getMasterDatabase(), AUTH_TABLES.USERS, userId, {
+      email: updates.email ?? existing.email,
+      fullname: updates.fullname ?? existing.fullname,
+      role: updates.role ?? existing.role,
+      status: updates.status ?? existing.status,
+      updated_at: new Date().toISOString()
+    });
   } catch (err) {
-
-    console.error(
-      "⚠️ Master sync update failed:",
-      err.toString()
-    );
-
+    console.error("⚠️ Master sync update failed:", err.toString());
   }
 
   return {

@@ -2,70 +2,173 @@
 
 const UsersAPI = (() => {
 
+  const ws = () => getWorkspaceId();
+
+  // =====================================================
+  // USERS
+  // =====================================================
+
   function getUsers(success, fail) {
-    
     google.script.run
       .withSuccessHandler(success)
       .withFailureHandler(fail)
-      .getUsers(getWorkspaceId());
-
+      .getUsers(ws());
   }
 
   function createUser(payload, success, fail) {
-
     google.script.run
       .withSuccessHandler(success)
       .withFailureHandler(fail)
-      .createUser(
-        getWorkspaceId(),
-        payload
-      );
-
+      .createUser(ws(), payload);
   }
 
   function updateUser(userId, payload, success, fail) {
-
     google.script.run
       .withSuccessHandler(success)
       .withFailureHandler(fail)
-      .updateUser(
-        getWorkspaceId(),
-        userId,
-        payload
-      );
-
+      .updateUser(ws(), userId, payload);
   }
 
   function deleteUser(userId, success, fail) {
-
     google.script.run
       .withSuccessHandler(success)
       .withFailureHandler(fail)
-      .deleteUser(
-        getWorkspaceId(),
-        userId
-      );
-
+      .deleteUser(ws(), userId);
   }
 
   function deactivateUser(userId, success, fail) {
-
     google.script.run
       .withSuccessHandler(success)
       .withFailureHandler(fail)
-      .deactivateUser(
-        getWorkspaceId(),
-        userId
-      );
-
+      .deactivateUser(ws(), userId);
   }
 
+  // =====================================================
+  // DEPARTMENTS
+  // =====================================================
+
+  function getDepartments(success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .getAllDepartments(ws());
+  }
+
+  function createDepartment(payload, success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .createDepartment(ws(), payload);
+  }
+
+  function updateDepartment(departmentId, payload, success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .updateDepartment(ws(), departmentId, payload);
+  }
+
+  function deleteDepartment(departmentId, success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .deleteDepartment(ws(), departmentId);
+  }
+
+  // =====================================================
+  // POSITIONS
+  // =====================================================
+
+  function getPositions(success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .getAllPositions(ws());
+  }
+
+  function createPosition(payload, success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .createPosition(ws(), payload);
+  }
+
+  function updatePosition(positionId, payload, success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .updatePosition(ws(), positionId, payload);
+  }
+
+  function deletePosition(positionId, success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .deletePosition(ws(), positionId);
+  }
+
+  // =====================================================
+  // SHIFTS
+  // =====================================================
+
+  function getShifts(success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .getAllShifts(ws());
+  }
+
+  function createShift(payload, success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .createShift(ws(), payload);
+  }
+
+  function updateShift(shiftId, payload, success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .updateShift(ws(), shiftId, payload);
+  }
+
+  function deleteShift(shiftId, success, fail) {
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .deleteShift(ws(), shiftId);
+  }
+
+  // =====================================================
+  // PUBLIC API
+  // =====================================================
+
   return {
+
+    // USERS
     getUsers,
     createUser,
     updateUser,
     deleteUser,
-    deactivateUser
+    deactivateUser,
+
+    // DEPARTMENTS
+    getDepartments,
+    createDepartment,
+    updateDepartment,
+    deleteDepartment,
+
+    // POSITIONS
+    getPositions,
+    createPosition,
+    updatePosition,
+    deletePosition,
+
+    // SHIFTS
+    getShifts,
+    createShift,
+    updateShift,
+    deleteShift
   };
 
 })();

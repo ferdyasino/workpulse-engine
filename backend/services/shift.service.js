@@ -1,7 +1,28 @@
 const SHIFT_TABLE = TABLES.SHIFTS;
 
 /**
- * SHIFT CREATION - With overlap protection
+ * =====================================================
+ * NORMALIZER
+ * =====================================================
+ */
+function normalizeShift(row) {
+  if (!row) return null;
+
+  return {
+    shift_id: row.shift_id,
+    shift_name: row.shift_name,
+    start_time: row.start_time,
+    end_time: row.end_time,
+    grace_minutes: Number(row.grace_minutes || 10),
+    status: row.status || "ACTIVE",
+    created_at: row.created_at
+  };
+}
+
+/**
+ * =====================================================
+ * CREATE SHIFT (SAFE + CONSISTENT)
+ * =====================================================
  */
 function createShift(workspace_id, payload) {
 
@@ -25,41 +46,39 @@ function createShift(workspace_id, payload) {
   }
 
   // =========================
-  // 2. LOAD EXISTING SHIFTS
+  // 2. LOAD EXISTING
   // =========================
   const existingShifts = find(workspace_id, SHIFT_TABLE)
     .map(normalizeShift)
     .filter(Boolean);
 
-// =========================
-// 3. SHIFT NAME DUPLICATION CHECK
-// =========================
-const existingShift = existingShifts.find(s =>
-  (s.shift_name || "").trim().toUpperCase() === shiftName
-);
+  // =========================
+  // 3. DUPLICATE NAME CHECK
+  // =========================
+  const existingShift = existingShifts.find(s =>
+    (s.shift_name || "").trim().toUpperCase() === shiftName
+  );
 
-if (existingShift) {
-  return {
-    success: true,
-    message: `Shift '${shiftName}' already exists`,
-    data: existingShift
-  };
-}
+  if (existingShift) {
+    return {
+      success: false,
+      message: `Shift '${shiftName}' already exists`,
+      data: existingShift
+    };
+  }
 
   // =========================
   // 4. OVERLAP CHECK
   // =========================
   const hasOverlap = existingShifts.some(s =>
-    isTimeOverlap(
-      startTime,
-      endTime,
-      s.start_time,
-      s.end_time
-    )
+    isTimeOverlap(startTime, endTime, s.start_time, s.end_time)
   );
 
   if (hasOverlap) {
-    throw new Error("Shift overlaps with an existing shift");
+    return {
+      success: false,
+      message: "Shift overlaps with an existing shift"
+    };
   }
 
   // =========================
@@ -75,19 +94,34 @@ if (existingShift) {
     created_at: new Date().toISOString()
   };
 
-  return insert(workspace_id, SHIFT_TABLE);
+  // =========================
+  // 6. PERSIST
+  // =========================
+  const result = insert(workspace_id, SHIFT_TABLE, shift);
+
+  return {
+    success: true,
+    data: result
+  };
 }
 
 /**
- * GET SHIFT BY ID
+ * =====================================================
+ * GET BY ID
+ * =====================================================
  */
 function getShiftById(workspace_id, shiftId) {
-  const result = find(workspace_id, SHIFT_TABLE, { shift_id: shiftId });
+  const result = find(workspace_id, SHIFT_TABLE, {
+    shift_id: shiftId
+  });
+
   return result.length ? normalizeShift(result[0]) : null;
 }
 
 /**
- * GET ALL SHIFTS
+ * =====================================================
+ * GET ALL
+ * =====================================================
  */
 function getAllShifts(workspace_id) {
   return find(workspace_id, SHIFT_TABLE)
@@ -96,42 +130,49 @@ function getAllShifts(workspace_id) {
 }
 
 /**
+ * =====================================================
  * UPDATE SHIFT
+ * =====================================================
  */
 function updateShift(workspace_id, shiftId, updates) {
 
-  if (updates.shift_name) {
+  const shift = getShiftById(workspace_id, shiftId);
+  if (!shift) throw new Error("Shift not found");
 
-    const newName = updates.shift_name.trim().toUpperCase();
+  const safeUpdates = { ...updates };
+
+  // =========================
+  // NAME VALIDATION
+  // =========================
+  if (safeUpdates.shift_name) {
+
+    const newName = safeUpdates.shift_name.trim().toUpperCase();
 
     const existingShifts = find(workspace_id, SHIFT_TABLE)
       .map(normalizeShift)
       .filter(Boolean);
 
-    const duplicateShift = existingShifts.find(s =>
+    const duplicate = existingShifts.find(s =>
       s.shift_id !== shiftId &&
       (s.shift_name || "").trim().toUpperCase() === newName
     );
 
-    if (duplicateShift) {
+    if (duplicate) {
       return {
-        success: true,
+        success: false,
         message: `Shift '${newName}' already exists`,
-        data: duplicateShift
+        data: duplicate
       };
     }
 
-    updates.shift_name = newName;
+    safeUpdates.shift_name = newName;
   }
 
-  const shift = getShiftById(workspace_id, shiftId);
-  if (!shift) throw new Error("Shift not found");
-
   // =========================
-  // TIME VALIDATION (INLINE)
+  // TIME VALIDATION
   // =========================
-  const start = updates.start_time || shift.start_time;
-  const end = updates.end_time || shift.end_time;
+  const start = safeUpdates.start_time || shift.start_time;
+  const end = safeUpdates.end_time || shift.end_time;
 
   if (start === end) {
     throw new Error("Invalid shift time range: start and end cannot be equal");
@@ -149,23 +190,41 @@ function updateShift(workspace_id, shiftId, updates) {
     throw new Error("Invalid time format (expected HH:mm)");
   }
 
-  return update(workspace_id, SHIFT_TABLE, shiftId, updates);
+  // =========================
+  // PERSIST
+  // =========================
+  const updated = update(workspace_id, SHIFT_TABLE, shiftId, safeUpdates);
+
+  return {
+    success: true,
+    data: updated
+  };
 }
 
 /**
+ * =====================================================
  * DEACTIVATE SHIFT
+ * =====================================================
  */
 function deactivateShift(workspace_id, shiftId) {
+
   const shift = getShiftById(workspace_id, shiftId);
   if (!shift) throw new Error("Shift not found");
 
-  return update(workspace_id, SHIFT_TABLE, shiftId, { status: "INACTIVE" });
+  const result = update(workspace_id, SHIFT_TABLE, shiftId, {
+    status: "INACTIVE"
+  });
+
+  return {
+    success: true,
+    data: result
+  };
 }
 
-/* ====================== TIME UTILITIES ====================== */
-
 /**
- * IMPROVED OVERLAP CHECK - Handles overnight shifts
+ * =====================================================
+ * OVERLAP UTILITY
+ * =====================================================
  */
 function isTimeOverlap(startA, endA, startB, endB) {
 
@@ -176,8 +235,7 @@ function isTimeOverlap(startA, endA, startB, endB) {
 
   const normalize = (start, end) => {
     if (end < start) {
-      // overnight shift
-      return [start, end + 1440];
+      return [start, end + 1440]; // overnight shift
     }
     return [start, end];
   };
@@ -191,21 +249,4 @@ function isTimeOverlap(startA, endA, startB, endB) {
   const [bS, bE] = normalize(bStart, bEnd);
 
   return (aS < bE && bS < aE);
-}
-
-/**
- * DOMAIN SANITIZER
- */
-function normalizeShift(row) {
-  if (!row || !row.start_time || !row.end_time) return null;
-
-  return {
-    shift_id: row.shift_id,
-    shift_name: row.shift_name,
-    start_time: row.start_time,
-    end_time: row.end_time,
-    grace_minutes: Number(row.grace_minutes || 10),
-    status: row.status || "ACTIVE",
-    created_at: row.created_at
-  };
 }

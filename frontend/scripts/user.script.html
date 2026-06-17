@@ -18,6 +18,7 @@ const UsersUI = (() => {
 
   function init() {
     bindEvents();
+    loadReferenceData();
     loadUsers();
   }
 
@@ -36,6 +37,31 @@ const UsersUI = (() => {
     document.querySelector("#employeeForm")
       ?.addEventListener("submit", handleSubmit);
 
+  }
+
+  function hydrateDropdowns() {
+
+    const dept = document.getElementById("employeeDepartment");
+    const pos = document.getElementById("employeePosition");
+    const shift = document.getElementById("employeeShift");
+
+    if (dept) {
+      dept.innerHTML = state.departments
+        .map(d => `<option value="${d.department_id}">${d.department_name}</option>`)
+        .join("");
+    }
+
+    if (pos) {
+      pos.innerHTML = state.positions
+        .map(p => `<option value="${p.position_id}">${p.position_name}</option>`)
+        .join("");
+    }
+
+    if (shift) {
+      shift.innerHTML = state.shifts
+        .map(s => `<option value="${s.shift_id}">${s.shift_name}</option>`)
+        .join("");
+    }
   }
 
   // =====================================================
@@ -76,6 +102,25 @@ const UsersUI = (() => {
     );
   }
 
+  function loadDepartments() {
+  UsersAPI.getDepartments((res) => {
+    populateSelect("employeeDepartment", res, "department_id", "department_name");
+  });
+}
+
+function loadPositions() {
+  UsersAPI.getPositions((res) => {
+    window._positionsCache = res || [];
+    populateSelect("employeePosition", res, "position_id", "position_name");
+  });
+}
+
+function loadShifts() {
+  UsersAPI.getShifts((res) => {
+    populateSelect("employeeShift", res, "shift_id", "shift_name");
+  });
+}
+
   // =====================================================
   // TABLE
   // =====================================================
@@ -114,6 +159,9 @@ const UsersUI = (() => {
         <td>${escapeHtml(name)}</td>
         <td>${escapeHtml(user.email || "")}</td>
         <td>${escapeHtml(user.role || "")}</td>
+        <td>${escapeHtml(getDepartmentName(user.department_id))}</td>
+        <td>${escapeHtml(getPositionName(user.position_id))}</td>
+        <td>${escapeHtml(getShiftName(user.shift_id))}</td>
         <td>
           <span class="badge ${getStatusClass(user.status)}">
             ${user.status || "UNKNOWN"}
@@ -152,22 +200,15 @@ const UsersUI = (() => {
     e.preventDefault();
 
     const payload = {
+      user_id: document.getElementById("employeeId").value,
+      fullname: document.getElementById("employeeName").value,
+      email: document.getElementById("employeeEmail").value,
+      role: document.getElementById("employeeRole").value,
+      status: document.getElementById("employeeStatus").value,
 
-      user_id:
-        document.getElementById("employeeId").value,
-
-      fullname:
-        document.getElementById("employeeName").value,
-
-      email:
-        document.getElementById("employeeEmail").value,
-
-      role:
-        document.getElementById("employeeRole").value,
-
-      status:
-        document.getElementById("employeeStatus").value
-
+      department_id: document.getElementById("employeeDepartment")?.value || "",
+      position_id: document.getElementById("employeePosition")?.value || "",
+      shift_id: document.getElementById("employeeShift")?.value || ""
     };
 
     const isEdit = !!payload.user_id;
@@ -221,6 +262,18 @@ const UsersUI = (() => {
 
     }
 
+  }
+
+  function getDepartmentName(id) {
+    return state.departments.find(d => d.department_id === id)?.department_name || "-";
+  }
+
+  function getPositionName(id) {
+    return state.positions.find(p => p.position_id === id)?.position_name || "-";
+  }
+
+  function getShiftName(id) {
+    return state.shifts.find(s => s.shift_id === id)?.shift_name || "-";
   }
 
   // =====================================================
@@ -282,6 +335,24 @@ const UsersUI = (() => {
 
   }
 
+  function loadReferenceData() {
+    Promise.all([
+      loadDepartments(),
+      loadPositions(),
+      loadShifts()
+    ]).then(([deps, pos, shifts]) => {
+
+      state.departments = deps || [];
+      state.positions = pos || [];
+      state.shifts = shifts || [];
+
+      hydrateDropdowns();
+
+    }).catch(err => {
+      console.error("Reference load failed:", err);
+    });
+  }
+
   // =====================================================
   // HELPERS
   // =====================================================
@@ -302,6 +373,31 @@ const UsersUI = (() => {
         ? "Loading..."
         : "Add User";
 
+  }
+  
+  document.getElementById("employeeDepartment")
+  .addEventListener("change", function () {
+
+    const deptId = this.value;
+
+    const filtered = (window._positionsCache || [])
+      .filter(p => p.department_id === deptId);
+
+    populateSelect("employeePosition", filtered, "position_id", "position_name");
+  });
+
+  function populateSelect(id, items, valueKey, labelKey) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.innerHTML = `<option value="">Select</option>`;
+
+    (items || []).forEach(item => {
+      const opt = document.createElement("option");
+      opt.value = item[valueKey];
+      opt.textContent = item[labelKey];
+      el.appendChild(opt);
+    });
   }
 
   function setText(selector, value) {
