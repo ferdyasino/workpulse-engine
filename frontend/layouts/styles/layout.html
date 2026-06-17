@@ -1,0 +1,86 @@
+<style>
+
+/* =========================
+   PAGE + STRUCTURE
+========================= */
+
+.page-container {
+  max-width: 1400px;
+  margin: auto;
+  padding: 24px;
+}
+
+/* TOPBAR */
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  margin: 12px;
+  padding: 14px 20px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+}
+
+.topbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+/* SIDEBAR */
+.app-sidebar {
+  min-height: calc(100vh - 40px);
+  padding: 1rem;
+}
+
+.sidebar-link {
+  display: block;
+  padding: 12px;
+  color: var(--text-secondary);
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+.sidebar-link:hover {
+  color: var(--text-main);
+  background: rgba(255,255,255,.08);
+}
+
+/* MODALS */
+.modal-content {
+  background: rgba(15,23,42,.95);
+  color: var(--text-main);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--radius-md);
+}
+
+/* CLOCKS (MODULE UI) */
+.clock-card {
+  width: 280px;
+  padding: 20px;
+  margin: auto;
+  text-align: center;
+}
+
+.dashboard-clock-time {
+  font-size: 44px;
+  font-weight: 900;
+}
+
+.dashboard-clock-date {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* DIGITAL CLOCK */
+.digital-clock {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+</style>

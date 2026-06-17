@@ -1,0 +1,62 @@
+<style>
+:root {
+
+  /* BRAND */
+  --primary: #38bdf8;
+  --primary-hover: #0ea5e9;
+
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --secondary: #64748b;
+
+  /* BACKGROUND */
+  --bg-1: #020617;
+  --bg-2: #0f172a;
+  --bg-3: #1e293b;
+  --bg-4: #334155;
+
+  /* TEXT */
+  --text-main: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  /* GLASS */
+  --glass-bg: rgba(255,255,255,.08);
+  --glass-bg-strong: rgba(255,255,255,.12);
+  --glass-border: rgba(255,255,255,.15);
+
+  /* EFFECTS */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+
+  --blur: 14px;
+
+  --shadow-sm: 0 4px 12px rgba(0,0,0,.15);
+  --shadow-md: 0 8px 24px rgba(0,0,0,.25);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.35);
+}
+
+/* GLOBAL BASE */
+html, body {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--text-main);
+  background: radial-gradient(circle at top, var(--bg-3), var(--bg-1));
+  background-attachment: fixed;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.15);
+  border-radius: 999px;
+}
+</style>
