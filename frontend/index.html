@@ -107,13 +107,15 @@ id="page-error"
   SCRIPTS
   ====================================================== -->
   <script>
-  window.SERVER_DATA =
-    '<?= JSON.stringify(SERVER_DATA) ?>';
-</script>
+    window.SERVER_DATA =
+      '<?= JSON.stringify(SERVER_DATA) ?>';
+  </script>
   <?!= include("frontend/scripts/scripts"); ?>
   <?!= include("frontend/scripts/clock.script"); ?>
   <?!= include("frontend/scripts/login.script"); ?>
   <?!= include("frontend/scripts/timelogs.script"); ?>
+  <?!= include("frontend/scripts/user.api.script"); ?>
+  <?!= include("frontend/scripts/user.modal.script"); ?>
   <?!= include("frontend/scripts/user.script"); ?>
   <?!= include("frontend/scripts/toast.script"); ?>
 

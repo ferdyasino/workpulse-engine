@@ -1,0 +1,92 @@
+<script>
+
+const UsersModal = (() => {
+
+  function openListModal() {
+
+    new bootstrap.Modal(
+      document.getElementById("employeeListModal")
+    ).show();
+
+  }
+
+  function openCreateModal() {
+
+    document.getElementById("employeeFormTitle").innerText =
+      "Add Employee";
+
+    document.getElementById("employeeForm").reset();
+
+    document.getElementById("employeeId").value = "";
+
+    new bootstrap.Modal(
+      document.getElementById("employeeFormModal")
+    ).show();
+
+  }
+
+  function openEditModal(emp) {
+
+    document.getElementById("employeeFormTitle").innerText =
+      "Edit Employee";
+
+    document.getElementById("employeeId").value =
+      emp.user_id;
+
+    document.getElementById("employeeName").value =
+      emp.name || emp.fullname || "";
+
+    document.getElementById("employeeEmail").value =
+      emp.email || "";
+
+    document.getElementById("employeeRole").value =
+      emp.role || "employee";
+
+    document.getElementById("employeeStatus").value =
+      emp.status || "ACTIVE";
+
+    new bootstrap.Modal(
+      document.getElementById("employeeFormModal")
+    ).show();
+
+  }
+
+  function openDeleteModal(id) {
+
+    document.getElementById("deleteEmployeeId").value =
+      id;
+
+    new bootstrap.Modal(
+      document.getElementById("employeeDeleteModal")
+    ).show();
+
+  }
+
+  function closeFormModal() {
+
+    bootstrap.Modal.getInstance(
+      document.getElementById("employeeFormModal")
+    )?.hide();
+
+  }
+
+  function closeDeleteModal() {
+
+    bootstrap.Modal.getInstance(
+      document.getElementById("employeeDeleteModal")
+    )?.hide();
+
+  }
+
+  return {
+    openListModal,
+    openCreateModal,
+    openEditModal,
+    openDeleteModal,
+    closeFormModal,
+    closeDeleteModal
+  };
+
+})();
+
+</script>

@@ -1,0 +1,73 @@
+<script>
+
+const UsersAPI = (() => {
+
+  function getUsers(success, fail) {
+    
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .getUsers(getWorkspaceId());
+
+  }
+
+  function createUser(payload, success, fail) {
+
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .createUser(
+        getWorkspaceId(),
+        payload
+      );
+
+  }
+
+  function updateUser(userId, payload, success, fail) {
+
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .updateUser(
+        getWorkspaceId(),
+        userId,
+        payload
+      );
+
+  }
+
+  function deleteUser(userId, success, fail) {
+
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .deleteUser(
+        getWorkspaceId(),
+        userId
+      );
+
+  }
+
+  function deactivateUser(userId, success, fail) {
+
+    google.script.run
+      .withSuccessHandler(success)
+      .withFailureHandler(fail)
+      .deactivateUser(
+        getWorkspaceId(),
+        userId
+      );
+
+  }
+
+  return {
+    getUsers,
+    createUser,
+    updateUser,
+    deleteUser,
+    deactivateUser
+  };
+
+})();
+
+</script>
