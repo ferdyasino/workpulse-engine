@@ -44,11 +44,15 @@ const UsersUI = (() => {
 
   function loadUsers() {
 
+    console.log("Loading users...");
+
     setLoading(true);
 
     UsersAPI.getUsers(
 
       (res) => {
+
+        console.log("Users loaded:", res);
 
         state.users = res || [];
 
@@ -61,19 +65,15 @@ const UsersUI = (() => {
 
       (err) => {
 
-        console.error(err);
+        console.error("Users load failed:", err);
 
-        showToast(
-          "Failed to load users",
-          "error"
-        );
+        showToast("Failed to load users", "error");
 
         setLoading(false);
 
       }
 
     );
-
   }
 
   // =====================================================
@@ -82,49 +82,48 @@ const UsersUI = (() => {
 
   function renderTable() {
 
-    const tbody =
-      document.querySelector("#usersTableBody");
+    const tbody = document.getElementById("usersTableBody");
+
+    console.log("tbody found:", tbody);
 
     if (!tbody) return;
 
+    // HARD RESET (important)
     tbody.innerHTML = "";
+
+    console.log("state.users:", state.users);
+
+    if (!state.users || state.users.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-muted">
+            No users found
+          </td>
+        </tr>
+      `;
+      return;
+    }
 
     state.users.forEach(user => {
 
       const row = document.createElement("tr");
 
+      const name = user.fullname || user.name || "N/A";
+
       row.innerHTML = `
-        <td>${escapeHtml(user.fullname || "")}</td>
+        <td>${escapeHtml(name)}</td>
         <td>${escapeHtml(user.email || "")}</td>
         <td>${escapeHtml(user.role || "")}</td>
-
         <td>
           <span class="badge ${getStatusClass(user.status)}">
             ${user.status || "UNKNOWN"}
           </span>
         </td>
-
-        <td class="text-end">
-
-          <button
-            class="btn btn-sm btn-glass"
-            onclick='UsersUI.openEditModal(${JSON.stringify(user)})'>
-            Edit
-          </button>
-
-          <button
-            class="btn btn-sm btn-glass-danger"
-            onclick="UsersUI.openDeleteModal('${user.user_id}')">
-            Delete
-          </button>
-
-        </td>
+        <td></td>
       `;
 
       tbody.appendChild(row);
-
     });
-
   }
 
   // =====================================================

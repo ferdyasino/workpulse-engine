@@ -24,6 +24,8 @@ function seedWorkspace(workspace_id, ownerMeta = {}) {
   // 2. SHIFTS
   // =========================
   result.shifts = seedShifts(workspace_id);
+    // =========================
+  result.positions = seedPositions(workspace_id, defaultDeptId);
 
   const defaultShiftId = result.shifts[0]?.shift_id;
 
@@ -77,6 +79,19 @@ function seedShifts(workspace_id) {
 
   return shifts.map(shift => 
     createShift(workspace_id, shift)   // createShift already has overlap check
+  );
+}
+
+function seedPositions(workspace_id, defaultDeptId = null) {
+
+  const positions = [
+    { position_name: "ADMIN", department_id: defaultDeptId, description: "System Administrator" },
+    { position_name: "MANAGER", department_id: defaultDeptId, description: "Team Manager" },
+    { position_name: "EMPLOYEE", department_id: defaultDeptId, description: "General Staff" }
+  ];
+
+  return positions.map(pos =>
+    createPosition(workspace_id, pos)
   );
 }
 

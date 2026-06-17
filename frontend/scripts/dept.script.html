@@ -1,0 +1,74 @@
+<script>
+/**
+ * =====================================================
+ * DEPARTMENT LIST RENDERER (NORMALIZED + SAFE)
+ * =====================================================
+ */
+
+function renderDepartmentList(depts) {
+
+  const el = document.getElementById("departmentList");
+  if (!el) return;
+
+  if (!Array.isArray(depts) || depts.length === 0) {
+    el.innerHTML = `<div class="text-muted">No departments found</div>`;
+    return;
+  }
+
+  el.innerHTML = depts.map(normalizeDepartment).map(d => `
+
+    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+
+      <div>
+        <strong>${escapeHtml(d.department_name)}</strong>
+      </div>
+
+      <span class="badge ${getDepartmentStatusClass(d.status)}">
+        ${d.status}
+      </span>
+
+    </div>
+
+  `).join("");
+}
+
+/* =========================
+   NORMALIZER (CRITICAL FOR CONSISTENCY)
+========================= */
+function normalizeDepartment(d) {
+  return {
+    department_id: d.department_id || "",
+    department_name: d.department_name || "UNKNOWN",
+    status: (d.status || "ACTIVE").toUpperCase()
+  };
+}
+
+/* =========================
+   STATUS UI MAPPING
+========================= */
+function getDepartmentStatusClass(status) {
+
+  switch ((status || "").toUpperCase()) {
+
+    case "ACTIVE":
+      return "badge-success";
+
+    case "INACTIVE":
+      return "badge-danger";
+
+    default:
+      return "badge-secondary";
+  }
+}
+
+/* =========================
+   SAFE HTML ESCAPE
+========================= */
+function escapeHtml(str) {
+  return String(str || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+</script>

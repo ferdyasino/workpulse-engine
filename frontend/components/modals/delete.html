@@ -1,0 +1,39 @@
+<!-- DELETE MODAL -->
+<div class="modal fade" id="employeeDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Deactivate Employee</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <p class="text-secondary-custom">
+          This action cannot be undone.
+        </p>
+
+        <input type="hidden" id="deleteEmployeeId">
+
+        <div class="d-flex justify-content-end gap-2">
+          <button class="btn btn-glass" data-bs-dismiss="modal">
+            Cancel
+          </button>
+
+          <button class="btn btn-warning"
+                  onclick="UsersUI.confirmDeleteEmployee('INACTIVE')">
+            Deactivate
+          </button>
+
+          <button class="btn btn-danger"
+                  onclick="UsersUI.confirmDeleteEmployee('DELETE')">
+            Delete
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>

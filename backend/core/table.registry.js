@@ -57,7 +57,7 @@ const AUTH_SCHEMA = {
 const SCHEMA = {
   USERS: [
     "user_id", "employee_no", "email", "fullname", "role",
-    "department_id", "shift_id", "status", "created_at"
+    "department_id", "shift_id", "position_id", "status", "created_at"
   ],
 
   DEPARTMENTS: [
@@ -67,6 +67,14 @@ const SCHEMA = {
   SHIFTS: [
     "shift_id", "shift_name", "start_time", "end_time",
     "grace_minutes", "status", "created_at"
+  ],
+
+  POSITIONS: [
+    "position_id",
+    "position_name",
+    "department_id",
+    "description",
+    "created_at"
   ],
 
   ATTENDANCE_INDEX: [
@@ -148,6 +156,12 @@ const TABLES = {
     sheet: "Shifts",
     pk: "shift_id",
     schema: SCHEMA.SHIFTS
+  },
+
+  POSITIONS: {
+    sheet: "Positions",
+    pk: "position_id",
+    schema: SCHEMA.POSITIONS
   },
 
   ATTENDANCE_INDEX: {

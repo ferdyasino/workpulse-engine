@@ -1,8 +1,3 @@
-/**
- * =====================================================
- * GENERIC CRUD OPERATIONS (General for all spreadsheets)
- * =====================================================
- */
 function insert(dbRef, table, data, schema = null) {
   data = normalizeRecord(data);
   const db = resolveDb(dbRef);
@@ -12,20 +7,29 @@ function insert(dbRef, table, data, schema = null) {
 
   const headers = schema || getHeaders(sheet);
 
-  const row = headers.map(h => data[h] ?? "");
+  // SAFE: only map known headers (prevents schema pollution)
+  const row = headers.map(h => {
+    const val = data?.[h];
+
+    // preserve falsy-but-valid values (0, false)
+    return val === undefined ? "" : val;
+  });
 
   sheet.appendRow(row);
 
   return { success: true };
 }
 
+
+
 function find(dbRef, table, filters = {}) {
   const db = resolveDb(dbRef);
   const sheet = db.getSheetByName(table.sheet);
+
   if (!sheet) throw new Error(`Sheet not found: ${table.sheet}`);
 
   const values = sheet.getDataRange().getValues();
-  const headers = values.shift(); // remove header row
+  const headers = values.shift(); // header row
 
   return values
     .map(row => rowToObject(headers, row))
@@ -34,49 +38,70 @@ function find(dbRef, table, filters = {}) {
     });
 }
 
+
+
 function findOne(dbRef, table, filters = {}) {
   return find(dbRef, table, filters)[0] || null;
 }
 
+
+
 function update(dbRef, table, id, updates) {
   updates = normalizeRecord(updates);
+
   const db = resolveDb(dbRef);
   const sheet = db.getSheetByName(table.sheet);
+
   if (!sheet) throw new Error(`Sheet not found: ${table.sheet}`);
 
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
   const pkIndex = headers.indexOf(table.pk);
 
-  if (pkIndex === -1) throw new Error(`PK "${table.pk}" not found in ${table.sheet}`);
+  if (pkIndex === -1) {
+    throw new Error(`PK "${table.pk}" not found in ${table.sheet}`);
+  }
 
   for (let r = 1; r < values.length; r++) {
     if (values[r][pkIndex] !== id) continue;
 
-    // Apply updates
+    let updated = false;
+
     Object.keys(updates).forEach(key => {
       const colIndex = headers.indexOf(key);
+
       if (colIndex !== -1) {
         values[r][colIndex] = updates[key];
+        updated = true;
       }
     });
 
-    sheet.getRange(r + 1, 1, 1, headers.length).setValues([values[r]]);
+    // only write if something changed (reduces quota usage)
+    if (updated) {
+      sheet.getRange(r + 1, 1, 1, headers.length)
+        .setValues([values[r]]);
+    }
+
     return true;
   }
+
   return false;
 }
+
 
 function remove(dbRef, table, id) {
   const db = resolveDb(dbRef);
   const sheet = db.getSheetByName(table.sheet);
+
   if (!sheet) throw new Error(`Sheet not found: ${table.sheet}`);
 
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
   const pkIndex = headers.indexOf(table.pk);
 
-  if (pkIndex === -1) throw new Error(`PK "${table.pk}" not found in ${table.sheet}`);
+  if (pkIndex === -1) {
+    throw new Error(`PK "${table.pk}" not found in ${table.sheet}`);
+  }
 
   for (let r = 1; r < values.length; r++) {
     if (values[r][pkIndex] === id) {
@@ -84,5 +109,6 @@ function remove(dbRef, table, id) {
       return true;
     }
   }
+
   return false;
 }
