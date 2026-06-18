@@ -1,5 +1,18 @@
 <script>
 
+function getWorkspaceId() {
+
+  const workspaceId =
+    APP.user?.workspace_id ||
+    localStorage.getItem("workspace_id");
+
+  if (!workspaceId) {
+    throw new Error("Workspace ID not found. Please login again.");
+  }
+
+  return workspaceId;
+}
+
 const UsersAPI = (() => {
 
   const ws = () => getWorkspaceId();

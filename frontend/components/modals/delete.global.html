@@ -1,0 +1,41 @@
+<div class="modal fade" id="globalDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="globalDeleteTitle">
+          Confirm Action
+        </h5>
+
+        <button class="btn-close btn-close-white"
+                data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <p id="globalDeleteMessage"
+           class="text-secondary-custom">
+          Are you sure?
+        </p>
+
+        <input type="hidden" id="globalDeleteId">
+
+        <div class="d-flex justify-content-end gap-2">
+
+          <button class="btn btn-glass"
+                  data-bs-dismiss="modal">
+            Cancel
+          </button>
+
+          <button class="btn btn-danger"
+                  id="globalDeleteConfirmBtn">
+            Confirm
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>

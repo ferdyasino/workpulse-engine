@@ -1,16 +1,22 @@
 function loginResolver(workspaceSlug, email) {
-  if (!email) throw new Error("email is required");
+
+  if (!email) {
+    throw new Error("Email is required");
+  }
 
   const normalizedEmail = normalize("email", email);
+
   const masterDb = getMasterDatabase();
 
   let workspace = null;
   let workspaceSource = null;
 
   // =====================================================
-  // 1. SLUG → OWNER → WORKSPACE
+  // 1. WORKSPACE SLUG
   // =====================================================
+
   if (workspaceSlug) {
+
     const ownerBySlug = findOne(
       masterDb,
       AUTH_TABLES.OWNERS,
@@ -18,15 +24,37 @@ function loginResolver(workspaceSlug, email) {
     );
 
     if (ownerBySlug?.workspace_id) {
-      workspace = getWorkspace(ownerBySlug.workspace_id);
-      workspaceSource = "owners.slug";
+
+      const candidateWorkspace =
+        getWorkspace(ownerBySlug.workspace_id);
+
+      if (candidateWorkspace) {
+
+        const workspaceDb = SpreadsheetApp.openById(
+          candidateWorkspace.workspace_id
+        );
+
+        const workspaceUser = findOne(
+          workspaceDb,
+          TABLES.USERS,
+          { email: normalizedEmail }
+        );
+
+        // ONLY use slug workspace if user exists there
+        if (workspaceUser) {
+          workspace = candidateWorkspace;
+          workspaceSource = "owners.slug";
+        }
+      }
     }
   }
 
   // =====================================================
-  // 2. EMAIL → OWNERS
+  // 2. EMAIL → OWNER
   // =====================================================
+
   if (!workspace) {
+
     const ownerByEmail = findOne(
       masterDb,
       AUTH_TABLES.OWNERS,
@@ -34,15 +62,21 @@ function loginResolver(workspaceSlug, email) {
     );
 
     if (ownerByEmail?.workspace_id) {
-      workspace = getWorkspace(ownerByEmail.workspace_id);
+
+      workspace = getWorkspace(
+        ownerByEmail.workspace_id
+      );
+
       workspaceSource = "owners.email";
     }
   }
 
   // =====================================================
-  // 3. EMAIL → AUTH USERS (EMPLOYEE PATH)
+  // 3. EMAIL → AUTH USER
   // =====================================================
+
   if (!workspace) {
+
     const authUser = findOne(
       masterDb,
       AUTH_TABLES.USERS,
@@ -50,15 +84,21 @@ function loginResolver(workspaceSlug, email) {
     );
 
     if (authUser?.workspace_id) {
-      workspace = getWorkspace(authUser.workspace_id);
+
+      workspace = getWorkspace(
+        authUser.workspace_id
+      );
+
       workspaceSource = "auth_users";
     }
   }
 
   // =====================================================
-  // 4. EMAIL → AUTHORIZED EMAILS (BOOTSTRAP OWNER)
+  // 4. EMAIL → AUTHORIZED EMAILS
   // =====================================================
+
   if (!workspace) {
+
     const authorized = findOne(
       masterDb,
       AUTH_TABLES.AUTHORIZED_EMAILS,
@@ -66,27 +106,33 @@ function loginResolver(workspaceSlug, email) {
     );
 
     if (authorized) {
-      console.info("🚀 Bootstrapping workspace for:", normalizedEmail);
 
-      const created = createWorkspace(normalizedEmail);
+      console.info(
+        "🚀 Bootstrapping workspace for:",
+        normalizedEmail
+      );
+
+      const created =
+        createWorkspace(normalizedEmail);
 
       const workspaceId =
         created?.workspace?.workspace_id;
 
       if (!workspaceId) {
-        throw new Error("Workspace creation failed during bootstrap");
+        throw new Error(
+          "Workspace creation failed during bootstrap"
+        );
       }
 
       workspace = getWorkspace(workspaceId);
       workspaceSource = "bootstrap";
-
-      // IMPORTANT: continue flow (do NOT return early)
     }
   }
 
   // =====================================================
-  // 5. HARD FAIL SAFETY
+  // 5. WORKSPACE REQUIRED
   // =====================================================
+
   if (!workspace) {
     throw new Error("Workspace could not be resolved");
   }
@@ -94,13 +140,15 @@ function loginResolver(workspaceSlug, email) {
   // =====================================================
   // 6. OPEN WORKSPACE DB
   // =====================================================
+
   const workspaceDb = SpreadsheetApp.openById(
     workspace.workspace_id
   );
 
   // =====================================================
-  // 7. FIND USER IN WORKSPACE (SOURCE OF TRUTH)
+  // 7. USER REQUIRED
   // =====================================================
+
   const workspaceUser = findOne(
     workspaceDb,
     TABLES.USERS,
@@ -108,10 +156,16 @@ function loginResolver(workspaceSlug, email) {
   );
 
   if (!workspaceUser) {
-    throw new Error("User not found in workspace");
+    throw new Error(
+      "User not found in resolved workspace"
+    );
   }
 
-  const status = normalize("status", workspaceUser.status || "");
+  const status = normalize(
+    "status",
+    workspaceUser.status || ""
+  );
+
   if (status !== "ACTIVE") {
     throw new Error("User is not active");
   }
@@ -119,40 +173,48 @@ function loginResolver(workspaceSlug, email) {
   // =====================================================
   // 8. ROLE RESOLUTION
   // =====================================================
-  const ownerRecord = findOne(masterDb, AUTH_TABLES.OWNERS, {
-    email: normalizedEmail
-  });
 
-  const authUser = findOne(masterDb, AUTH_TABLES.USERS, {
-    email: normalizedEmail
-  });
+  const ownerRecord = findOne(
+    masterDb,
+    AUTH_TABLES.OWNERS,
+    { email: normalizedEmail }
+  );
 
-  let role = workspaceUser.role;
+  const authUser = findOne(
+    masterDb,
+    AUTH_TABLES.USERS,
+    { email: normalizedEmail }
+  );
 
-  if (ownerRecord) role = "OWNER";
-  else if (authUser?.role) role = authUser.role;
+  let role = workspaceUser.role || "EMPLOYEE";
+
+  if (ownerRecord) {
+    role = "OWNER";
+  } else if (authUser?.role) {
+    role = authUser.role;
+  }
 
   // =====================================================
   // 9. RESPONSE
   // =====================================================
+
   return {
     success: true,
 
     user_id: workspaceUser.user_id,
     email: workspaceUser.email,
     fullname: workspaceUser.fullname,
+
     role,
     status,
 
     workspace_id: workspace.workspace_id,
     workspace_url: workspace.workspace_url,
-    timelog_spreadsheet_id: workspace.timelog_spreadsheet_id,
+    timelog_spreadsheet_id:
+      workspace.timelog_spreadsheet_id,
 
     meta: {
-      resolved_by: workspaceSlug
-        ? "owner_id"
-        : workspaceSource,
-
+      resolved_by: workspaceSource,
       bootstrap: workspaceSource === "bootstrap",
       workspace_source: workspaceSource
     }

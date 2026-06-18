@@ -1,0 +1,75 @@
+<script>
+const UsersModal = (() => {
+
+  // =========================
+  // LIST
+  // =========================
+
+  function openListModal() {
+    GlobalModal.openList({
+      title: "Employee Records",
+      columns: [
+        "Employee No",
+        "Full Name",
+        "Email",
+        "Role",
+        "Department",
+        "Shift",
+        "Status"
+      ],
+      onAdd: openCreateModal
+    });
+  }
+
+  // =========================
+  // CREATE
+  // =========================
+
+  function openCreateModal() {
+    UsersUI.openCreate();
+  }
+
+  // =========================
+  // EDIT
+  // =========================
+
+  function openEditModal(emp) {
+    UsersUI.openEdit(emp);
+  }
+
+  // =========================
+  // DELETE
+  // =========================
+
+  function openDeleteModal(id) {
+    GlobalModal.openDelete({
+      title: "Deactivate Employee",
+      message: "This action cannot be undone.",
+      id: id,
+      onConfirm: () => UsersUI.confirmDeleteEmployee(id)
+    });
+  }
+
+  // =========================
+  // CLOSE MODALS
+  // =========================
+
+  function closeFormModal() {
+    GlobalModal.hide("globalFormModal");
+  }
+
+  function closeDeleteModal() {
+    GlobalModal.hide("globalDeleteModal");
+  }
+
+  return {
+    openListModal,
+    openCreateModal,
+    openEditModal,
+    openDeleteModal,
+    closeFormModal,
+    closeDeleteModal
+  };
+
+})();
+</script>

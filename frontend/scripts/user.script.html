@@ -5,6 +5,10 @@
  * =====================================================
  */
 
+function UserInit(){
+  UsersUI.init();
+}
+
 const UsersUI = (() => {
 
   let state = {
@@ -486,18 +490,4 @@ function loadShifts() {
   };
 
 })();
-
-function getWorkspaceId() {
-
-  return localStorage.getItem("workspace_id")
-    || document.getElementById("sid")?.value;
-
-}
-
-
-document.addEventListener(
-  "DOMContentLoaded",
-  UsersUI.init
-);
-
 </script>

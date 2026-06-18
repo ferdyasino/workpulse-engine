@@ -1,0 +1,141 @@
+<script>
+
+const GlobalModal = (() => {
+
+  /* =====================================================
+     BOOTSTRAP HELPERS
+  ===================================================== */
+
+  function getModal(id) {
+    return document.getElementById(id);
+  }
+
+  function show(id) {
+    const el = getModal(id);
+    return new bootstrap.Modal(el).show();
+  }
+
+  function hide(id) {
+    const el = getModal(id);
+    bootstrap.Modal.getInstance(el)?.hide();
+  }
+
+  /* =====================================================
+     LIST MODAL
+  ===================================================== */
+
+  function openList(config) {
+
+    document.getElementById("globalListTitle").innerText =
+      config.title || "List";
+
+    // headers
+    const head = document.getElementById("globalListHead");
+    head.innerHTML = `
+      <tr>
+        ${(config.columns || []).map(c => `<th>${c}</th>`).join("")}
+        <th class="text-end">Actions</th>
+      </tr>
+    `;
+
+    // add button
+    const addBtn = document.getElementById("globalListAddBtn");
+    addBtn.onclick = config.onAdd || null;
+
+    show("globalListModal");
+  }
+
+  /* =====================================================
+     FORM MODAL (DYNAMIC FIELDS)
+  ===================================================== */
+
+  function openForm(config) {
+
+    document.getElementById("globalFormTitle").innerText =
+      config.title || "Form";
+
+    const container = document.getElementById("globalFormFields");
+    container.innerHTML = "";
+
+    (config.fields || []).forEach(f => {
+
+      let fieldHTML = "";
+
+      if (f.type === "select") {
+
+        fieldHTML = `
+          <div class="mb-3">
+            <label class="form-label">${f.label}</label>
+            <select class="form-select" name="${f.name}">
+              ${(f.options || []).map(o =>
+                `<option value="${o.value}">${o.label}</option>`
+              ).join("")}
+            </select>
+          </div>
+        `;
+
+      } else {
+
+        fieldHTML = `
+          <div class="mb-3">
+            <label class="form-label">${f.label}</label>
+            <input class="form-control"
+                   type="${f.type || 'text'}"
+                   name="${f.name}">
+          </div>
+        `;
+      }
+
+      container.insertAdjacentHTML("beforeend", fieldHTML);
+    });
+
+    const form = document.getElementById("globalForm");
+
+    form.onsubmit = (e) => {
+      e.preventDefault();
+
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      if (config.onSubmit) config.onSubmit(data);
+    };
+
+    show("globalFormModal");
+  }
+
+  /* =====================================================
+     DELETE MODAL
+  ===================================================== */
+
+  function openDelete(config) {
+
+    document.getElementById("globalDeleteTitle").innerText =
+      config.title || "Confirm";
+
+    document.getElementById("globalDeleteMessage").innerText =
+      config.message || "Are you sure?";
+
+    document.getElementById("globalDeleteId").value =
+      config.id || "";
+
+    const btn = document.getElementById("globalDeleteConfirmBtn");
+
+    btn.onclick = () => {
+      if (config.onConfirm) {
+        config.onConfirm(config.id);
+      }
+    };
+
+    show("globalDeleteModal");
+  }
+
+  return {
+    openList,
+    openForm,
+    openDelete,
+    show,
+    hide
+  };
+
+})();
+
+</script>

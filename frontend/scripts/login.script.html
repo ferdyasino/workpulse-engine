@@ -1,14 +1,27 @@
 <script>
 
-document.getElementById('loginForm')?.addEventListener('submit', (e) => {
+document.getElementById("loginForm")?.addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const data = JSON.parse(window.SERVER_DATA);
-  const workspaceSlug = data.workspaceSlug;
-  const email = document.getElementById('email')?.value || data.email;
-  const sid = document.getElementById('sid')?.value;
+  const data = window.SERVER_DATA
+    ? JSON.parse(window.SERVER_DATA)
+    : {};
 
-  console.log("sid", sid);
+  const workspaceSlug = data.workspaceSlug || "";
+  const email =
+    document.getElementById("email")?.value ||
+    data.email ||
+    "";
+
+  const sid =
+    document.getElementById("sid")?.value ||
+    "";
+
+  console.log("SERVER_DATA:", data);
+  console.log("workspaceSlug:", workspaceSlug);
+  console.log("email:", email);
+  console.log("sid:", sid);
+
   if (!email) {
     showToast?.("Email is required", "warning");
     return;
@@ -20,7 +33,10 @@ document.getElementById('loginForm')?.addEventListener('submit', (e) => {
   google.script.run
     .withSuccessHandler(handleLoginSuccess)
     .withFailureHandler(handleLoginError)
-    .loginResolver(workspaceSlug, email);
+    .loginResolver(
+      workspaceSlug, // can be blank
+      email
+    );
 });
 
 // =====================================================
@@ -40,39 +56,19 @@ function handleLoginSuccess(result) {
 
   console.log("CURRENT USER:", user);
 
-  showToast("Login successful", "success");
+  showToast?.("Login successful", "success");
 
   applyRoleUI?.();
 
-  // =====================================================
-  // ROUTE
-  // =====================================================
-
   if (APP.role === "admin" || APP.role === "owner") {
-    showToast("Welcome Admin Panel", "info");
+    showToast?.("Welcome Admin Panel", "info");
   } else {
-    showToast("Welcome Dashboard", "success");
+    showToast?.("Welcome Dashboard", "success");
   }
+
+  UserInit();
+  
   go("dashboard");
-}
-
-// =====================================================
-// LOGOUT
-// =====================================================
-
-function logout() {
-
-  // if (!confirm("Are you sure you want to logout?")) return;
-
-  localStorage.clear();
-
-  APP.user = null;
-  APP.role = "guest";
-  APP.currentPage = "login";
-
-  showToast("Logged out successfully", "info");
-
-  go("login");
 }
 
 // =====================================================
@@ -85,7 +81,27 @@ function handleLoginError(err) {
 
   console.error("LOGIN ERROR:", err);
 
-  showToast("Login failed. Please try again.", "error");
+  showToast?.(
+    err?.message || "Login failed. Please try again.",
+    "error"
+  );
+
+  go("login");
+}
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+function logout() {
+
+  localStorage.clear();
+
+  APP.user = null;
+  APP.role = "guest";
+  APP.currentPage = "login";
+
+  showToast?.("Logged out successfully", "info");
 
   go("login");
 }
@@ -99,7 +115,7 @@ function restoreSession() {
   const email = localStorage.getItem("email");
 
   if (!email) {
-    showToast("Please login to continue", "info");
+    showToast?.("Please login to continue", "info");
     go("login");
     return;
   }
@@ -109,19 +125,24 @@ function restoreSession() {
     name: localStorage.getItem("name") || ""
   };
 
-  APP.role = (localStorage.getItem("role") || "guest").toLowerCase();
-
-  console.log(localStorage.getItem("role"));
-
-  showToast("Welcome back", "success");
+  APP.role = (
+    localStorage.getItem("role") || "guest"
+  ).toLowerCase();
 
   applyRoleUI?.();
+
+  showToast?.("Welcome back", "success");
+
   go("dashboard");
 }
 
+// =====================================================
+// USER STATE
+// =====================================================
+
 function setCurrentUser(result) {
 
-  if (!result) return;
+  if (!result) return null;
 
   const user = {
     user_id: result.user_id || "",
@@ -129,34 +150,43 @@ function setCurrentUser(result) {
     name: result.fullname || result.name || "",
     role: (result.role || "guest").toLowerCase(),
     workspace_id: result.workspace_id || "",
-    timelog_spreadsheet_id: result.timelog_spreadsheet_id || ""
+    timelog_spreadsheet_id:
+      result.timelog_spreadsheet_id || ""
   };
 
-  // runtime state
   APP.user = user;
   APP.role = user.role;
 
-  // persistence
   localStorage.setItem("user_id", user.user_id);
   localStorage.setItem("email", user.email);
   localStorage.setItem("name", user.name);
   localStorage.setItem("role", user.role);
   localStorage.setItem("workspace_id", user.workspace_id);
-  localStorage.setItem("timelog_spreadsheet_id", user.timelog_spreadsheet_id);
+  localStorage.setItem(
+    "timelog_spreadsheet_id",
+    user.timelog_spreadsheet_id
+  );
 
   return user;
 }
 
 function getCurrentUser() {
+
   return APP.user || {
-    user_id: localStorage.getItem("user_id"),
-    email: localStorage.getItem("email"),
-    name: localStorage.getItem("name"),
-    role: localStorage.getItem("role"),
-    workspace_id: localStorage.getItem("workspace_id"),
-    timelog_spreadsheet_id: localStorage.getItem("timelog_spreadsheet_id")
+    user_id: localStorage.getItem("user_id") || "",
+    email: localStorage.getItem("email") || "",
+    name: localStorage.getItem("name") || "",
+    role: localStorage.getItem("role") || "guest",
+    workspace_id:
+      localStorage.getItem("workspace_id") || "",
+    timelog_spreadsheet_id:
+      localStorage.getItem("timelog_spreadsheet_id") || ""
   };
 }
+
+// =====================================================
+// HEADER
+// =====================================================
 
 function renderUserHeader() {
 
@@ -164,7 +194,12 @@ function renderUserHeader() {
 
   const name = user.name || "Guest User";
 
-  document.getElementById("currUsername").textContent = name;
+  const usernameEl =
+    document.getElementById("currUsername");
+
+  if (usernameEl) {
+    usernameEl.textContent = name;
+  }
 
   const initials = name
     .split(" ")
@@ -173,11 +208,20 @@ function renderUserHeader() {
     .substring(0, 2)
     .toUpperCase();
 
-  const initialsEl = document.getElementById("currInitials");
-  if (initialsEl) initialsEl.textContent = initials;
+  const initialsEl =
+    document.getElementById("currInitials");
 
-  document.getElementById("currWorkStatus").textContent =
-    APP.workStatus || "Not Started";
+  if (initialsEl) {
+    initialsEl.textContent = initials;
+  }
+
+  const statusEl =
+    document.getElementById("currWorkStatus");
+
+  if (statusEl) {
+    statusEl.textContent =
+      APP.workStatus || "Not Started";
+  }
 }
 
 </script>

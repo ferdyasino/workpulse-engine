@@ -56,13 +56,37 @@ const PAGE_TITLES = {
   login: "Login"
 };
 
-function initApp(params){
-  const data = JSON.parse(params);
+function initApp(serverData) {
+
+  const data = JSON.parse(serverData);
+
+  const emailInput = document.getElementById("email");
+  const sidInput = document.getElementById("sid");
+
+  // Prefill email from URL immediately
+  if (emailInput && data.email) {
+    emailInput.value = data.email;
+  }
+
+  // Fetch owner info using workspace slug
   google.script.run
-    .withSuccessHandler(res => {
-      localStorage.setItem("workspace_id", res.workspace_id);
-      document.getElementById("sid").value = res.workspace_id;
-      document.getElementById("email").value = data.email;
+    .withSuccessHandler(owner => {
+
+      console.log("owner", owner);
+
+      // SID from owner record
+      if (sidInput) {
+        sidInput.value = owner?.sid || owner?.owner_sid || "";
+      }
+
+      // Optional: overwrite email if owner email exists
+      // if (emailInput && owner?.email) {
+      //   emailInput.value = owner.email;
+      // }
+
+    })
+    .withFailureHandler(err => {
+      console.error(err);
     })
     .getOwnerById(data.workspaceSlug);
 }
@@ -74,7 +98,6 @@ function bootApp() {
 
   const page = APP.currentPage || "login";
 
-  // restore correct UI state
   go(page);
 
   // ONLY sync if dashboard is active
@@ -182,7 +205,6 @@ function applyUIState(page) {
 
     renderTimeLogger?.();
 
-    // IMPORTANT: always resync when entering dashboard
     syncDashboard();
   }
 }
