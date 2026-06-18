@@ -175,6 +175,8 @@ function loadShifts() {
 
     UsersAPI.getShifts(
       (res) => {
+
+        console.log("RAW SHIFTS:", res);
         state.shifts = res || [];
         resolve(state.shifts);
       },

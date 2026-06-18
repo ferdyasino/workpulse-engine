@@ -25,11 +25,10 @@ function insert(dbRef, table, data, schema = null) {
 function find(dbRef, table, filters = {}) {
   const db = resolveDb(dbRef);
   const sheet = db.getSheetByName(table.sheet);
-
   if (!sheet) throw new Error(`Sheet not found: ${table.sheet}`);
 
   const values = sheet.getDataRange().getValues();
-  const headers = values.shift(); // header row
+  const headers = values.shift();
 
   return values
     .map(row => rowToObject(headers, row))

@@ -124,9 +124,36 @@ function getShiftById(workspace_id, shiftId) {
  * =====================================================
  */
 function getAllShifts(workspace_id) {
-  return find(workspace_id, SHIFT_TABLE)
-    .map(normalizeShift)
-    .filter(Boolean);
+  try {
+    const db = resolveDb(workspace_id);
+    const sheet = db.getSheetByName(SHIFT_TABLE.sheet);
+
+    if (!sheet) {
+      throw new Error(`Shift sheet "${SHIFT_TABLE.sheet}" not found`);
+    }
+
+    const data = sheet.getDataRange().getDisplayValues();
+
+    if (data.length <= 1) return [];
+
+    const headers = data[0];
+    const rows = data.slice(1);
+
+    return rows.map(row => {
+      const obj = {};
+      headers.forEach((h, i) => {
+        let val = row[i];
+        if (val === "") val = null;
+        obj[h] = val;
+      });
+
+      return normalizeShift(obj);
+    }).filter(Boolean);
+
+  } catch (error) {
+    console.error("getAllShifts error:", error);
+    return [];  
+  }
 }
 
 /**

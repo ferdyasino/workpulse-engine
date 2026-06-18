@@ -123,14 +123,14 @@ const UsersAPI = (() => {
   // =====================================================
   // SHIFTS
   // =====================================================
-
+console.log("ws", ws());
   function getShifts(success, fail) {
     google.script.run
       .withSuccessHandler(success)
       .withFailureHandler(fail)
       .getAllShifts(ws());
   }
-
+  
   function createShift(payload, success, fail) {
     google.script.run
       .withSuccessHandler(success)
