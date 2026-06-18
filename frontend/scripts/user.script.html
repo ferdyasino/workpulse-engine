@@ -431,23 +431,7 @@ function loadShifts() {
     }).catch(err => {
       console.error("Reference load failed:", err);
     });
-  }function loadReferenceData() {
-
-  Promise.all([
-    loadDepartments(),
-    loadPositions(),
-    loadShifts()
-  ])
-  .then(() => {
-
-    console.log("Departments", state.departments);
-    console.log("Positions", state.positions);
-    console.log("Shifts", state.shifts);
-
-  })
-  .catch(console.error);
-
-}
+  }
 
   // =====================================================
   // HELPERS
