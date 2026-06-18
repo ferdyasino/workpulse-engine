@@ -11,92 +11,173 @@ const GlobalModal = (() => {
   }
 
   function show(id) {
+
     const el = getModal(id);
-    return new bootstrap.Modal(el).show();
+
+    const modal = new bootstrap.Modal(el, {
+      backdrop: "static",
+      keyboard: false
+    });
+
+    modal.show();
   }
 
   function hide(id) {
+
     const el = getModal(id);
-    bootstrap.Modal.getInstance(el)?.hide();
+
+    bootstrap.Modal
+      .getInstance(el)
+      ?.hide();
   }
 
   /* =====================================================
      LIST MODAL
   ===================================================== */
 
-  function openList(config) {
+  function openList(config = {}) {
 
     document.getElementById("globalListTitle").innerText =
       config.title || "List";
 
-    // headers
     const head = document.getElementById("globalListHead");
+
     head.innerHTML = `
       <tr>
-        ${(config.columns || []).map(c => `<th>${c}</th>`).join("")}
+        ${(config.columns || [])
+          .map(col => `<th>${col}</th>`)
+          .join("")}
         <th class="text-end">Actions</th>
       </tr>
     `;
 
-    // add button
     const addBtn = document.getElementById("globalListAddBtn");
+
     addBtn.onclick = config.onAdd || null;
 
     show("globalListModal");
   }
 
   /* =====================================================
-     FORM MODAL (DYNAMIC FIELDS)
+     FORM MODAL
   ===================================================== */
 
-  function openForm(config) {
+  function openForm(config = {}) {
 
     document.getElementById("globalFormTitle").innerText =
       config.title || "Form";
 
+    const form = document.getElementById("globalForm");
     const container = document.getElementById("globalFormFields");
+
+    form.reset();
+
     container.innerHTML = "";
 
-    (config.fields || []).forEach(f => {
+    (config.fields || []).forEach(field => {
 
-      let fieldHTML = "";
+      const colClass = field.col || "col-md-6";
 
-      if (f.type === "select") {
+      let html = "";
 
-        fieldHTML = `
-          <div class="mb-3">
-            <label class="form-label">${f.label}</label>
-            <select class="form-select" name="${f.name}">
-              ${(f.options || []).map(o =>
-                `<option value="${o.value}">${o.label}</option>`
-              ).join("")}
+      /* =========================
+         SELECT
+      ========================= */
+
+      if (field.type === "select") {
+
+        html = `
+          <div class="${colClass}">
+            <label class="form-label">
+              ${field.label || ""}
+            </label>
+
+            <select
+              class="form-select"
+              name="${field.name}"
+              ${field.required ? "required" : ""}
+            >
+
+              ${(field.options || []).map(option => `
+
+                <option
+                  value="${option.value}"
+                  ${String(option.value) === String(field.value)
+                    ? "selected"
+                    : ""}
+                >
+                  ${option.label}
+                </option>
+
+              `).join("")}
+
             </select>
-          </div>
-        `;
-
-      } else {
-
-        fieldHTML = `
-          <div class="mb-3">
-            <label class="form-label">${f.label}</label>
-            <input class="form-control"
-                   type="${f.type || 'text'}"
-                   name="${f.name}">
           </div>
         `;
       }
 
-      container.insertAdjacentHTML("beforeend", fieldHTML);
+      /* =========================
+         TEXTAREA
+      ========================= */
+
+      else if (field.type === "textarea") {
+
+        html = `
+          <div class="${colClass}">
+            <label class="form-label">
+              ${field.label || ""}
+            </label>
+
+            <textarea
+              class="form-control"
+              name="${field.name}"
+              rows="${field.rows || 3}"
+              ${field.required ? "required" : ""}
+            >${field.value || ""}</textarea>
+          </div>
+        `;
+      }
+
+      /* =========================
+         INPUT
+      ========================= */
+
+      else {
+
+        html = `
+          <div class="${colClass}">
+            <label class="form-label">
+              ${field.label || ""}
+            </label>
+
+            <input
+              class="form-control"
+              type="${field.type || "text"}"
+              name="${field.name}"
+              value="${field.value || ""}"
+              placeholder="${field.placeholder || ""}"
+              ${field.required ? "required" : ""}
+            >
+          </div>
+        `;
+      }
+
+      container.insertAdjacentHTML(
+        "beforeend",
+        html
+      );
     });
 
-    const form = document.getElementById("globalForm");
-
     form.onsubmit = (e) => {
+
       e.preventDefault();
 
-      const data = Object.fromEntries(new FormData(form).entries());
+      const data =
+        Object.fromEntries(
+          new FormData(form).entries()
+        );
 
-      if (config.onSubmit) config.onSubmit(data);
+      config.onSubmit?.(data);
     };
 
     show("globalFormModal");
@@ -106,10 +187,10 @@ const GlobalModal = (() => {
      DELETE MODAL
   ===================================================== */
 
-  function openDelete(config) {
+  function openDelete(config = {}) {
 
     document.getElementById("globalDeleteTitle").innerText =
-      config.title || "Confirm";
+      config.title || "Confirm Delete";
 
     document.getElementById("globalDeleteMessage").innerText =
       config.message || "Are you sure?";
@@ -117,23 +198,27 @@ const GlobalModal = (() => {
     document.getElementById("globalDeleteId").value =
       config.id || "";
 
-    const btn = document.getElementById("globalDeleteConfirmBtn");
+    const btn =
+      document.getElementById(
+        "globalDeleteConfirmBtn"
+      );
 
     btn.onclick = () => {
-      if (config.onConfirm) {
-        config.onConfirm(config.id);
-      }
+      config.onConfirm?.(config.id);
     };
 
     show("globalDeleteModal");
   }
 
   return {
+
     openList,
     openForm,
     openDelete,
+
     show,
     hide
+
   };
 
 })();
