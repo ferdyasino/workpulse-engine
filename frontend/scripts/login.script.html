@@ -62,11 +62,11 @@ function handleLoginSuccess(result) {
 
   if (APP.role === "admin" || APP.role === "owner") {
     showToast?.("Welcome Admin Panel", "info");
+    UserInit();
   } else {
     showToast?.("Welcome Dashboard", "success");
   }
 
-  UserInit();
   
   go("dashboard");
 }
