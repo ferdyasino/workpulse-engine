@@ -1,13 +1,15 @@
 <script>
 const UsersModal = (() => {
 
-  // =========================
-  // LIST
-  // =========================
+  // =====================================================
+  // LIST MODAL (PURE CONFIG)
+  // =====================================================
 
-  function openListModal() {
+  function openListModal(config = {}) {
+
     GlobalModal.openList({
       title: "Employee Records",
+
       columns: [
         "Employee No",
         "Full Name",
@@ -17,58 +19,126 @@ const UsersModal = (() => {
         "Shift",
         "Status"
       ],
-      onAdd: openCreateModal
+
+      onAdd: () => {
+        openCreateModal();
+      },
+
+      onMount: config.onMount || null
     });
   }
 
-  // =========================
-  // CREATE
-  // =========================
+  // =====================================================
+  // CREATE / EDIT MODAL (NO BUSINESS LOGIC)
+  // =====================================================
 
-  function openCreateModal() {
-    UsersUI.openCreate();
+  function openCreateModal(user = {}, config = {}) {
+
+  GlobalModal.openForm({
+    title: user.user_id
+      ? "Edit Employee"
+      : "Create Employee",
+
+    fields: [
+      {
+        name: "fullname",
+        label: "Full Name",
+        value: user.fullname || ""
+      },
+
+      {
+        name: "email",
+        label: "Email",
+        type: "email",
+        value: user.email || ""
+      },
+
+      {
+        name: "role",
+        label: "Role",
+        type: "select",
+        options: [
+          { value: "employee", label: "Employee" },
+          { value: "admin", label: "Admin" }
+        ],
+        value: user.role || "employee"
+      },
+
+      {
+        name: "department_id",
+        label: "Department",
+        type: "select",
+        options: (config.departments || []).map(d => ({
+          value: d.department_id,
+          label: d.department_name
+        })),
+        value: user.department_id || ""
+      },
+
+      {
+        name: "position_id",
+        label: "Position",
+        type: "select",
+        options: (config.positions || []).map(p => ({
+          value: p.position_id,
+          label: p.position_name
+        })),
+        value: user.position_id || ""
+      },
+
+      {
+        name: "shift_id",
+        label: "Shift",
+        type: "select",
+        options: (config.shifts || []).map(s => ({
+          value: s.shift_id,
+          label: s.shift_name
+        })),
+        value: user.shift_id || ""
+      }
+    ],
+
+    onSubmit: (formData) => {
+      config.onSubmit?.(formData, user);
+    }
+  });
+}
+  // =====================================================
+  // EDIT (WRAPPER ONLY)
+  // =====================================================
+
+  function openEditModal(emp, handlers = {}) {
+    openCreateModal(emp, handlers);
   }
 
-  // =========================
-  // EDIT
-  // =========================
+  // =====================================================
+  // DELETE (CONFIG ONLY)
+  // =====================================================
 
-  function openEditModal(emp) {
-    UsersUI.openEdit(emp);
-  }
+  function openDeleteModal(id, handlers = {}) {
 
-  // =========================
-  // DELETE
-  // =========================
-
-  function openDeleteModal(id) {
     GlobalModal.openDelete({
       title: "Deactivate Employee",
       message: "This action cannot be undone.",
-      id: id,
-      onConfirm: () => UsersUI.confirmDeleteEmployee(id)
+      id,
+
+      onConfirm: () => {
+        if (typeof handlers.onConfirm === "function") {
+          handlers.onConfirm(id);
+        }
+      }
     });
   }
 
-  // =========================
-  // CLOSE MODALS
-  // =========================
-
-  function closeFormModal() {
-    GlobalModal.hide("globalFormModal");
-  }
-
-  function closeDeleteModal() {
-    GlobalModal.hide("globalDeleteModal");
-  }
+  // =====================================================
+  // PUBLIC API
+  // =====================================================
 
   return {
     openListModal,
     openCreateModal,
     openEditModal,
-    openDeleteModal,
-    closeFormModal,
-    closeDeleteModal
+    openDeleteModal
   };
 
 })();

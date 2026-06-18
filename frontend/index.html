@@ -34,9 +34,9 @@
 
   
   <?!= include("frontend/components/toast"); ?>
-  <?!= include("frontend/components/modals/list"); ?>
-  <?!= include("frontend/components/modals/form"); ?>
-  <?!= include("frontend/components/modals/delete"); ?>
+  <?!= include("frontend/components/modals/list.global"); ?>
+  <?!= include("frontend/components/modals/form.global"); ?>
+  <?!= include("frontend/components/modals/delete.global"); ?>
   
   
   <!-- =====================================================
@@ -118,8 +118,10 @@ id="page-error"
   <?!= include("frontend/scripts/login.script"); ?>
   <?!= include("frontend/scripts/timelogs.script"); ?>
   <?!= include("frontend/scripts/user.api.script"); ?>
-  <?!= include("frontend/scripts/user.modal.script"); ?>
   <?!= include("frontend/scripts/user.script"); ?>
+  <!-- <?!= include("frontend/scripts/user.modal.script"); ?> -->
+  <?!= include("frontend/scripts/modals/global.modal.script"); ?>
+  <?!= include("frontend/scripts/modals/user.modal.script"); ?>
   <?!= include("frontend/scripts/toast.script"); ?>
 
 </body>

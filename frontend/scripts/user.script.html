@@ -6,13 +6,15 @@
  */
 
 function UserInit(){
-  UsersUI.init();
+  init();
 }
 
-const UsersUI = (() => {
 
   let state = {
     users: [],
+    departments: [],
+    positions: [],
+    shifts: [],
     loading: false
   };
 
@@ -21,7 +23,7 @@ const UsersUI = (() => {
   // =====================================================
 
   function init() {
-    bindEvents();
+    // bindEvents();
     loadReferenceData();
     loadUsers();
   }
@@ -30,24 +32,58 @@ const UsersUI = (() => {
   // EVENTS
   // =====================================================
 
-  function bindEvents() {
+  // function bindEvents() {
 
-    document.querySelector("#btnAddUser")
-      ?.addEventListener("click", UsersModal.openCreateModal);
+  //   document.querySelector("#btnAddUser")
+  //     ?.addEventListener("click", openCreateUser());
 
-    document.querySelector("#btnRefreshUsers")
-      ?.addEventListener("click", loadUsers);
+  //   document.querySelector("#btnRefreshUsers")
+  //     ?.addEventListener("click", loadUsers);
 
-    document.querySelector("#employeeForm")
-      ?.addEventListener("submit", handleSubmit);
+  //   document.querySelector("#employeeForm")
+  //     ?.addEventListener("submit", handleSubmit);
 
+  // }
+
+function openCreateUser() {
+
+  if (!state.departments.length) {
+    showToast("Loading reference data...", "warning");
+    return;
   }
+
+  UsersModal.openCreateModal({}, {
+
+    departments: state.departments,
+    positions: state.positions,
+    shifts: state.shifts,
+
+    onSubmit(formData) {
+
+      UsersAPI.createUser(
+        formData,
+
+        () => {
+          showToast("User created", "success");
+          loadUsers();
+        },
+
+        (err) => {
+          showToast(err.message, "error");
+        }
+      );
+
+    }
+
+  });
+
+}
 
   function hydrateDropdowns() {
 
-    const dept = document.getElementById("employeeDepartment");
-    const pos = document.getElementById("employeePosition");
-    const shift = document.getElementById("employeeShift");
+    const dept = document.getElementById("department_id");
+    const pos = document.getElementById("position_id");
+    const shift = document.getElementById("shift_id");
 
     if (dept) {
       dept.innerHTML = state.departments
@@ -106,22 +142,45 @@ const UsersUI = (() => {
     );
   }
 
-  function loadDepartments() {
-  UsersAPI.getDepartments((res) => {
-    populateSelect("employeeDepartment", res, "department_id", "department_name");
+function loadDepartments() {
+  return new Promise((resolve, reject) => {
+
+    UsersAPI.getDepartments(
+      (res) => {
+        state.departments = res || [];
+        resolve(state.departments);
+      },
+      reject
+    );
+
   });
 }
 
 function loadPositions() {
-  UsersAPI.getPositions((res) => {
-    window._positionsCache = res || [];
-    populateSelect("employeePosition", res, "position_id", "position_name");
+  return new Promise((resolve, reject) => {
+
+    UsersAPI.getPositions(
+      (res) => {
+        state.positions = res || [];
+        resolve(state.positions);
+      },
+      reject
+    );
+
   });
 }
 
 function loadShifts() {
-  UsersAPI.getShifts((res) => {
-    populateSelect("employeeShift", res, "shift_id", "shift_name");
+  return new Promise((resolve, reject) => {
+
+    UsersAPI.getShifts(
+      (res) => {
+        state.shifts = res || [];
+        resolve(state.shifts);
+      },
+      reject
+    );
+
   });
 }
 
@@ -344,18 +403,34 @@ function loadShifts() {
       loadDepartments(),
       loadPositions(),
       loadShifts()
-    ]).then(([deps, pos, shifts]) => {
+    ]).then(([deps, pos, shift]) => {
 
       state.departments = deps || [];
       state.positions = pos || [];
-      state.shifts = shifts || [];
+      state.shifts = shift || [];
 
       hydrateDropdowns();
 
     }).catch(err => {
       console.error("Reference load failed:", err);
     });
-  }
+  }function loadReferenceData() {
+
+  Promise.all([
+    loadDepartments(),
+    loadPositions(),
+    loadShifts()
+  ])
+  .then(() => {
+
+    console.log("Departments", state.departments);
+    console.log("Positions", state.positions);
+    console.log("Shifts", state.shifts);
+
+  })
+  .catch(console.error);
+
+}
 
   // =====================================================
   // HELPERS
@@ -379,16 +454,16 @@ function loadShifts() {
 
   }
   
-  document.getElementById("employeeDepartment")
-  .addEventListener("change", function () {
+  // document.getElementById("employeeDepartment")
+  // .addEventListener("change", function () {
 
-    const deptId = this.value;
+  //   const deptId = this.value;
 
-    const filtered = (window._positionsCache || [])
-      .filter(p => p.department_id === deptId);
+  //   const filtered = (window._positionsCache || [])
+  //     .filter(p => p.department_id === deptId);
 
-    populateSelect("employeePosition", filtered, "position_id", "position_name");
-  });
+  //   populateSelect("employeePosition", filtered, "position_id", "position_name");
+  // });
 
   function populateSelect(id, items, valueKey, labelKey) {
     const el = document.getElementById(id);
@@ -463,31 +538,5 @@ function loadShifts() {
 
   }
 
-  // =====================================================
-  // PUBLIC API
-  // =====================================================
 
-  return {
-
-    init,
-
-    loadUsers,
-
-    openListModal:
-      UsersModal.openListModal,
-
-    openCreateModal:
-      UsersModal.openCreateModal,
-
-    openEditModal:
-      UsersModal.openEditModal,
-
-    openDeleteModal:
-      UsersModal.openDeleteModal,
-
-    confirmDeleteEmployee
-
-  };
-
-})();
 </script>
