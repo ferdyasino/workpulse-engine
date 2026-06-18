@@ -11,6 +11,10 @@ function formatLabel(value) {
 
 }
 
+function closeFormModal() {
+  GlobalModal.hide("globalFormModal");
+}
+
 const GlobalModal = (() => {
 
   /* =====================================================
@@ -263,22 +267,31 @@ const GlobalModal = (() => {
   function openDelete(config = {}) {
 
     document.getElementById("globalDeleteTitle").innerText =
-      config.title || "Confirm Delete";
+      config.title || "Confirm Action";
 
     document.getElementById("globalDeleteMessage").innerText =
-      config.message || "Are you sure?";
+      config.message || "Choose an action.";
 
     document.getElementById("globalDeleteId").value =
       config.id || "";
 
-    const btn =
-      document.getElementById(
-        "globalDeleteConfirmBtn"
-      );
+    const deleteBtn =
+      document.getElementById("globalDeleteBtn");
 
-    btn.onclick = () => {
-      config.onConfirm?.(config.id);
-    };
+    const deactivateBtn =
+      document.getElementById("globalDeactivateBtn");
+
+    const modalId = "globalDeleteModal";
+
+    if (deleteBtn) {
+      deleteBtn.onclick = () =>
+        config.onDelete?.(config.id);
+    }
+
+    if (deactivateBtn) {
+      deactivateBtn.onclick = () =>
+        config.onDeactivate?.(config.id);
+    }
 
     show("globalDeleteModal");
   }
@@ -290,7 +303,8 @@ const GlobalModal = (() => {
     openDelete,
 
     show,
-    hide
+    hide,
+    closeFormModal
 
   };
 

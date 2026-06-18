@@ -45,54 +45,6 @@ function UserInit(){
 
   // }
 
-function openCreateUser() {
-
-  if (!state.departments.length) {
-    showToast("Loading reference data...", "warning");
-    return;
-  }
-
-  UsersModal.openCreateModal({}, {
-
-    departments: state.departments,
-    positions: state.positions,
-    shifts: state.shifts,
-
-    onAddDepartment: () => {
-      console.log("Add Department clicked");
-      // openDepartmentModal()
-    },
-
-    onAddPosition: () => {
-      console.log("Add Position clicked");
-      // openPositionModal()
-    },
-
-    onAddShift: () => {
-      console.log("Add Shift clicked");
-      // openShiftModal()
-    },
-
-    onSubmit(formData) {
-
-      UsersAPI.createUser(
-        formData,
-
-        () => {
-          showToast("User created", "success");
-          loadUsers();
-        },
-
-        (err) => {
-          showToast(err.message, "error");
-        }
-      );
-
-    }
-
-  });
-
-}
 
   function hydrateDropdowns() {
 
@@ -247,7 +199,19 @@ function loadShifts() {
             ${user.status || "UNKNOWN"}
           </span>
         </td>
-        <td></td>
+       <td class="text-nowrap">
+        <button
+          class="btn btn-sm btn-primary"
+          onclick="editUser('${user.user_id}')">
+          Edit
+        </button>
+
+        <button
+          class="btn btn-sm btn-danger"
+          onclick="deleteUser('${user.user_id}')">
+          Delete
+        </button>
+      </td>
       `;
 
       tbody.appendChild(row);
@@ -356,64 +320,6 @@ function loadShifts() {
     return state.shifts.find(s => s.shift_id === id)?.shift_name || "-";
   }
 
-  // =====================================================
-  // DELETE / DEACTIVATE
-  // =====================================================
-
-  function confirmDeleteEmployee(mode) {
-
-    const id =
-      document.getElementById("deleteEmployeeId").value;
-
-    setLoading(true);
-
-    const successHandler = () => {
-
-      showToast(
-        mode === "DELETE"
-          ? "User deleted"
-          : "User deactivated",
-        "success"
-      );
-
-      loadUsers();
-
-    };
-
-    const failHandler = (err) => {
-
-      console.error(err);
-
-      showToast(
-        err.message || "Operation failed",
-        "error"
-      );
-
-      setLoading(false);
-
-    };
-
-    if (mode === "DELETE") {
-
-      UsersAPI.deleteUser(
-        id,
-        successHandler,
-        failHandler
-      );
-
-    } else {
-
-      UsersAPI.deactivateUser(
-        id,
-        successHandler,
-        failHandler
-      );
-
-    }
-
-    UsersModal.closeDeleteModal();
-
-  }
 
   function loadReferenceData() {
     Promise.all([
@@ -455,16 +361,16 @@ function loadShifts() {
 
   }
   
-  document.getElementById("employeeDepartment")
-  .addEventListener("change", function () {
+  // document.getElementById("employeeDepartment")
+  // .addEventListener("change", function () {
 
-    const deptId = this.value;
+  //   const deptId = this.value;
 
-    const filtered = (window._positionsCache || [])
-      .filter(p => p.department_id === deptId);
+  //   const filtered = (window._positionsCache || [])
+  //     .filter(p => p.department_id === deptId);
 
-    populateSelect("employeePosition", filtered, "position_id", "position_name");
-  });
+  //   populateSelect("employeePosition", filtered, "position_id", "position_name");
+  // });
 
   function populateSelect(id, items, valueKey, labelKey) {
     const el = document.getElementById(id);

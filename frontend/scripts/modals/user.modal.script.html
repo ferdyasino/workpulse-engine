@@ -124,6 +124,9 @@ const UsersModal = (() => {
     openCreateModal(emp, handlers);
   }
 
+  function closeFormModal() {
+    GlobalModal.hide("globalFormModal");
+  }
   // =====================================================
   // DELETE MODAL
   // =====================================================
@@ -131,13 +134,18 @@ const UsersModal = (() => {
   function openDeleteModal(id, handlers = {}) {
 
     GlobalModal.openDelete({
-      title: "Deactivate Employee",
-      message: "This action cannot be undone.",
+
+      title: "Employee Action",
+
+      message:
+        "Choose whether to deactivate or permanently delete this employee.",
+
       id,
 
-      onConfirm: () => {
-        handlers.onConfirm?.(id);
-      }
+      onDelete: handlers.onDelete,
+
+      onDeactivate: handlers.onDeactivate
+
     });
 
   }
@@ -150,7 +158,8 @@ const UsersModal = (() => {
     openListModal,
     openCreateModal,
     openEditModal,
-    openDeleteModal
+    openDeleteModal,
+    closeFormModal
   };
 
 })();
