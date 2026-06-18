@@ -1,5 +1,16 @@
 <script>
 
+function formatLabel(value) {
+
+  if (!value) return "-";
+
+  return String(value)
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+
+}
+
 const GlobalModal = (() => {
 
   /* =====================================================
@@ -80,42 +91,104 @@ const GlobalModal = (() => {
 
       let html = "";
 
-      /* =========================
-         SELECT
-      ========================= */
+    if (field.onAdd) {
 
-      if (field.type === "select") {
+    setTimeout(() => {
 
-        html = `
-          <div class="${colClass}">
-            <label class="form-label">
-              ${field.label || ""}
-            </label>
+      container.addEventListener("click", (e) => {
 
-            <select
-              class="form-select"
-              name="${field.name}"
-              ${field.required ? "required" : ""}
+        const btn = e.target.closest("[data-add-field]");
+        if (!btn) return;
+
+        const fieldName = btn.dataset.addField;
+
+        const field = (config.fields || [])
+          .find(f => f.name === fieldName);
+
+        if (typeof field?.onAdd === "function") {
+          field.onAdd(fieldName, e);
+        }
+
+      });
+
+    }, 0);
+  }
+
+  /* =========================
+    SELECT
+  ========================= */
+
+  if (field.type === "select") {
+
+    const selectHtml = `
+      <select
+        class="form-select"
+        name="${field.name}"
+        ${field.required ? "required" : ""}
+      >
+
+        ${(field.options || []).map(option => `
+
+          <option
+            value="${option.value}"
+            ${String(option.value) === String(field.value)
+              ? "selected"
+              : ""}
+          >
+            ${formatLabel(option.label || option.value)}
+          </option>
+
+        `).join("")}
+
+      </select>
+    `;
+
+    html = `
+  <div class="${colClass}">
+    <label class="form-label">
+      ${field.label || ""}
+    </label>
+
+    <div class="d-flex gap-2 align-items-center">
+
+      <select
+        class="form-select flex-grow-1"
+        name="${field.name}"
+        ${field.required ? "required" : ""}
+      >
+
+        ${(field.options || []).map(option => `
+          <option
+            value="${option.value}"
+            ${String(option.value) === String(field.value)
+              ? "selected"
+              : ""}
+          >
+            ${formatLabel(option.label || option.value)}
+          </option>
+        `).join("")}
+
+      </select>
+
+      ${
+        field.onAdd
+          ? `
+            <button
+              type="button"
+              class="btn btn-glass btn-glass-icon"
+              data-add-field="${field.name}"
+              title="Add ${field.label}"
             >
-
-              ${(field.options || []).map(option => `
-
-                <option
-                  value="${option.value}"
-                  ${String(option.value) === String(field.value)
-                    ? "selected"
-                    : ""}
-                >
-                  ${option.label}
-                </option>
-
-              `).join("")}
-
-            </select>
-          </div>
-        `;
+              +
+            </button>
+          `
+          : ""
       }
 
+    </div>
+  </div>
+`;
+  }
       /* =========================
          TEXTAREA
       ========================= */

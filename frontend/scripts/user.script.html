@@ -58,6 +58,21 @@ function openCreateUser() {
     positions: state.positions,
     shifts: state.shifts,
 
+    onAddDepartment: () => {
+      console.log("Add Department clicked");
+      // openDepartmentModal()
+    },
+
+    onAddPosition: () => {
+      console.log("Add Position clicked");
+      // openPositionModal()
+    },
+
+    onAddShift: () => {
+      console.log("Add Shift clicked");
+      // openShiftModal()
+    },
+
     onSubmit(formData) {
 
       UsersAPI.createUser(
@@ -456,16 +471,16 @@ function loadShifts() {
 
   }
   
-  // document.getElementById("employeeDepartment")
-  // .addEventListener("change", function () {
+  document.getElementById("employeeDepartment")
+  .addEventListener("change", function () {
 
-  //   const deptId = this.value;
+    const deptId = this.value;
 
-  //   const filtered = (window._positionsCache || [])
-  //     .filter(p => p.department_id === deptId);
+    const filtered = (window._positionsCache || [])
+      .filter(p => p.department_id === deptId);
 
-  //   populateSelect("employeePosition", filtered, "position_id", "position_name");
-  // });
+    populateSelect("employeePosition", filtered, "position_id", "position_name");
+  });
 
   function populateSelect(id, items, valueKey, labelKey) {
     const el = document.getElementById(id);

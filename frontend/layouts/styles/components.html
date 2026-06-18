@@ -1,8 +1,13 @@
 <style>
 
-/* =========================
-   GLASS
-========================= */
+/* =====================================================
+   DESIGN TOKENS (implicit usage)
+===================================================== */
+/* var(--glass-bg), --radius-sm, --radius-md, --blur, etc. */
+
+/* =====================================================
+   GLASS SYSTEM
+===================================================== */
 
 .glass {
   background: var(--glass-bg);
@@ -27,9 +32,9 @@
   box-shadow: var(--shadow-lg);
 }
 
-/* =========================
-   FORMS (UNCHANGED)
-========================= */
+/* =====================================================
+   FORMS (BASE)
+===================================================== */
 
 .form-control,
 .form-select {
@@ -51,11 +56,13 @@
   box-shadow: 0 0 0 .25rem rgba(56,189,248,.15);
 }
 
-/* =========================
+/* =====================================================
    BUTTONS
-========================= */
+===================================================== */
 
-.btn { border-radius: var(--radius-sm); }
+.btn {
+  border-radius: var(--radius-sm);
+}
 
 .btn-primary {
   background: var(--primary);
@@ -89,9 +96,9 @@
   transform: translateY(-1px);
 }
 
-/* =========================
+/* =====================================================
    TABLE
-========================= */
+===================================================== */
 
 .table {
   color: var(--text-main);
@@ -107,17 +114,17 @@
   border-color: rgba(255,255,255,.08);
 }
 
-/* =========================
+/* =====================================================
    BADGES
-========================= */
+===================================================== */
 
 .badge-success { background: rgba(34,197,94,.15); color: var(--success); }
 .badge-warning { background: rgba(245,158,11,.15); color: var(--warning); }
 .badge-danger { background: rgba(239,68,68,.15); color: var(--danger); }
 
-/* =========================
-   TOAST
-========================= */
+/* =====================================================
+   TOAST SYSTEM
+===================================================== */
 
 .toast-host {
   position: fixed;
@@ -141,15 +148,14 @@
   justify-content: space-between;
 }
 
-/* states unchanged */
 .toast-success { background: rgba(34,197,94,.15); }
-.toast-error { background: rgba(239,68,68,.15); }
-.toast-info { background: rgba(56,189,248,.15); }
+.toast-error   { background: rgba(239,68,68,.15); }
+.toast-info    { background: rgba(56,189,248,.15); }
 .toast-warning { background: rgba(245,158,11,.15); }
 
-/* =========================
+/* =====================================================
    LOADER
-========================= */
+===================================================== */
 
 .loader {
   width: 48px;
@@ -164,9 +170,9 @@
   to { transform: rotate(360deg); }
 }
 
-/* =========================
+/* =====================================================
    AVATAR
-========================= */
+===================================================== */
 
 .avatar-circle {
   width: 42px;
@@ -182,27 +188,38 @@
   text-transform: uppercase;
 }
 
-/* =========================
-   FIX DROPDOWN VISIBILITY
-========================= */
+/* =====================================================
+   SELECT DROPDOWN FIX (FINAL OVERRIDE)
+===================================================== */
 
-/* SELECT box itself */
 .form-select {
-  background-color: rgba(15, 23, 42, 0.9) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+
+  background-color: rgba(15, 23, 42, 0.85) !important;
   color: var(--text-main) !important;
+
   border: 1px solid rgba(255,255,255,.12) !important;
-}
 
-/* OPTION LIST (critical fix) */
-.form-select option {
-  background-color: #0f172a !important;
-  color: #ffffff !important;
-}
+  padding: 10px 14px;
 
-/* hover / focus safety */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  display: block;
+}
+/* focus */
 .form-select:focus {
-  background-color: rgba(15, 23, 42, 0.95) !important;
-  color: #ffffff !important;
+  border-radius: 14px !important;
+  outline: none;
+  box-shadow: 0 0 0 .25rem rgba(56,189,248,.15) !important;
+  border-color: rgba(56,189,248,.5) !important;
 }
 
+/* dropdown options */
+.form-select option {
+  background: #0f172a !important;
+  color: #fff !important;
+}
 </style>
