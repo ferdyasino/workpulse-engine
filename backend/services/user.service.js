@@ -545,7 +545,7 @@ function createOwnerUser(workspace_id, ownerMeta = {}) {
 
   return {
     owner_id,
-    workspace_id,
+    // workspace_id,
     email,
     fullname,
     status: "ACTIVE"

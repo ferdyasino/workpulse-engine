@@ -57,7 +57,7 @@ function handleLoginSuccess(result) {
   console.log("CURRENT USER:", user);
 
   showToast?.("Login successful", "success");
-
+  renderUserHeader();
   applyRoleUI?.();
 
   if (APP.role === "admin" || APP.role === "owner") {
@@ -120,16 +120,27 @@ function restoreSession() {
     return;
   }
 
+  const user = getCurrentUser();
+
+  console.log("CURRENT USER:", user);
+
+  showToast?.("Login successful", "success");
+  renderUserHeader();
+  applyRoleUI?.();
+
   APP.user = {
     email,
-    name: localStorage.getItem("name") || ""
+    name: user.fullname
   };
 
   APP.role = (
     localStorage.getItem("role") || "guest"
   ).toLowerCase();
 
-  applyRoleUI?.();
+  if (APP.role === "admin" || APP.role === "owner") {
+    showToast?.("Welcome Admin Panel", "info");
+    UserInit();
+  }
 
   showToast?.("Welcome back", "success");
 
@@ -149,9 +160,9 @@ function setCurrentUser(result) {
     email: result.email || "",
     name: result.fullname || result.name || "",
     role: (result.role || "guest").toLowerCase(),
-    workspace_id: result.workspace_id || "",
-    timelog_spreadsheet_id:
-      result.timelog_spreadsheet_id || ""
+    // workspace_id: result.workspace_id || "",
+    // timelog_spreadsheet_id:
+    //   result.timelog_spreadsheet_id || ""
   };
 
   APP.user = user;
@@ -161,11 +172,11 @@ function setCurrentUser(result) {
   localStorage.setItem("email", user.email);
   localStorage.setItem("name", user.name);
   localStorage.setItem("role", user.role);
-  localStorage.setItem("workspace_id", user.workspace_id);
-  localStorage.setItem(
-    "timelog_spreadsheet_id",
-    user.timelog_spreadsheet_id
-  );
+  localStorage.setItem("workspace_id", result.workspace_id);
+  // localStorage.setItem(
+  //   "timelog_spreadsheet_id",
+  //   user.timelog_spreadsheet_id
+  // );
 
   return user;
 }
@@ -177,10 +188,10 @@ function getCurrentUser() {
     email: localStorage.getItem("email") || "",
     name: localStorage.getItem("name") || "",
     role: localStorage.getItem("role") || "guest",
-    workspace_id:
-      localStorage.getItem("workspace_id") || "",
-    timelog_spreadsheet_id:
-      localStorage.getItem("timelog_spreadsheet_id") || ""
+    // workspace_id:
+    //   localStorage.getItem("workspace_id") || "",
+    // timelog_spreadsheet_id:
+    //   localStorage.getItem("timelog_spreadsheet_id") || ""
   };
 }
 
@@ -192,7 +203,7 @@ function renderUserHeader() {
 
   const user = getCurrentUser();
 
-  const name = user.name || "Guest User";
+  const name = user.name || APP.name || localStorage.getItem("name");
 
   const usernameEl =
     document.getElementById("currUsername");
