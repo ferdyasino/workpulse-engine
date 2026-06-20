@@ -1,0 +1,159 @@
+<script>
+
+/* =====================================================
+   SAFE DEPARTMENT RESOLVER (IMPORTANT FIX)
+===================================================== */
+
+function getDepartmentsForPosition(config) {
+  return (
+    config.departments ||
+    state.departments ||
+    []
+  );
+}
+
+/* =====================================================
+   POSITION → ADD FROM USER MODAL FLOW
+===================================================== */
+
+function openCreatePositionFromUserModal() {
+
+  UsersModal.closeFormModal?.();
+
+  PositionModal.openCreateModal({}, {
+    departments: state.departments,
+    onSubmit(formData) {
+
+      UsersAPI.createPosition(
+        formData,
+
+        async () => {
+
+          showToast("Position created", "success");
+          
+          await reloadAllReferences();
+          
+          PositionModal.closeFormModal?.();
+
+
+          const newPositionId =
+            findPositionIdByName(formData.position_name);
+
+          openCreateUser({
+            position_id: newPositionId
+          });
+
+        },
+
+        (err) => {
+          showToast(err.message || "Failed to create position", "error");
+        }
+
+      );
+
+    }
+  });
+
+}
+
+/* =====================================================
+   POSITION LIST RENDERER (NORMALIZED + SAFE)
+===================================================== */
+
+function renderPositionList(positions) {
+
+  const el = document.getElementById("positionList");
+  if (!el) return;
+
+  if (!Array.isArray(positions) || positions.length === 0) {
+    el.innerHTML = `<div class="text-muted">No positions found</div>`;
+    return;
+  }
+
+  el.innerHTML = positions
+    .map(normalizePosition)
+    .map(p => `
+
+      <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+
+        <div>
+          <strong>${escapeHtml(p.position_name)}</strong>
+        </div>
+
+        <div class="text-end">
+          <span class="badge ${getPositionStatusClass(p.status)}">
+            ${p.status}
+          </span>
+        </div>
+
+      </div>
+
+    `).join("");
+}
+
+/* =====================================================
+   SAFE POSITION ID RESOLUTION
+   (IMPORTANT: avoids duplicate-name bugs)
+===================================================== */
+
+function findPositionIdByName(name) {
+
+  const normalized = String(name || "").trim().toLowerCase();
+
+  const found = [...(state.positions || [])]
+    .reverse()
+    .find(p =>
+      String(p.position_name || "")
+        .trim()
+        .toLowerCase() === normalized
+    );
+
+  return found?.position_id || "";
+}
+
+/* =====================================================
+   NORMALIZER (FRONTEND SAFE LAYER)
+===================================================== */
+
+function normalizePosition(p) {
+  return {
+    position_id: p.position_id || "",
+    position_name: p.position_name || "UNKNOWN",
+    department_id: p.department_id || "",
+    description: p.description || "",
+    status: (p.status || "ACTIVE").toUpperCase()
+  };
+}
+
+/* =====================================================
+   STATUS STYLE
+===================================================== */
+
+function getPositionStatusClass(status) {
+
+  switch ((status || "").toUpperCase()) {
+
+    case "ACTIVE":
+      return "badge-success";
+
+    case "INACTIVE":
+      return "badge-danger";
+
+    default:
+      return "badge-secondary";
+  }
+}
+
+/* =====================================================
+   HTML ESCAPE SAFETY
+===================================================== */
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+</script>

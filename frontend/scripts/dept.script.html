@@ -1,9 +1,37 @@
 <script>
-/**
- * =====================================================
- * DEPARTMENT LIST RENDERER (NORMALIZED + SAFE)
- * =====================================================
- */
+
+function openCreateDepartmentFromUserModal() {
+  // close employee form first so modals do not stack badly
+  UsersModal.closeFormModal?.();
+
+  DepartmentModal.openCreateModal({}, {
+    onSubmit(formData) {
+      UsersAPI.createDepartment(
+        formData,
+
+        async () => {
+          showToast("Department created", "success");
+          
+          await reloadAllReferences();
+
+          DepartmentModal.closeFormModal?.();
+
+
+          const newDepartmentId =
+            findDepartmentIdByName(formData.department_name);
+
+          openCreateUser({
+            department_id: newDepartmentId
+          });
+        },
+
+        (err) => {
+          showToast(err.message || "Failed to create department", "error");
+        }
+      );
+    }
+  });
+}
 
 function renderDepartmentList(depts) {
 
@@ -30,6 +58,18 @@ function renderDepartmentList(depts) {
     </div>
 
   `).join("");
+}
+
+function findDepartmentIdByName(name) {
+  const normalized = String(name || "").trim().toLowerCase();
+
+  const found = [...(state.departments || [])]
+    .reverse()
+    .find(d =>
+      String(d.department_name || "").trim().toLowerCase() === normalized
+    );
+
+  return found?.department_id || "";
 }
 
 /* =========================

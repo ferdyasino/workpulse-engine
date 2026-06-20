@@ -1,0 +1,42 @@
+<script>
+const DepartmentModal = (() => {
+
+  function openCreateModal(dept = {}, config = {}) {
+    GlobalModal.openForm({
+      title: dept.department_id ? "Edit Department" : "Create Department",
+
+      fields: [
+        {
+          name: "department_name",
+          label: "Department Name",
+          value: dept.department_name || "",
+          required: true,
+          col: "col-md-12"
+        },
+
+        {
+          name: "description",
+          label: "Description",
+          type: "textarea",
+          value: dept.description || "",
+          col: "col-md-12"
+        }
+      ],
+
+      onSubmit: (formData) => {
+        config.onSubmit?.(formData, dept);
+      }
+    });
+  }
+
+  function closeFormModal() {
+    GlobalModal.hide("globalFormModal");
+  }
+
+  return {
+    openCreateModal,
+    closeFormModal
+  };
+
+})();
+</script>

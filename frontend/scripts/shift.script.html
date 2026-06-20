@@ -1,9 +1,39 @@
 <script>
-/**
- * =====================================================
- * SHIFT LIST RENDERER (NORMALIZED + SAFE)
- * =====================================================
- */
+function openCreateShiftFromUserModal() {
+
+  UsersModal.closeFormModal?.();
+
+  ShiftModal.openCreateModal({}, {
+    onSubmit(formData) {
+
+      UsersAPI.createShift(
+        formData,
+
+        async () => {
+
+          showToast("Shift created", "success");
+          
+          await reloadAllReferences();
+
+          ShiftModal.closeFormModal?.();
+
+
+          openCreateUser({
+            shift_id: findShiftIdByName(formData.shift_name)
+          });
+
+        },
+
+        (err) => {
+          showToast(err.message || "Failed to create shift", "error");
+        }
+
+      );
+
+    }
+  });
+
+}
 
 function renderShiftList(shifts) {
 
@@ -35,6 +65,19 @@ function renderShiftList(shifts) {
     </div>
 
   `).join("");
+}
+
+
+function findShiftIdByName(name) {
+  const normalized = String(name || "").trim().toLowerCase();
+
+  const found = [...(state.shifts || [])]
+    .reverse()
+    .find(s =>
+      String(s.shift_name || "").trim().toLowerCase() === normalized
+    );
+
+  return found?.shift_id || "";
 }
 
 /* =========================

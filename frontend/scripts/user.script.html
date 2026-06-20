@@ -28,6 +28,10 @@ function UserInit(){
     loadUsers();
   }
 
+  function reloadAllReferences() {
+    return loadReferenceData();
+  }
+
   // =====================================================
   // EVENTS
   // =====================================================
@@ -360,7 +364,7 @@ function loadShifts() {
         : "Add User";
 
   }
-  
+
   // document.getElementById("employeeDepartment")
   // .addEventListener("change", function () {
 

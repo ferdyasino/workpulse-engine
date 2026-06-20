@@ -58,8 +58,8 @@ const UsersModal = (() => {
             { value: "admin", label: "Admin" }
           ],
           value: user.role || "employee"
-        },
-
+        },        
+        
         {
           name: "department_id",
           label: "Department",
@@ -68,10 +68,10 @@ const UsersModal = (() => {
             value: d.department_id,
             label: d.department_name
           })),
-          value: user.department_id || "",
+          value: user.department_id || config.selectedDepartmentId || "",
           onAdd: true
         },
-
+        
         {
           name: "position_id",
           label: "Position",
@@ -80,10 +80,10 @@ const UsersModal = (() => {
             value: p.position_id,
             label: p.position_name
           })),
-          value: user.position_id || "",
+          value: user.position_id || config.selectedPositionId || "",
           onAdd: true
         },
-
+        
         {
           name: "shift_id",
           label: "Shift",
@@ -92,9 +92,19 @@ const UsersModal = (() => {
             value: s.shift_id,
             label: s.shift_name
           })),
-          value: user.shift_id || "",
+          value: user.shift_id || config.selectedShiftId || "",
           onAdd: true
-        }
+        },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: [
+            { value: "ACTIVE", label: "Active" },
+            { value: "INACTIVE", label: "Inactive" }
+          ],
+          value: user.status || ""
+        },
       ],
 
       onAddField: (fieldName, e) => {

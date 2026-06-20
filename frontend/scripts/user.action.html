@@ -1,77 +1,82 @@
 <script>
 
-    function openCreateUser() {
+await function openCreateUser(prefill = {}) {
+  if (!state.departments.length) {
+    showToast("Loading reference data...", "warning");
+    return;
+  }
+    
+  UsersModal.openCreateModal({}, {
+    departments: state.departments,
+    positions: state.positions,
+    shifts: state.shifts,
 
-    if (!state.departments.length) {
-        showToast("Loading reference data...", "warning");
+    selectedDepartmentId: prefill.department_id || "",
+    selectedPositionId: prefill.position_id || "",
+    selectedShiftId: prefill.shift_id || "",
+
+    onAddField(fieldName) {
+      if (fieldName === "department_id") {
+        openCreateDepartmentFromUserModal();
         return;
-    }
+      }
 
-      UsersModal.openCreateModal({}, {
-        departments: state.departments,
-        positions: state.positions,
-        shifts: state.shifts,
+      if (fieldName === "position_id") {
+        openCreatePositionFromUserModal();
+        return;
+      }
 
-        onAddField(fieldName) {
-          if (fieldName === "department_id") {
-            console.log("Add Department clicked");
-          }
+      if (fieldName === "shift_id") {
+        openCreateShiftFromUserModal()
+        return;
+      }
+    },
 
-          if (fieldName === "position_id") {
-            console.log("Add Position clicked");
-          }
-
-          if (fieldName === "shift_id") {
-            console.log("Add Shift clicked");
-          }
+    onSubmit(formData) {
+      UsersAPI.createUser(
+        formData,
+        () => {
+          showToast("User created", "success");
+          UsersModal.closeFormModal?.();
+          loadUsers();
         },
+        (err) => {
+          showToast(err.message, "error");
+        }
+      );
+    }
+  });
+}
 
-        onSubmit(formData) {
-          UsersAPI.createUser(
-            formData,
-            () => {
-              showToast("User created", "success");
+function editUser(userId) {
+  const user = state.users.find(u => u.user_id === userId);
+
+  if (!user) return;
+
+  UsersModal.openEditModal(
+      user,
+      {
+      departments: state.departments,
+      positions: state.positions,
+      shifts: state.shifts,
+
+      onSubmit(formData) {
+          UsersAPI.updateUser(
+          userId,
+          formData,
+          () => {
+              showToast("User updated", "success");
               UsersModal.closeFormModal?.();
               loadUsers();
-            },
-            (err) => {
-              showToast(err.message, "error");
-            }
+          },
+          err => showToast(err.message, "error")
           );
-        }
-      });
+      }
+      }
+  );
+}
 
-    }
-
-    function editUser(userId) {
-        const user = state.users.find(u => u.user_id === userId);
-
-        if (!user) return;
-
-        UsersModal.openEditModal(
-            user,
-            {
-            departments: state.departments,
-            positions: state.positions,
-            shifts: state.shifts,
-
-            onSubmit(formData) {
-                UsersAPI.updateUser(
-                userId,
-                formData,
-                () => {
-                    showToast("User updated", "success");
-                    UsersModal.closeFormModal?.();
-                    loadUsers();
-                },
-                err => showToast(err.message, "error")
-                );
-            }
-            }
-        );
-        }
-
- function deleteUser(userId) {
+function deleteUser(userId) {
 
   UsersModal.openDeleteModal(userId, {
 
