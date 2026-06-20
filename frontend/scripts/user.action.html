@@ -1,6 +1,5 @@
 <script>
-
-await function openCreateUser(prefill = {}) {
+function openCreateUser(prefill = {}) {
   if (!state.departments.length) {
     showToast("Loading reference data...", "warning");
     return;
