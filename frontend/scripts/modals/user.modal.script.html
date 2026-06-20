@@ -1,5 +1,4 @@
 <script>
-
 const UsersModal = (() => {
 
   // =====================================================
@@ -7,7 +6,6 @@ const UsersModal = (() => {
   // =====================================================
 
   function openListModal(config = {}) {
-
     GlobalModal.openList({
       title: "Employee Records",
 
@@ -27,7 +25,6 @@ const UsersModal = (() => {
 
       onMount: config.onMount || null
     });
-
   }
 
   // =====================================================
@@ -35,13 +32,10 @@ const UsersModal = (() => {
   // =====================================================
 
   function openCreateModal(user = {}, config = {}) {
-
     GlobalModal.openForm({
-
       title: user.user_id ? "Edit Employee" : "Create Employee",
 
       fields: [
-
         {
           name: "fullname",
           label: "Full Name",
@@ -101,19 +95,16 @@ const UsersModal = (() => {
           value: user.shift_id || "",
           onAdd: true
         }
-
       ],
 
-      onAddField: (fieldName) => {
-        config.onAddField?.(fieldName);
+      onAddField: (fieldName, e) => {
+        config.onAddField?.(fieldName, e);
       },
 
       onSubmit: (formData) => {
         config.onSubmit?.(formData, user);
       }
-
     });
-
   }
 
   // =====================================================
@@ -127,27 +118,19 @@ const UsersModal = (() => {
   function closeFormModal() {
     GlobalModal.hide("globalFormModal");
   }
+
   // =====================================================
   // DELETE MODAL
   // =====================================================
 
   function openDeleteModal(id, handlers = {}) {
-
     GlobalModal.openDelete({
-
       title: "Employee Action",
-
-      message:
-        "Choose whether to deactivate or permanently delete this employee.",
-
+      message: "Choose whether to deactivate or permanently delete this employee.",
       id,
-
       onDelete: handlers.onDelete,
-
       onDeactivate: handlers.onDeactivate
-
     });
-
   }
 
   // =====================================================
@@ -163,5 +146,4 @@ const UsersModal = (() => {
   };
 
 })();
-
 </script>

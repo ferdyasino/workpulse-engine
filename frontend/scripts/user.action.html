@@ -7,46 +7,39 @@
         return;
     }
 
-    UsersModal.openCreateModal({}, {
-
+      UsersModal.openCreateModal({}, {
         departments: state.departments,
         positions: state.positions,
         shifts: state.shifts,
 
-        onAddDepartment: () => {
-        console.log("Add Department clicked");
-        // openDepartmentModal()
-        },
+        onAddField(fieldName) {
+          if (fieldName === "department_id") {
+            console.log("Add Department clicked");
+          }
 
-        onAddPosition: () => {
-        console.log("Add Position clicked");
-        // openPositionModal()
-        },
+          if (fieldName === "position_id") {
+            console.log("Add Position clicked");
+          }
 
-        onAddShift: () => {
-        console.log("Add Shift clicked");
-        // openShiftModal()
+          if (fieldName === "shift_id") {
+            console.log("Add Shift clicked");
+          }
         },
 
         onSubmit(formData) {
-
-        UsersAPI.createUser(
+          UsersAPI.createUser(
             formData,
-
             () => {
-            showToast("User created", "success");
-            UsersModal.closeFormModal?.();
-            loadUsers();
+              showToast("User created", "success");
+              UsersModal.closeFormModal?.();
+              loadUsers();
             },
-
             (err) => {
-            showToast(err.message, "error");
+              showToast(err.message, "error");
             }
-        );
-
+          );
         }
-
-    });
+      });
 
     }
 
