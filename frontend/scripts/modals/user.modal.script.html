@@ -1,5 +1,4 @@
 <script>
-
 const UsersModal = (() => {
 
   // =====================================================
@@ -7,7 +6,6 @@ const UsersModal = (() => {
   // =====================================================
 
   function openListModal(config = {}) {
-
     GlobalModal.openList({
       title: "Employee Records",
 
@@ -27,7 +25,6 @@ const UsersModal = (() => {
 
       onMount: config.onMount || null
     });
-
   }
 
   // =====================================================
@@ -35,13 +32,10 @@ const UsersModal = (() => {
   // =====================================================
 
   function openCreateModal(user = {}, config = {}) {
-
     GlobalModal.openForm({
-
       title: user.user_id ? "Edit Employee" : "Create Employee",
 
       fields: [
-
         {
           name: "fullname",
           label: "Full Name",
@@ -64,8 +58,8 @@ const UsersModal = (() => {
             { value: "admin", label: "Admin" }
           ],
           value: user.role || "employee"
-        },
-
+        },        
+        
         {
           name: "department_id",
           label: "Department",
@@ -74,10 +68,10 @@ const UsersModal = (() => {
             value: d.department_id,
             label: d.department_name
           })),
-          value: user.department_id || "",
+          value: user.department_id || config.selectedDepartmentId || "",
           onAdd: true
         },
-
+        
         {
           name: "position_id",
           label: "Position",
@@ -86,10 +80,10 @@ const UsersModal = (() => {
             value: p.position_id,
             label: p.position_name
           })),
-          value: user.position_id || "",
+          value: user.position_id || config.selectedPositionId || "",
           onAdd: true
         },
-
+        
         {
           name: "shift_id",
           label: "Shift",
@@ -98,22 +92,29 @@ const UsersModal = (() => {
             value: s.shift_id,
             label: s.shift_name
           })),
-          value: user.shift_id || "",
+          value: user.shift_id || config.selectedShiftId || "",
           onAdd: true
-        }
-
+        },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: [
+            { value: "ACTIVE", label: "Active" },
+            { value: "INACTIVE", label: "Inactive" }
+          ],
+          value: user.status || ""
+        },
       ],
 
-      onAddField: (fieldName) => {
-        config.onAddField?.(fieldName);
+      onAddField: (fieldName, e) => {
+        config.onAddField?.(fieldName, e);
       },
 
       onSubmit: (formData) => {
         config.onSubmit?.(formData, user);
       }
-
     });
-
   }
 
   // =====================================================
@@ -124,22 +125,22 @@ const UsersModal = (() => {
     openCreateModal(emp, handlers);
   }
 
+  function closeFormModal() {
+    GlobalModal.hide("globalFormModal");
+  }
+
   // =====================================================
   // DELETE MODAL
   // =====================================================
 
   function openDeleteModal(id, handlers = {}) {
-
     GlobalModal.openDelete({
-      title: "Deactivate Employee",
-      message: "This action cannot be undone.",
+      title: "Employee Action",
+      message: "Choose whether to deactivate or permanently delete this employee.",
       id,
-
-      onConfirm: () => {
-        handlers.onConfirm?.(id);
-      }
+      onDelete: handlers.onDelete,
+      onDeactivate: handlers.onDeactivate
     });
-
   }
 
   // =====================================================
@@ -150,9 +151,9 @@ const UsersModal = (() => {
     openListModal,
     openCreateModal,
     openEditModal,
-    openDeleteModal
+    openDeleteModal,
+    closeFormModal
   };
 
 })();
-
 </script>

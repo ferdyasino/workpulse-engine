@@ -1,0 +1,134 @@
+<script>
+
+await function openCreateUser(prefill = {}) {
+  if (!state.departments.length) {
+    showToast("Loading reference data...", "warning");
+    return;
+  }
+    
+  UsersModal.openCreateModal({}, {
+    departments: state.departments,
+    positions: state.positions,
+    shifts: state.shifts,
+
+    selectedDepartmentId: prefill.department_id || "",
+    selectedPositionId: prefill.position_id || "",
+    selectedShiftId: prefill.shift_id || "",
+
+    onAddField(fieldName) {
+      if (fieldName === "department_id") {
+        openCreateDepartmentFromUserModal();
+        return;
+      }
+
+      if (fieldName === "position_id") {
+        openCreatePositionFromUserModal();
+        return;
+      }
+
+      if (fieldName === "shift_id") {
+        openCreateShiftFromUserModal()
+        return;
+      }
+    },
+
+    onSubmit(formData) {
+      UsersAPI.createUser(
+        formData,
+        () => {
+          showToast("User created", "success");
+          UsersModal.closeFormModal?.();
+          loadUsers();
+        },
+        (err) => {
+          showToast(err.message, "error");
+        }
+      );
+    }
+  });
+}
+
+function editUser(userId) {
+  const user = state.users.find(u => u.user_id === userId);
+
+  if (!user) return;
+
+  UsersModal.openEditModal(
+      user,
+      {
+      departments: state.departments,
+      positions: state.positions,
+      shifts: state.shifts,
+
+      onSubmit(formData) {
+          UsersAPI.updateUser(
+          userId,
+          formData,
+          () => {
+              showToast("User updated", "success");
+              UsersModal.closeFormModal?.();
+              loadUsers();
+          },
+          err => showToast(err.message, "error")
+          );
+      }
+      }
+  );
+}
+
+function deleteUser(userId) {
+
+  UsersModal.openDeleteModal(userId, {
+
+    onDelete(id) {
+
+      setLoading(true);
+
+      UsersAPI.deleteUser(
+
+        id,
+
+        () => {
+          showToast("User deleted", "success");
+          GlobalModal.hide("globalDeleteModal"); 
+          loadUsers();
+        },
+
+        (err) => {
+          console.error(err);
+          showToast(err.message || "Delete failed", "error");
+          setLoading(false);
+        }
+
+      );
+
+    },
+
+    onDeactivate(id) {
+
+      setLoading(true);
+
+      UsersAPI.deactivateUser(
+
+        id,
+
+        () => {
+          showToast("User deactivated", "success");
+          GlobalModal.hide("globalDeleteModal"); 
+          loadUsers();
+        },
+
+        (err) => {
+          console.error(err);
+          showToast(err.message || "Deactivate failed", "error");
+          setLoading(false);
+        }
+
+      );
+
+    }
+
+  });
+
+}
+</script>

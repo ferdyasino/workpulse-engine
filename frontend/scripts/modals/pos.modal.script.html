@@ -1,0 +1,66 @@
+<script>
+const PositionModal = (() => {
+
+function getDepartments(config) {
+  return Array.isArray(config.departments)
+    ? config.departments
+    : [];
+}
+
+  function openCreateModal(position = {}, config = {}) {
+
+    const departments = getDepartments(config);
+
+    GlobalModal.openForm({
+      title: position.position_id ? "Edit Position" : "Create Position",
+
+      fields: [
+        {
+          name: "position_name",
+          label: "Position Name",
+          value: position.position_name || "",
+          required: true,
+          col: "col-md-12"
+        },
+
+        {
+          name: "department_id",
+          label: "Department",
+          type: "select",
+          required: true,
+
+          options: departments.map(d => ({
+            value: d.department_id,
+            label: d.department_name
+          })),
+
+          value: position.department_id || ""
+        },
+
+        {
+          name: "description",
+          label: "Description",
+          type: "textarea",
+          value: position.description || "",
+          col: "col-md-12"
+        }
+      ],
+
+      onSubmit: (formData) => {
+        config.onSubmit?.(formData, position);
+      }
+    });
+
+  }
+
+  function closeFormModal() {
+    GlobalModal.hide("globalFormModal");
+  }
+
+  return {
+    openCreateModal,
+    closeFormModal
+  };
+
+})();
+</script>

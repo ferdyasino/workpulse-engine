@@ -1,0 +1,67 @@
+<script>
+const ShiftModal = (() => {
+
+  function openCreateModal(shift = {}, config = {}) {
+    GlobalModal.openForm({
+      title: shift.shift_id ? "Edit Shift" : "Create Shift",
+
+      fields: [
+        {
+          name: "shift_name",
+          label: "Shift Name",
+          value: shift.shift_name || "",
+          required: true
+        },
+
+        {
+          name: "start_time",
+          label: "Start Time",
+          type: "time",
+          value: shift.start_time || "",
+          required: true
+        },
+
+        {
+          name: "end_time",
+          label: "End Time",
+          type: "time",
+          value: shift.end_time || "",
+          required: true
+        },
+
+        {
+          name: "grace_minutes",
+          label: "Grace Minutes",
+          type: "number",
+          value: shift.grace_minutes || 0
+        },
+
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          value: shift.status || "ACTIVE",
+          options: [
+            { value: "ACTIVE", label: "Active" },
+            { value: "INACTIVE", label: "Inactive" }
+          ]
+        }
+      ],
+
+      onSubmit: (formData) => {
+        config.onSubmit?.(formData, shift);
+      }
+    });
+  }
+
+  function closeFormModal() {
+    GlobalModal.hide("globalFormModal");
+  }
+
+  return {
+    openCreateModal,
+    closeFormModal
+  };
+
+})();
+</script>

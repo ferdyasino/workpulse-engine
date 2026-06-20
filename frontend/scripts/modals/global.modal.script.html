@@ -1,14 +1,11 @@
 <script>
-
 function formatLabel(value) {
-
   if (!value) return "-";
 
   return String(value)
     .toLowerCase()
     .replace(/_/g, " ")
     .replace(/\b\w/g, c => c.toUpperCase());
-
 }
 
 const GlobalModal = (() => {
@@ -22,7 +19,6 @@ const GlobalModal = (() => {
   }
 
   function show(id) {
-
     const el = getModal(id);
 
     const modal = new bootstrap.Modal(el, {
@@ -34,12 +30,8 @@ const GlobalModal = (() => {
   }
 
   function hide(id) {
-
     const el = getModal(id);
-
-    bootstrap.Modal
-      .getInstance(el)
-      ?.hide();
+    bootstrap.Modal.getInstance(el)?.hide();
   }
 
   /* =====================================================
@@ -47,7 +39,6 @@ const GlobalModal = (() => {
   ===================================================== */
 
   function openList(config = {}) {
-
     document.getElementById("globalListTitle").innerText =
       config.title || "List";
 
@@ -63,7 +54,7 @@ const GlobalModal = (() => {
     `;
 
     const addBtn = document.getElementById("globalListAddBtn");
-
+    addBtn.onclick = null;
     addBtn.onclick = config.onAdd || null;
 
     show("globalListModal");
@@ -74,7 +65,6 @@ const GlobalModal = (() => {
   ===================================================== */
 
   function openForm(config = {}) {
-
     document.getElementById("globalFormTitle").innerText =
       config.title || "Form";
 
@@ -82,124 +72,62 @@ const GlobalModal = (() => {
     const container = document.getElementById("globalFormFields");
 
     form.reset();
-
     container.innerHTML = "";
 
     (config.fields || []).forEach(field => {
-
       const colClass = field.col || "col-md-6";
-
       let html = "";
 
-    if (field.onAdd) {
-
-    setTimeout(() => {
-
-      container.addEventListener("click", (e) => {
-
-        const btn = e.target.closest("[data-add-field]");
-        if (!btn) return;
-
-        const fieldName = btn.dataset.addField;
-
-        const field = (config.fields || [])
-          .find(f => f.name === fieldName);
-
-        if (typeof field?.onAdd === "function") {
-          field.onAdd(fieldName, e);
-        }
-
-      });
-
-    }, 0);
-  }
-
-  /* =========================
-    SELECT
-  ========================= */
-
-  if (field.type === "select") {
-
-    const selectHtml = `
-      <select
-        class="form-select"
-        name="${field.name}"
-        ${field.required ? "required" : ""}
-      >
-
-        ${(field.options || []).map(option => `
-
-          <option
-            value="${option.value}"
-            ${String(option.value) === String(field.value)
-              ? "selected"
-              : ""}
-          >
-            ${formatLabel(option.label || option.value)}
-          </option>
-
-        `).join("")}
-
-      </select>
-    `;
-
-    html = `
-  <div class="${colClass}">
-    <label class="form-label">
-      ${field.label || ""}
-    </label>
-
-    <div class="d-flex gap-2 align-items-center">
-
-      <select
-        class="form-select flex-grow-1"
-        name="${field.name}"
-        ${field.required ? "required" : ""}
-      >
-
-        ${(field.options || []).map(option => `
-          <option
-            value="${option.value}"
-            ${String(option.value) === String(field.value)
-              ? "selected"
-              : ""}
-          >
-            ${formatLabel(option.label || option.value)}
-          </option>
-        `).join("")}
-
-      </select>
-
-      ${
-        field.onAdd
-          ? `
-            <button
-              type="button"
-              class="btn btn-glass btn-glass-icon"
-              data-add-field="${field.name}"
-              title="Add ${field.label}"
-            >
-              +
-            </button>
-          `
-          : ""
-      }
-
-    </div>
-  </div>
-`;
-  }
-      /* =========================
-         TEXTAREA
-      ========================= */
-
-      else if (field.type === "textarea") {
-
+      if (field.type === "select") {
         html = `
           <div class="${colClass}">
-            <label class="form-label">
-              ${field.label || ""}
-            </label>
+            <label class="form-label">${field.label || ""}</label>
+
+            <div class="d-flex gap-2 align-items-center">
+              <select
+                class="form-select flex-grow-1"
+                name="${field.name}"
+                ${field.required ? "required" : ""}
+              >
+                ${
+                  field.placeholderOption
+                    ? `<option value="">${field.placeholderOption}</option>`
+                    : ""
+                }
+
+                ${(field.options || []).map(option => `
+                  <option
+                    value="${option.value}"
+                    ${String(option.value) === String(field.value) ? "selected" : ""}
+                  >
+                    ${formatLabel(option.label || option.value)}
+                  </option>
+                `).join("")}
+              </select>
+
+              ${
+                field.onAdd
+                  ? `
+                    <button
+                      type="button"
+                      class="btn btn-glass btn-glass-icon"
+                      data-add-field="${field.name}"
+                      title="Add ${field.label}"
+                    >
+                      +
+                    </button>
+                  `
+                  : ""
+              }
+            </div>
+          </div>
+        `;
+      }
+
+      else if (field.type === "textarea") {
+        html = `
+          <div class="${colClass}">
+            <label class="form-label">${field.label || ""}</label>
 
             <textarea
               class="form-control"
@@ -211,17 +139,10 @@ const GlobalModal = (() => {
         `;
       }
 
-      /* =========================
-         INPUT
-      ========================= */
-
       else {
-
         html = `
           <div class="${colClass}">
-            <label class="form-label">
-              ${field.label || ""}
-            </label>
+            <label class="form-label">${field.label || ""}</label>
 
             <input
               class="form-control"
@@ -235,20 +156,23 @@ const GlobalModal = (() => {
         `;
       }
 
-      container.insertAdjacentHTML(
-        "beforeend",
-        html
-      );
+      container.insertAdjacentHTML("beforeend", html);
     });
 
-    form.onsubmit = (e) => {
+    container.onclick = (e) => {
+      const btn = e.target.closest("[data-add-field]");
+      if (!btn) return;
 
+      const fieldName = btn.dataset.addField;
+      config.onAddField?.(fieldName, e);
+    };
+
+    form.onsubmit = (e) => {
       e.preventDefault();
 
-      const data =
-        Object.fromEntries(
-          new FormData(form).entries()
-        );
+      const data = Object.fromEntries(
+        new FormData(form).entries()
+      );
 
       config.onSubmit?.(data);
     };
@@ -261,39 +185,39 @@ const GlobalModal = (() => {
   ===================================================== */
 
   function openDelete(config = {}) {
-
     document.getElementById("globalDeleteTitle").innerText =
-      config.title || "Confirm Delete";
+      config.title || "Confirm Action";
 
     document.getElementById("globalDeleteMessage").innerText =
-      config.message || "Are you sure?";
+      config.message || "Choose an action.";
 
     document.getElementById("globalDeleteId").value =
       config.id || "";
 
-    const btn =
-      document.getElementById(
-        "globalDeleteConfirmBtn"
-      );
+    const deleteBtn = document.getElementById("globalDeleteBtn");
+    const deactivateBtn = document.getElementById("globalDeactivateBtn");
 
-    btn.onclick = () => {
-      config.onConfirm?.(config.id);
-    };
+    deleteBtn.onclick = null;
+    deactivateBtn.onclick = null;
+
+    if (deleteBtn) {
+      deleteBtn.onclick = () => config.onDelete?.(config.id);
+    }
+
+    if (deactivateBtn) {
+      deactivateBtn.onclick = () => config.onDeactivate?.(config.id);
+    }
 
     show("globalDeleteModal");
   }
 
   return {
-
     openList,
     openForm,
     openDelete,
-
     show,
     hide
-
   };
 
 })();
-
 </script>
