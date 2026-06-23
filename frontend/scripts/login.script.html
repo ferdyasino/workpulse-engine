@@ -139,44 +139,44 @@ function logout() {
 // SESSION RESTORE
 // =====================================================
 
-function restoreSession() {
-  const email = localStorage.getItem("email");
-  const role = (localStorage.getItem("role") || "guest").toLowerCase();
-  const workspaceId = localStorage.getItem("workspace_id");
+// function restoreSession() {
+//   const email = localStorage.getItem("email");
+//   const role = (localStorage.getItem("role") || "guest").toLowerCase();
+//   const workspaceId = localStorage.getItem("workspace_id");
 
-  // no valid session
-  if (!email || !workspaceId) {
-    APP.user = null;
-    APP.role = "guest";
-    go("login");
-    return;
-  }
+//   // no valid session
+//   if (!email || !workspaceId) {
+//     APP.user = null;
+//     APP.role = "guest";
+//     go("login");
+//     return;
+//   }
 
-  const user = getCurrentUser();
+//   const user = getCurrentUser();
 
-  APP.user = user;
-  APP.role = role;
+//   APP.user = user;
+//   APP.role = role;
 
-  renderUserHeader();
-  applyRoleUI?.();
+//   renderUserHeader();
+//   applyRoleUI?.();
 
-  const isAdmin = role === "admin" || role === "owner";
-  const lastPage = localStorage.getItem("last_page");
+//   const isAdmin = role === "admin" || role === "owner";
+//   const lastPage = localStorage.getItem("last_page");
 
-  let targetPage = "dashboard";
+//   let targetPage = "dashboard";
 
-  if (isAdmin) {
-    UserInit?.();
-    targetPage =
-      lastPage === "dashboard" || lastPage === "admin"
-        ? lastPage
-        : "admin";
-  } else {
-    targetPage = "dashboard";
-  }
+//   if (isAdmin) {
+//     UserInit?.();
+//     targetPage =
+//       lastPage === "dashboard" || lastPage === "admin"
+//         ? lastPage
+//         : "admin";
+//   } else {
+//     targetPage = "dashboard";
+//   }
 
-  go(targetPage);
-}
+//   go(targetPage);
+// }
 
 
 // =====================================================

@@ -9,7 +9,7 @@
 const APP = {
   user: null,
   role: "guest",
-  currentPage: "login",
+  currentPage: null, // IMPORTANT: do NOT default to login
   workspaceSlug: "",
   serverEmail: ""
 };
@@ -84,6 +84,7 @@ function parseServerData() {
     localStorage.setItem("workspace_slug", workspaceSlug);
   }
 
+  // prefill login email if present in URL/server data
   const emailInput = document.getElementById("email");
   if (emailInput && email) {
     emailInput.value = email;
@@ -97,17 +98,21 @@ function parseServerData() {
 // =====================================================
 
 function bootApp() {
-  const page = APP.currentPage || "login";
-
-  go(page);
-
-  if (page === "dashboard") {
-    syncDashboard();
+  // IMPORTANT:
+  // restoreSession() should already decide current page.
+  // bootApp must only fallback if page is still empty.
+  if (!APP.currentPage) {
+    APP.currentPage = "login";
   }
+
+  go(APP.currentPage);
 }
 
-function syncDashboard() {
+// =====================================================
+// DASHBOARD SYNC
+// =====================================================
 
+function syncDashboard() {
   const email = localStorage.getItem("email");
   const workspace_id = localStorage.getItem("workspace_id");
 
@@ -117,7 +122,6 @@ function syncDashboard() {
 
   google.script.run
     .withSuccessHandler((res) => {
-
       hideLoader?.();
 
       const logs = Array.isArray(res) ? res : [];
@@ -126,7 +130,6 @@ function syncDashboard() {
       renderTimeLogger?.();
       renderBreakActivity?.(logs);
       renderGlobalState?.(state);
-
     })
     .withFailureHandler((err) => {
       hideLoader?.();
@@ -140,8 +143,9 @@ function syncDashboard() {
 // =====================================================
 
 function go(page) {
-
   APP.currentPage = page;
+
+  // persist last viewed page
   localStorage.setItem("last_page", page);
 
   const targetId = ROUTES[page] || ROUTES.home;
@@ -199,18 +203,18 @@ function applyUIState(page) {
     clock?.classList.add("d-none");
   }
 
-  // EMPLOYEE DASHBOARD LOGIC
+  // EMPLOYEE DASHBOARD
   if (page === "dashboard") {
     renderTimeLogger?.();
     syncDashboard();
   }
 }
+
 // =====================================================
 // ROLE UI
 // =====================================================
 
 function applyRoleUI() {
-
   const isAdmin = APP.role === "admin" || APP.role === "owner";
   const adminMenu = document.getElementById("adminMenuItem");
 
@@ -247,7 +251,6 @@ function hideLoader() {
 // =====================================================
 
 function toggleDashboard() {
-
   const isAdmin = APP.role === "admin" || APP.role === "owner";
 
   if (!isAdmin) {
@@ -265,15 +268,51 @@ function toggleDashboard() {
 }
 
 // =====================================================
+// SESSION RESTORE
+// =====================================================
+
+function restoreSession() {
+  const email = localStorage.getItem("email");
+
+  // no session = login page
+  if (!email) {
+    APP.user = null;
+    APP.role = "guest";
+    APP.currentPage = "login";
+    return;
+  }
+
+  const user = getCurrentUser();
+
+  APP.user = user;
+  APP.role = (user.role || "guest").toLowerCase();
+
+  renderUserHeader();
+  applyRoleUI?.();
+
+  const isAdmin = APP.role === "admin" || APP.role === "owner";
+  const lastPage = localStorage.getItem("last_page");
+
+  if (isAdmin) {
+    // admin can persist admin/dashboard
+    APP.currentPage =
+      lastPage === "dashboard" || lastPage === "admin"
+        ? lastPage
+        : "admin";
+  }else{
+    APP.currentPage = "dashboard";
+  }
+}
+
+// =====================================================
 // INIT
 // =====================================================
 
 window.addEventListener("DOMContentLoaded", () => {
-
-  parseServerData();   // <-- THIS PREFILLS EMAIL + SAVES WORKSPACE SLUG
-  restoreSession();
+  parseServerData();  
+  restoreSession();  
   renderUserHeader();
-  bootApp();
+  bootApp();     
 });
 
 function formatTime(ts) {
