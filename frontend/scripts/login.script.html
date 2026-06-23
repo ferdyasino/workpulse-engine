@@ -1,25 +1,55 @@
 <script>
+// =====================================================
+// SERVER DATA HELPER
+// =====================================================
+
+function getServerData() {
+  try {
+    return window.SERVER_DATA
+      ? JSON.parse(window.SERVER_DATA)
+      : {};
+  } catch (err) {
+    console.error("Invalid SERVER_DATA:", err);
+    return {};
+  }
+}
+
+function embedServerData() {
+  const data = getServerData();
+
+  const emailInput = document.getElementById("email");
+
+  // Save workspace slug if available
+  if (data.workspaceSlug) {
+    localStorage.setItem("workspaceSlug", data.workspaceSlug);
+  }
+
+  // Prefill email if available
+  if (emailInput && data.email) {
+    emailInput.value = data.email;
+  }
+
+  return data;
+}
+
 
 // =====================================================
 // LOGIN HANDLER
 // =====================================================
 
+
 document.getElementById("loginForm")?.addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const data = window.SERVER_DATA
-    ? JSON.parse(window.SERVER_DATA)
-    : {};
-
-  const workspaceSlug = data.workspaceSlug || "";
-
   const email =
-    document.getElementById("email")?.value ||
-    data.email ||
+    document.getElementById("email")?.value?.trim() ||
+    APP.serverEmail ||
     "";
 
-  const sid =
-    document.getElementById("sid")?.value || "";
+  const workspaceSlug =
+    APP.workspaceSlug ||
+    localStorage.getItem("workspace_slug") ||
+    "";
 
   if (!email) {
     showToast?.("Email is required", "warning");
@@ -34,13 +64,11 @@ document.getElementById("loginForm")?.addEventListener("submit", (e) => {
     .loginResolver(workspaceSlug, email);
 });
 
-
 // =====================================================
 // LOGIN SUCCESS
 // =====================================================
 
 function handleLoginSuccess(result) {
-
   hideLoader?.();
 
   if (!result) {
@@ -50,20 +78,17 @@ function handleLoginSuccess(result) {
 
   const user = setCurrentUser(result);
 
-  console.log("LOGIN USER:", user);
-
   renderUserHeader();
   applyRoleUI?.();
 
-  // IMPORTANT: set initial route ONCE
-  const isAdmin = APP.role === "admin" || APP.role === "owner";
+  const isAdmin =
+    APP.role === "admin" ||
+    APP.role === "owner";
 
   if (isAdmin) {
-    showToast?.("Welcome Admin Panel", "success");
     UserInit?.();
     go("admin");
   } else {
-    showToast?.("Welcome Dashboard", "success");
     go("dashboard");
   }
 }
@@ -74,7 +99,6 @@ function handleLoginSuccess(result) {
 // =====================================================
 
 function handleLoginError(err) {
-
   hideLoader?.();
 
   console.error("LOGIN ERROR:", err);
@@ -93,28 +117,37 @@ function handleLoginError(err) {
 // =====================================================
 
 function logout() {
+  // keep workspaceSlug if you want the login page to still know which workspace it belongs to
+  const workspaceSlug = localStorage.getItem("workspaceSlug") || "";
 
   localStorage.clear();
+
+  if (workspaceSlug) {
+    localStorage.setItem("workspaceSlug", workspaceSlug);
+  }
 
   APP.user = null;
   APP.role = "guest";
   APP.currentPage = "login";
 
   showToast?.("Logged out successfully", "info");
-
   go("login");
 }
 
 
 // =====================================================
-// SESSION RESTORE (FIXED)
+// SESSION RESTORE
 // =====================================================
 
 function restoreSession() {
-
   const email = localStorage.getItem("email");
+  const role = (localStorage.getItem("role") || "guest").toLowerCase();
+  const workspaceId = localStorage.getItem("workspace_id");
 
-  if (!email) {
+  // no valid session
+  if (!email || !workspaceId) {
+    APP.user = null;
+    APP.role = "guest";
     go("login");
     return;
   }
@@ -122,32 +155,24 @@ function restoreSession() {
   const user = getCurrentUser();
 
   APP.user = user;
-  APP.role = (user.role || "guest").toLowerCase();
+  APP.role = role;
 
   renderUserHeader();
   applyRoleUI?.();
 
-  const isAdmin = APP.role === "admin" || APP.role === "owner";
-
-  // ==============================
-  // PRIORITY 1: last visited page
-  // ==============================
+  const isAdmin = role === "admin" || role === "owner";
   const lastPage = localStorage.getItem("last_page");
-
-  const validAdminPages = ["admin", "dashboard"];
-  const validUserPages = ["dashboard"];
 
   let targetPage = "dashboard";
 
   if (isAdmin) {
     UserInit?.();
-    targetPage = validAdminPages.includes(lastPage)
-      ? lastPage
-      : "admin"; // fallback for admin
+    targetPage =
+      lastPage === "dashboard" || lastPage === "admin"
+        ? lastPage
+        : "admin";
   } else {
-    targetPage = validUserPages.includes(lastPage)
-      ? lastPage
-      : "dashboard";
+    targetPage = "dashboard";
   }
 
   go(targetPage);
@@ -159,7 +184,6 @@ function restoreSession() {
 // =====================================================
 
 function setCurrentUser(result) {
-
   if (!result) return null;
 
   const user = {
@@ -167,7 +191,8 @@ function setCurrentUser(result) {
     email: result.email || "",
     name: result.fullname || result.name || "",
     role: (result.role || "guest").toLowerCase(),
-    shift_id: result.shift_id || ""
+    shift_id: result.shift_id || "",
+    workspace_id: result.workspace_id || ""
   };
 
   APP.user = user;
@@ -177,7 +202,7 @@ function setCurrentUser(result) {
   localStorage.setItem("email", user.email);
   localStorage.setItem("name", user.name);
   localStorage.setItem("role", user.role);
-  localStorage.setItem("workspace_id", result.workspace_id || "");
+  localStorage.setItem("workspace_id", user.workspace_id);
   localStorage.setItem("shift_id", user.shift_id);
 
   return user;
@@ -189,13 +214,13 @@ function setCurrentUser(result) {
 // =====================================================
 
 function getCurrentUser() {
-
   return APP.user || {
     user_id: localStorage.getItem("user_id") || "",
     email: localStorage.getItem("email") || "",
     name: localStorage.getItem("name") || "",
     role: localStorage.getItem("role") || "guest",
-    shift_id: localStorage.getItem("shift_id") || ""
+    shift_id: localStorage.getItem("shift_id") || "",
+    workspace_id: localStorage.getItem("workspace_id") || ""
   };
 }
 
@@ -205,9 +230,7 @@ function getCurrentUser() {
 // =====================================================
 
 function renderUserHeader() {
-
   const user = getCurrentUser();
-
   const name = user.name || "User";
 
   const usernameEl = document.getElementById("currUsername");
@@ -223,11 +246,9 @@ function renderUserHeader() {
   const initialsEl = document.getElementById("currInitials");
   if (initialsEl) initialsEl.textContent = initials;
 
-  // IMPORTANT: do NOT hardcode fake status here
   const statusEl = document.getElementById("currWorkStatus");
   if (statusEl) {
     statusEl.textContent = APP.workStatus || "NOT STARTED";
   }
 }
-
 </script>

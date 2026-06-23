@@ -1,21 +1,18 @@
 <script>
 
-function getWorkspaceId() {
+window.UsersAPI = (() => {
 
-  const workspaceId =
-    APP.user?.workspace_id ||
-    localStorage.getItem("workspace_id");
+  const ws = () => {
+    const id =
+      APP.user?.workspace_id ||
+      localStorage.getItem("workspace_id");
 
-  if (!workspaceId) {
-    throw new Error("Workspace ID not found. Please login again.");
-  }
+    if (!id) {
+      throw new Error("Workspace ID not found. Please login again.");
+    }
 
-  return workspaceId;
-}
-
-const UsersAPI = (() => {
-
-  const ws = () => getWorkspaceId();
+    return id;
+  };
 
   // =====================================================
   // USERS
@@ -123,7 +120,7 @@ const UsersAPI = (() => {
   // =====================================================
   // SHIFTS
   // =====================================================
-console.log("ws", ws());
+// console.log("ws", ws());
   function getShifts(success, fail) {
     google.script.run
       .withSuccessHandler(success)

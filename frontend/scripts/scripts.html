@@ -9,7 +9,9 @@
 const APP = {
   user: null,
   role: "guest",
-  currentPage: "login"
+  currentPage: "login",
+  workspaceSlug: "",
+  serverEmail: ""
 };
 
 // =====================================================
@@ -56,51 +58,49 @@ const PAGE_TITLES = {
   login: "Login"
 };
 
-function initApp(serverData) {
+// =====================================================
+// SERVER DATA BOOTSTRAP
+// =====================================================
 
-  const data = JSON.parse(serverData);
+function parseServerData() {
+  let data = {};
+
+  try {
+    if (window.SERVER_DATA) {
+      data = JSON.parse(window.SERVER_DATA);
+    }
+  } catch (err) {
+    console.error("Failed to parse SERVER_DATA:", err);
+    data = {};
+  }
+
+  const workspaceSlug = data.workspaceSlug || data.w || "";
+  const email = data.email || "";
+
+  APP.workspaceSlug = workspaceSlug;
+  APP.serverEmail = email;
+
+  if (workspaceSlug) {
+    localStorage.setItem("workspace_slug", workspaceSlug);
+  }
 
   const emailInput = document.getElementById("email");
-  const sidInput = document.getElementById("sid");
-
-  // Prefill email from URL immediately
-  if (emailInput && data.email) {
-    emailInput.value = data.email;
+  if (emailInput && email) {
+    emailInput.value = email;
   }
 
-  // Fetch owner info using workspace slug
-  google.script.run
-    .withSuccessHandler(owner => {
-
-      // console.log("owner", owner);
-
-      // SID from owner record
-      if (sidInput) {
-        sidInput.value = owner?.sid || owner?.owner_sid || "";
-      }
-
-      // Optional: overwrite email if owner email exists
-      // if (emailInput && owner?.email) {
-      //   emailInput.value = owner.email;
-      // }
-
-    })
-    .withFailureHandler(err => {
-      console.error(err);
-    })
-    .getOwnerById(data.workspaceSlug);
+  return data;
 }
 
-function bootApp() {
-  if(window.SERVER_DATA){
-    initApp(window.SERVER_DATA);
-  }
+// =====================================================
+// APP BOOT
+// =====================================================
 
+function bootApp() {
   const page = APP.currentPage || "login";
 
   go(page);
 
-  // ONLY sync if dashboard is active
   if (page === "dashboard") {
     syncDashboard();
   }
@@ -109,9 +109,7 @@ function bootApp() {
 function syncDashboard() {
 
   const email = localStorage.getItem("email");
-  const workspace_id =
-    localStorage.getItem("workspace_id") ||
-    document.getElementById("sid")?.value;
+  const workspace_id = localStorage.getItem("workspace_id");
 
   if (!email || !workspace_id) return;
 
@@ -123,14 +121,11 @@ function syncDashboard() {
       hideLoader?.();
 
       const logs = Array.isArray(res) ? res : [];
-
       const state = buildTimeLogState(logs);
 
       renderTimeLogger?.();
-      // renderTimeLogs(logs);
-      renderBreakActivity(logs);  
-      // renderTimeSummary(state);
-      renderGlobalState(state);
+      renderBreakActivity?.(logs);
+      renderGlobalState?.(state);
 
     })
     .withFailureHandler((err) => {
@@ -187,24 +182,29 @@ function applyUIState(page) {
   const topbar = document.getElementById("appTopbar");
   const clock = document.getElementById("adminClockContainer");
 
+  // LOGIN PAGE
   if (page === "login") {
     topbar?.classList.add("d-none");
+    clock?.classList.add("d-none");
     return;
   }
 
-  // ALWAYS SHOW TOPBAR (admin + user)
+  // SHOW TOPBAR FOR ALL NON-LOGIN PAGES
   topbar?.classList.remove("d-none");
 
-  // ALWAYS SHOW CLOCK (your requirement)
-  clock?.classList.remove("d-none");
+  // CLOCK ONLY FOR ADMIN PAGE
+  if (page === "admin") {
+    clock?.classList.remove("d-none");
+  } else {
+    clock?.classList.add("d-none");
+  }
+
+  // EMPLOYEE DASHBOARD LOGIC
   if (page === "dashboard") {
-
     renderTimeLogger?.();
-
     syncDashboard();
   }
 }
-
 // =====================================================
 // ROLE UI
 // =====================================================
@@ -212,7 +212,6 @@ function applyUIState(page) {
 function applyRoleUI() {
 
   const isAdmin = APP.role === "admin" || APP.role === "owner";
-
   const adminMenu = document.getElementById("adminMenuItem");
 
   if (adminMenu) {
@@ -225,7 +224,6 @@ function applyRoleUI() {
 // =====================================================
 
 function updateDashboardTitle(page) {
-
   const el = document.getElementById("dashboardTitle");
   if (!el) return;
 
@@ -253,15 +251,15 @@ function toggleDashboard() {
   const isAdmin = APP.role === "admin" || APP.role === "owner";
 
   if (!isAdmin) {
-    showToast("Access denied", "error");
+    showToast?.("Access denied", "error");
     return;
   }
 
   if (APP.currentPage === "admin") {
-    showToast("Switching to dashboard", "info");
+    showToast?.("Switching to dashboard", "info");
     go("dashboard");
   } else {
-    showToast("Switching to admin panel", "info");
+    showToast?.("Switching to admin panel", "info");
     go("admin");
   }
 }
@@ -272,6 +270,7 @@ function toggleDashboard() {
 
 window.addEventListener("DOMContentLoaded", () => {
 
+  parseServerData();   // <-- THIS PREFILLS EMAIL + SAVES WORKSPACE SLUG
   restoreSession();
   renderUserHeader();
   bootApp();
