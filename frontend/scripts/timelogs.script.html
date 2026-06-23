@@ -72,6 +72,7 @@ function logTime(action) {
   const workspace_id =
     localStorage.getItem("workspace_id") ||
     document.getElementById("sid")?.value;
+  const shiftId = localStorage.getItem("shift_id");
 
   const userId = localStorage.getItem("user_id");
 
@@ -84,46 +85,42 @@ function logTime(action) {
     user_id: userId,
     email,
     action,
-    shift_id: "SHIFT-4",
+    shift_id: shiftId,
     device_info: navigator.userAgent,
     location: "home",
     timestamp: new Date().toISOString()
   };
 
-  showLoader?.();
+  validate(workspace_id, payload,
+    (result) => {
+      console.log("VALID OK:", result);
 
-  google.script.run
-    .withSuccessHandler((res) => {
+      showLoader?.();
 
-      hideLoader?.();
+      google.script.run
+        .withSuccessHandler((res) => {
 
-      // =========================
-      // STRICT RESPONSE VALIDATION
-      // =========================
-      if (!res || typeof res !== "object") {
-        showToast?.("Invalid server response", "error");
-        return;
-      }
+          hideLoader?.();
 
-      if (res.success !== true) {
-        showToast?.(res.message || "Action failed", "error");
-        return;
-      }
+          if (!res?.success) {
+            showToast?.(res.message || "Action failed", "error");
+            return;
+          }
 
-      // =========================
-      // ONLY TRUE SUCCESS
-      // =========================
-      showToast?.(res.message || "Logged successfully", "success");
+          showToast?.("Logged successfully", "success");
+          getLogs();
+        })
+        .withFailureHandler((err) => {
+          hideLoader?.();
+          showToast?.(err?.message || "Server error", "error");
+        })
+        .insertTimeLog(workspace_id, payload);
 
-      // background sync
-      getLogs();
-    })
-    .withFailureHandler((err) => {
-
-      hideLoader?.();
-      showToast?.(err?.message || "Server error", "error");
-    })
-    .insertTimeLog(workspace_id, payload);
+    },
+    (err) => {
+      showToast?.(err.message, "error");
+    }
+  );
 }
 
 /* =========================
@@ -156,6 +153,21 @@ function getLogs() {
     })
     .withFailureHandler(console.error)
     .findTimeLogs(workspace_id, { email });
+}
+
+function validate(workspace_id, payload, callback, errCallback) {
+
+  google.script.run
+    .withSuccessHandler(res => {
+
+      if (callback) callback(res);
+    })
+    .withFailureHandler(err => {
+      console.error("VALIDATION ERROR", err);
+
+      if (errCallback) errCallback(err);
+    })
+    .recordTimeLogAction(workspace_id, payload);
 }
 
 /* =========================

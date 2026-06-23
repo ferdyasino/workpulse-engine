@@ -201,6 +201,7 @@ function loginResolver(workspaceSlug, email) {
     user_id: workspaceUser.user_id,
     email: workspaceUser.email,
     fullname: workspaceUser.fullname,
+    shift_id: workspaceUser.shift_id,
 
     role,
     status,
