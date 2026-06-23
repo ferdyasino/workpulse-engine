@@ -1,0 +1,60 @@
+<script>
+    window.renderGlobalState = function(state) {
+
+  const statusText = document.getElementById("globalStatusText");
+  const dot = document.getElementById("statusDot");
+
+  if (statusText) {
+    statusText.textContent = state.status || "NOT STARTED";
+  }
+
+  if (dot) {
+    dot.className = "status-dot";
+
+    switch (state.status) {
+      case "WORKING":
+        dot.classList.add("bg-success");
+        break;
+
+      case "ON BREAK":
+        dot.classList.add("bg-warning");
+        break;
+
+      case "AT LUNCH":
+        dot.classList.add("bg-info");
+        break;
+
+      case "CLOCKED OUT":
+        dot.classList.add("bg-danger");
+        break;
+
+      default:
+        dot.classList.add("bg-secondary");
+    }
+  }
+
+  const breaks = state.breaks || [];
+
+  const b1 = document.getElementById("b1Btn");
+  const b2 = document.getElementById("b2Btn");
+  const b3 = document.getElementById("b3Btn");
+
+  if (b1) {
+    b1.className = breaks[0]?.out
+      ? "btn btn-sm btn-success"
+      : "btn btn-sm btn-outline-warning";
+  }
+
+  if (b2) {
+    b2.className = breaks[1]?.out
+      ? "btn btn-sm btn-success"
+      : "btn btn-sm btn-outline-warning";
+  }
+
+  if (b3) {
+    b3.className = breaks[2]?.out
+      ? "btn btn-sm btn-success"
+      : "btn btn-sm btn-outline-warning";
+  }
+};
+</script>

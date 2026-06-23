@@ -129,7 +129,8 @@ function syncDashboard() {
       renderTimeLogger?.();
       // renderTimeLogs(logs);
       renderBreakActivity(logs);  
-      renderTimeSummary(state);
+      // renderTimeSummary(state);
+      renderGlobalState(state);
 
     })
     .withFailureHandler((err) => {

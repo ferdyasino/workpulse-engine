@@ -152,6 +152,14 @@ function assertCanStartLunch(state) {
     throw new Error("Lunch already in progress.");
   }
 
+  // ❗ NEW RULE: cannot start lunch if a break is active
+  const activeBreak = (state.breaks || []).find(b => b && !b.out);
+
+  if (activeBreak) {
+    const idx = (state.breaks || []).indexOf(activeBreak) + 1;
+    throw new Error(`End Break ${idx} before starting lunch.`);
+  }
+
   return true;
 }
 
