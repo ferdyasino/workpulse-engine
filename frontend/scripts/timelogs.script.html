@@ -148,7 +148,7 @@ function getLogs() {
 
       const state = buildTimeLogState(unique);
 
-      // renderTimeSummary(state);
+      renderTimeSummary(state);
       renderGlobalState(state);
       renderBreakActivity(unique);
 
@@ -240,9 +240,9 @@ function renderTimeSummary(state) {
   const summaryTimeOut = document.getElementById("summaryTimeOut");
   const summaryStatus = document.getElementById("summaryStatus");
 
-  if (summaryStatus) {
-    summaryStatus.textContent = state.status || "NOT_STARTED";
-  }
+  // if (summaryStatus) {
+  //   summaryStatus.textContent = state.status || "NOT_STARTED";
+  // }
 
   if (summaryTimeIn) {
     summaryTimeIn.textContent = state.time_in

@@ -1,17 +1,24 @@
 <script>
-    window.renderGlobalState = function(state) {
-
+window.renderGlobalState = function(state = {}) {
   const statusText = document.getElementById("globalStatusText");
   const dot = document.getElementById("statusDot");
 
+  const currentStatus = String(state.status || "NOT STARTED").toUpperCase();
+
+  // =====================================================
+  // HEADER STATUS TEXT
+  // =====================================================
   if (statusText) {
     statusText.textContent = state.status || "NOT STARTED";
   }
 
+  // =====================================================
+  // STATUS DOT
+  // =====================================================
   if (dot) {
     dot.className = "status-dot";
 
-    switch (state.status) {
+    switch (currentStatus) {
       case "WORKING":
         dot.classList.add("bg-success");
         break;
@@ -30,31 +37,66 @@
 
       default:
         dot.classList.add("bg-secondary");
+        break;
     }
   }
 
-  const breaks = state.breaks || [];
+  // =====================================================
+  // BREAK BUTTONS
+  // Expected break item shape:
+  // {
+  //   in: "...",   // break start timestamp
+  //   out: "..."   // break end timestamp
+  // }
+  //
+  // Rules:
+  // - no in, no out   => AVAILABLE  => yellow outline
+  // - in, no out      => ACTIVE     => green
+  // - in + out        => ENDED      => gray disabled
+  // =====================================================
+  const breaks = Array.isArray(state.breaks) ? state.breaks : [];
 
-  const b1 = document.getElementById("b1Btn");
-  const b2 = document.getElementById("b2Btn");
-  const b3 = document.getElementById("b3Btn");
-
-  if (b1) {
-    b1.className = breaks[0]?.out
-      ? "btn btn-sm btn-success"
-      : "btn btn-sm btn-outline-warning";
-  }
-
-  if (b2) {
-    b2.className = breaks[1]?.out
-      ? "btn btn-sm btn-success"
-      : "btn btn-sm btn-outline-warning";
-  }
-
-  if (b3) {
-    b3.className = breaks[2]?.out
-      ? "btn btn-sm btn-success"
-      : "btn btn-sm btn-outline-warning";
-  }
+  applyBreakButtonState("b1Btn", getBreakButtonState(breaks[0]), "B1");
+  applyBreakButtonState("b2Btn", getBreakButtonState(breaks[1]), "B2");
+  applyBreakButtonState("b3Btn", getBreakButtonState(breaks[2]), "B3");
 };
+
+function getBreakButtonState(breakItem) {
+  if (!breakItem) return "AVAILABLE";
+
+  const hasIn = !!breakItem.in;
+  const hasOut = !!breakItem.out;
+
+  if (hasIn && hasOut) return "ENDED";
+  if (hasIn && !hasOut) return "ACTIVE";
+
+  return "AVAILABLE";
+}
+
+function applyBreakButtonState(buttonId, breakState, label) {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
+
+  // hard reset
+  btn.className = "btn btn-sm";
+  btn.disabled = false;
+  btn.textContent = label;
+  btn.dataset.breakState = breakState;
+
+  switch (breakState) {
+    case "ACTIVE":
+      btn.classList.add("btn-success");
+      break;
+
+    case "ENDED":
+      btn.classList.add("btn-break-ended");
+      btn.disabled = true;
+      break;
+
+    case "AVAILABLE":
+    default:
+      btn.classList.add("btn-outline-warning");
+      break;
+  }
+}
 </script>

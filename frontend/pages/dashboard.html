@@ -68,79 +68,71 @@
 
     </div>
 
-    <!-- =========================
-         RIGHT PANEL
-    ========================== -->
-    <div class="col-lg-8">
+ <!-- =========================
+     RIGHT PANEL
+========================== -->
+<div class="col-lg-8">
 
   <!-- HEADER -->
   <div class="glass glass-card mb-4 p-4">
-
-    <div class="d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
 
       <!-- LEFT: USER INFO -->
-      <div>
-        <div class="d-flex align-items-center gap-2 mb-1">
+      <div class="flex-grow-1">
 
+        <div class="d-flex align-items-center gap-3">
           <div class="avatar-circle">
             <span id="currInitials">GU</span>
           </div>
 
-          <h3 id="currUsername" class="mb-0 fw-bold">
-            GUEST USER
-          </h3>
+          <div>
+            <h3 id="currUsername" class="mb-0 fw-bold">GUEST USER</h3>
 
+            <div class="text-muted-custom small mt-1 d-flex flex-wrap align-items-center gap-2">
+              <span id="currDepartment">-- Department --</span>
+              <span>•</span>
+              <span id="currShiftLabel">--:-- - --:--</span>
+            </div>
+
+            <div class="mt-2 d-flex align-items-center gap-2">
+              <span class="status-dot" id="statusDot"></span>
+              <strong id="globalStatusText">NOT STARTED</strong>
+            </div>
+          </div>
         </div>
 
-        <div class="mt-1 d-flex align-items-center gap-2">
-
-        <span class="status-dot" id="statusDot"></span>
-
-        <strong id="globalStatusText">NOT STARTED</strong>
-
-      </div>
-
-      <div class="mt-2 d-flex gap-2">
-
-        <button id="b1Btn" class="btn btn-sm btn-outline-warning">B1</button>
-        <button id="b2Btn" class="btn btn-sm btn-outline-warning">B2</button>
-        <button id="b3Btn" class="btn btn-sm btn-outline-warning">B3</button>
+        <!-- BREAK BUTTONS -->
+        <div class="mt-3 d-flex gap-2 flex-wrap">
+          <button id="b1Btn" class="btn btn-sm btn-outline-warning">B1</button>
+          <button id="b2Btn" class="btn btn-sm btn-outline-warning">B2</button>
+          <button id="b3Btn" class="btn btn-sm btn-outline-warning">B3</button>
+        </div>
 
       </div>
-      </div>
 
-      <!-- RIGHT: BADGE -->
+      <!-- RIGHT: SESSION BADGE -->
       <div class="text-end">
-        <span class="badge bg-success px-3 py-2">
+        <span class="badge bg-success px-3 py-2" id="sessionBadge">
           Active Session
         </span>
       </div>
 
     </div>
-
   </div>
 
-      <!-- TIMELINE -->
-      <div id="dashboardTimelineHost">
+  <!-- TIMELINE -->
+  <div id="dashboardTimelineHost">
+    <div class="glass glass-card p-3">
 
-        <div class="glass glass-card p-3">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Full Timeline</h5>
+      </div>
 
-          <div class="d-flex justify-content-between align-items-center mb-3">
-
-            <h5 class="mb-0">Full Timeline</h5>
-
-          </div>
-
-          <div id="dashboardTimelogsList">
-            <div class="text-muted-custom">No logs yet</div>
-          </div>
-
-        </div>
-
+      <div id="dashboardTimelogsList">
+        <div class="text-muted-custom">No logs yet</div>
       </div>
 
     </div>
-
   </div>
 
 </div>

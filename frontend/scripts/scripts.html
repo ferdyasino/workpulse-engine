@@ -130,6 +130,7 @@ function syncDashboard() {
       renderTimeLogger?.();
       renderBreakActivity?.(logs);
       renderGlobalState?.(state);
+      renderTimeSummary(state);
     })
     .withFailureHandler((err) => {
       hideLoader?.();
