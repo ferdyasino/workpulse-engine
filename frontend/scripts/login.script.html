@@ -87,10 +87,8 @@ function handleLoginSuccess(result) {
 
   if (isAdmin) {
     UserInit?.();
-    go("admin");
-  } else {
-    go("dashboard");
   }
+  go("dashboard");
 }
 
 
