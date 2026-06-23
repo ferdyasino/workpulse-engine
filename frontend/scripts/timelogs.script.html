@@ -77,7 +77,7 @@ function logTime(action) {
   const userId = localStorage.getItem("user_id");
 
   if (!email || !workspace_id || !userId) {
-    showToast?.("Session expired. Please login again.", "error");
+    showToast?.(err?.message,"Session expired. Please login again.", "error");
     return;
   }
 
@@ -93,6 +93,7 @@ function logTime(action) {
 
   validate(workspace_id, payload,
     (result) => {
+
       console.log("VALID OK:", result);
 
       showLoader?.();
@@ -107,7 +108,7 @@ function logTime(action) {
             return;
           }
 
-          showToast?.("Logged successfully", "success");
+          showToast?.(res.message || "Logged successfully", "success");
           getLogs();
         })
         .withFailureHandler((err) => {
@@ -118,7 +119,7 @@ function logTime(action) {
 
     },
     (err) => {
-      showToast?.(err.message, "error");
+      showToast?.(err?.message || "Validation failed", "error");
     }
   );
 }
@@ -160,12 +161,26 @@ function validate(workspace_id, payload, callback, errCallback) {
   google.script.run
     .withSuccessHandler(res => {
 
-      if (callback) callback(res);
+      if (!res) {
+        errCallback?.({ message: "Empty response from server" });
+        return;
+      }
+
+      if (!res.success) {
+        errCallback?.(res);
+        return;
+      }
+
+      callback?.(res);
     })
     .withFailureHandler(err => {
-      console.error("VALIDATION ERROR", err);
 
-      if (errCallback) errCallback(err);
+      console.error("VALIDATION ERROR:", err);
+
+      errCallback?.({
+        message: err?.message || "Server error"
+      });
+
     })
     .recordTimeLogAction(workspace_id, payload);
 }

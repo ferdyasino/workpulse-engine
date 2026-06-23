@@ -3,17 +3,30 @@
 ========================= */
 function recordTimeLogAction(workspace_id, payload) {
 
-  if (!workspace_id) throw new Error("workspace_id is required");
-  if (!payload) throw new Error("payload is required");
+  try {
 
-  validateTimeLogAction(workspace_id, payload);
+    if (!workspace_id) {
+      return { success: false, message: "workspace_id is required" };
+    }
 
-  return {
-    success: true,
-    message: "Validation passed"
-  };
+    if (!payload) {
+      return { success: false, message: "payload is required" };
+    }
+
+    validateTimeLogAction(workspace_id, payload);
+
+    return {
+      success: true,
+      message: `${payload.action} validated for shift ${payload.shift_id}`
+    };
+
+  } catch (err) {
+    return {
+      success: false,
+      message: err.message || "Validation failed"
+    };
+  }
 }
-
 
 /* =========================
    VALID ACTIONS
