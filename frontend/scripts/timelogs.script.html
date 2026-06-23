@@ -72,11 +72,12 @@ function logTime(action) {
   const workspace_id =
     localStorage.getItem("workspace_id") ||
     document.getElementById("sid")?.value;
+  const shiftId = localStorage.getItem("shift_id");
 
   const userId = localStorage.getItem("user_id");
 
   if (!email || !workspace_id || !userId) {
-    showToast?.("Session expired. Please login again.", "error");
+    showToast?.(err?.message,"Session expired. Please login again.", "error");
     return;
   }
 
@@ -84,46 +85,43 @@ function logTime(action) {
     user_id: userId,
     email,
     action,
-    shift_id: "SHIFT-4",
+    shift_id: shiftId,
     device_info: navigator.userAgent,
     location: "home",
     timestamp: new Date().toISOString()
   };
 
-  showLoader?.();
+  validate(workspace_id, payload,
+    (result) => {
 
-  google.script.run
-    .withSuccessHandler((res) => {
+      console.log("VALID OK:", result);
 
-      hideLoader?.();
+      showLoader?.();
 
-      // =========================
-      // STRICT RESPONSE VALIDATION
-      // =========================
-      if (!res || typeof res !== "object") {
-        showToast?.("Invalid server response", "error");
-        return;
-      }
+      google.script.run
+        .withSuccessHandler((res) => {
 
-      if (res.success !== true) {
-        showToast?.(res.message || "Action failed", "error");
-        return;
-      }
+          hideLoader?.();
 
-      // =========================
-      // ONLY TRUE SUCCESS
-      // =========================
-      showToast?.(res.message || "Logged successfully", "success");
+          if (!res?.success) {
+            showToast?.(res.message || "Action failed", "error");
+            return;
+          }
 
-      // background sync
-      getLogs();
-    })
-    .withFailureHandler((err) => {
+          showToast?.(res.message || "Logged successfully", "success");
+          getLogs();
+        })
+        .withFailureHandler((err) => {
+          hideLoader?.();
+          showToast?.(err?.message || "Server error", "error");
+        })
+        .insertTimeLog(workspace_id, payload);
 
-      hideLoader?.();
-      showToast?.(err?.message || "Server error", "error");
-    })
-    .insertTimeLog(workspace_id, payload);
+    },
+    (err) => {
+      showToast?.(err?.message || "Validation failed", "error");
+    }
+  );
 }
 
 /* =========================
@@ -150,12 +148,42 @@ function getLogs() {
 
       const state = buildTimeLogState(unique);
 
-      renderTimeSummary(state);
+      // renderTimeSummary(state);
+      renderGlobalState(state);
       renderBreakActivity(unique);
 
     })
     .withFailureHandler(console.error)
     .findTimeLogs(workspace_id, { email });
+}
+
+function validate(workspace_id, payload, callback, errCallback) {
+
+  google.script.run
+    .withSuccessHandler(res => {
+
+      if (!res) {
+        errCallback?.({ message: "Empty response from server" });
+        return;
+      }
+
+      if (!res.success) {
+        errCallback?.(res);
+        return;
+      }
+
+      callback?.(res);
+    })
+    .withFailureHandler(err => {
+
+      console.error("VALIDATION ERROR:", err);
+
+      errCallback?.({
+        message: err?.message || "Server error"
+      });
+
+    })
+    .recordTimeLogAction(workspace_id, payload);
 }
 
 /* =========================

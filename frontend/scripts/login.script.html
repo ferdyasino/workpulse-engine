@@ -1,5 +1,9 @@
 <script>
 
+// =====================================================
+// LOGIN HANDLER
+// =====================================================
+
 document.getElementById("loginForm")?.addEventListener("submit", (e) => {
   e.preventDefault();
 
@@ -8,19 +12,14 @@ document.getElementById("loginForm")?.addEventListener("submit", (e) => {
     : {};
 
   const workspaceSlug = data.workspaceSlug || "";
+
   const email =
     document.getElementById("email")?.value ||
     data.email ||
     "";
 
   const sid =
-    document.getElementById("sid")?.value ||
-    "";
-
-  console.log("SERVER_DATA:", data);
-  console.log("workspaceSlug:", workspaceSlug);
-  console.log("email:", email);
-  console.log("sid:", sid);
+    document.getElementById("sid")?.value || "";
 
   if (!email) {
     showToast?.("Email is required", "warning");
@@ -28,16 +27,13 @@ document.getElementById("loginForm")?.addEventListener("submit", (e) => {
   }
 
   showLoader?.();
-  showToast?.("Logging in...", "info");
 
   google.script.run
     .withSuccessHandler(handleLoginSuccess)
     .withFailureHandler(handleLoginError)
-    .loginResolver(
-      workspaceSlug, // can be blank
-      email
-    );
+    .loginResolver(workspaceSlug, email);
 });
+
 
 // =====================================================
 // LOGIN SUCCESS
@@ -54,22 +50,24 @@ function handleLoginSuccess(result) {
 
   const user = setCurrentUser(result);
 
-  console.log("CURRENT USER:", user);
+  console.log("LOGIN USER:", user);
 
-  showToast?.("Login successful", "success");
   renderUserHeader();
   applyRoleUI?.();
 
-  if (APP.role === "admin" || APP.role === "owner") {
-    showToast?.("Welcome Admin Panel", "info");
-    UserInit();
+  // IMPORTANT: set initial route ONCE
+  const isAdmin = APP.role === "admin" || APP.role === "owner";
+
+  if (isAdmin) {
+    showToast?.("Welcome Admin Panel", "success");
+    UserInit?.();
+    go("admin");
   } else {
     showToast?.("Welcome Dashboard", "success");
+    go("dashboard");
   }
-
-  
-  go("dashboard");
 }
+
 
 // =====================================================
 // LOGIN ERROR
@@ -89,6 +87,7 @@ function handleLoginError(err) {
   go("login");
 }
 
+
 // =====================================================
 // LOGOUT
 // =====================================================
@@ -106,8 +105,9 @@ function logout() {
   go("login");
 }
 
+
 // =====================================================
-// SESSION RESTORE
+// SESSION RESTORE (FIXED)
 // =====================================================
 
 function restoreSession() {
@@ -115,37 +115,44 @@ function restoreSession() {
   const email = localStorage.getItem("email");
 
   if (!email) {
-    showToast?.("Please login to continue", "info");
     go("login");
     return;
   }
 
   const user = getCurrentUser();
 
-  console.log("CURRENT USER:", user);
+  APP.user = user;
+  APP.role = (user.role || "guest").toLowerCase();
 
-  showToast?.("Login successful", "success");
   renderUserHeader();
   applyRoleUI?.();
 
-  APP.user = {
-    email,
-    name: user.fullname
-  };
+  const isAdmin = APP.role === "admin" || APP.role === "owner";
 
-  APP.role = (
-    localStorage.getItem("role") || "guest"
-  ).toLowerCase();
+  // ==============================
+  // PRIORITY 1: last visited page
+  // ==============================
+  const lastPage = localStorage.getItem("last_page");
 
-  if (APP.role === "admin" || APP.role === "owner") {
-    showToast?.("Welcome Admin Panel", "info");
-    UserInit();
+  const validAdminPages = ["admin", "dashboard"];
+  const validUserPages = ["dashboard"];
+
+  let targetPage = "dashboard";
+
+  if (isAdmin) {
+    UserInit?.();
+    targetPage = validAdminPages.includes(lastPage)
+      ? lastPage
+      : "admin"; // fallback for admin
+  } else {
+    targetPage = validUserPages.includes(lastPage)
+      ? lastPage
+      : "dashboard";
   }
 
-  showToast?.("Welcome back", "success");
-
-  go("admin");
+  go(targetPage);
 }
+
 
 // =====================================================
 // USER STATE
@@ -160,9 +167,7 @@ function setCurrentUser(result) {
     email: result.email || "",
     name: result.fullname || result.name || "",
     role: (result.role || "guest").toLowerCase(),
-    // workspace_id: result.workspace_id || "",
-    // timelog_spreadsheet_id:
-    //   result.timelog_spreadsheet_id || ""
+    shift_id: result.shift_id || ""
   };
 
   APP.user = user;
@@ -172,14 +177,16 @@ function setCurrentUser(result) {
   localStorage.setItem("email", user.email);
   localStorage.setItem("name", user.name);
   localStorage.setItem("role", user.role);
-  localStorage.setItem("workspace_id", result.workspace_id);
-  // localStorage.setItem(
-  //   "timelog_spreadsheet_id",
-  //   user.timelog_spreadsheet_id
-  // );
+  localStorage.setItem("workspace_id", result.workspace_id || "");
+  localStorage.setItem("shift_id", user.shift_id);
 
   return user;
 }
+
+
+// =====================================================
+// GET USER
+// =====================================================
 
 function getCurrentUser() {
 
@@ -188,12 +195,10 @@ function getCurrentUser() {
     email: localStorage.getItem("email") || "",
     name: localStorage.getItem("name") || "",
     role: localStorage.getItem("role") || "guest",
-    // workspace_id:
-    //   localStorage.getItem("workspace_id") || "",
-    // timelog_spreadsheet_id:
-    //   localStorage.getItem("timelog_spreadsheet_id") || ""
+    shift_id: localStorage.getItem("shift_id") || ""
   };
 }
+
 
 // =====================================================
 // HEADER
@@ -203,35 +208,25 @@ function renderUserHeader() {
 
   const user = getCurrentUser();
 
-  const name = user.name || APP.name || localStorage.getItem("name");
+  const name = user.name || "User";
 
-  const usernameEl =
-    document.getElementById("currUsername");
-
-  if (usernameEl) {
-    usernameEl.textContent = name;
-  }
+  const usernameEl = document.getElementById("currUsername");
+  if (usernameEl) usernameEl.textContent = name;
 
   const initials = name
     .split(" ")
-    .map(n => n[0])
+    .map(n => n?.[0] || "")
     .join("")
     .substring(0, 2)
     .toUpperCase();
 
-  const initialsEl =
-    document.getElementById("currInitials");
+  const initialsEl = document.getElementById("currInitials");
+  if (initialsEl) initialsEl.textContent = initials;
 
-  if (initialsEl) {
-    initialsEl.textContent = initials;
-  }
-
-  const statusEl =
-    document.getElementById("currWorkStatus");
-
+  // IMPORTANT: do NOT hardcode fake status here
+  const statusEl = document.getElementById("currWorkStatus");
   if (statusEl) {
-    statusEl.textContent =
-      APP.workStatus || "Not Started";
+    statusEl.textContent = APP.workStatus || "NOT STARTED";
   }
 }
 

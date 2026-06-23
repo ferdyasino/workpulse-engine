@@ -3,17 +3,30 @@
 ========================= */
 function recordTimeLogAction(workspace_id, payload) {
 
-  if (!workspace_id) throw new Error("workspace_id is required");
-  if (!payload) throw new Error("payload is required");
+  try {
 
-  validateTimeLogAction(workspace_id, payload);
+    if (!workspace_id) {
+      return { success: false, message: "workspace_id is required" };
+    }
 
-  return {
-    success: true,
-    message: "Validation passed"
-  };
+    if (!payload) {
+      return { success: false, message: "payload is required" };
+    }
+
+    validateTimeLogAction(workspace_id, payload);
+
+    return {
+      success: true,
+      message: `${payload.action} validated for shift ${payload.shift_id}`
+    };
+
+  } catch (err) {
+    return {
+      success: false,
+      message: err.message || "Validation failed"
+    };
+  }
 }
-
 
 /* =========================
    VALID ACTIONS
@@ -51,7 +64,7 @@ function validateTimeLogAction(workspace_id, payload) {
     throw new Error(`Invalid action: ${action}`);
   }
 
-  // IMPORTANT: state is session-based (not global history)
+  // SHIFT-BASED STATE (not session-based)
   const state = getCurrentState(workspace_id, email, payload.shift_id);
 
   switch (action) {
@@ -97,9 +110,8 @@ function validateTimeLogAction(workspace_id, payload) {
 ========================= */
 function assertCanTimeIn(state) {
 
-  // only block if already timed in for THIS session
   if (state.time_in) {
-    throw new Error("You already timed in for this session.");
+    throw new Error("You already timed in for this shift.");
   }
 
   return true;
@@ -116,7 +128,7 @@ function assertCanTimeOut(state) {
   }
 
   if (state.time_out) {
-    throw new Error("You are already timed out.");
+    throw new Error("You already timed out for this shift.");
   }
 
   return true;
@@ -140,6 +152,14 @@ function assertCanStartLunch(state) {
     throw new Error("Lunch already in progress.");
   }
 
+  // ❗ NEW RULE: cannot start lunch if a break is active
+  const activeBreak = (state.breaks || []).find(b => b && !b.out);
+
+  if (activeBreak) {
+    const idx = (state.breaks || []).indexOf(activeBreak) + 1;
+    throw new Error(`End Break ${idx} before starting lunch.`);
+  }
+
   return true;
 }
 
@@ -147,11 +167,11 @@ function assertCanStartLunch(state) {
 function assertCanEndLunch(state) {
 
   if (!state.lunch?.in) {
-    throw new Error("Cannot end lunch because lunch was not started.");
+    throw new Error("Cannot end lunch because it was not started.");
   }
 
   if (state.lunch?.out) {
-    throw new Error("Lunch has already been ended.");
+    throw new Error("Lunch already completed for this shift.");
   }
 
   return true;
@@ -166,7 +186,6 @@ function extractBreakNumber(action) {
   return match ? Number(match[1]) : null;
 }
 
-
 function getBreakStateMap(state) {
   const breaks = Array.isArray(state.breaks) ? state.breaks : [];
 
@@ -177,10 +196,15 @@ function getBreakStateMap(state) {
   };
 }
 
+function getActiveBreak(state) {
+  return (state.breaks || []).find(b => b && !b.out) || null;
+}
+
 
 /* =========================
-   BREAK RULES (REQUIRED MISSING PART)
+   BREAK RULES (STRICT ORDER + SAFE STATE)
 ========================= */
+
 function assertCanStartBreak(state, action) {
 
   if (!state.time_in) {
@@ -188,7 +212,35 @@ function assertCanStartBreak(state, action) {
   }
 
   if (state.time_out) {
-    throw new Error("Cannot start break after time out.");
+    throw new Error("Cannot start a break after time out.");
+  }
+
+  const breakNumber = extractBreakNumber(action);
+  const map = getBreakStateMap(state);
+
+  const activeBreak = getActiveBreak(state);
+
+  if (activeBreak) {
+    const idx = (state.breaks || []).indexOf(activeBreak) + 1;
+    throw new Error(`Finish Break ${idx} before starting a new break.`);
+  }
+
+  if (breakNumber === 1) {
+    if (map[1]) throw new Error("Break 1 already completed for this shift.");
+  }
+
+  if (breakNumber === 2) {
+    if (!map[1]?.out) {
+      throw new Error("You must complete Break 1 before starting Break 2.");
+    }
+    if (map[2]) throw new Error("Break 2 already completed for this shift.");
+  }
+
+  if (breakNumber === 3) {
+    if (!map[2]?.out) {
+      throw new Error("You must complete Break 2 before starting Break 3.");
+    }
+    if (map[3]) throw new Error("Break 3 already completed for this shift.");
   }
 
   return true;
@@ -197,11 +249,18 @@ function assertCanStartBreak(state, action) {
 
 function assertCanEndBreak(state, action) {
 
-  const breaks = state.breaks || [];
-  const lastBreak = breaks.findLast(b => !b.out);
+  const breakNumber = extractBreakNumber(action);
 
-  if (!lastBreak) {
+  const activeBreak = getActiveBreak(state);
+
+  if (!activeBreak) {
     throw new Error("No active break to end.");
+  }
+
+  const activeIndex = (state.breaks || []).indexOf(activeBreak) + 1;
+
+  if (activeIndex !== breakNumber) {
+    throw new Error(`You must end Break ${activeIndex} first.`);
   }
 
   return true;

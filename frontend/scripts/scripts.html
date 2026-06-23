@@ -129,7 +129,8 @@ function syncDashboard() {
       renderTimeLogger?.();
       // renderTimeLogs(logs);
       renderBreakActivity(logs);  
-      renderTimeSummary(state);
+      // renderTimeSummary(state);
+      renderGlobalState(state);
 
     })
     .withFailureHandler((err) => {
@@ -146,6 +147,7 @@ function syncDashboard() {
 function go(page) {
 
   APP.currentPage = page;
+  localStorage.setItem("last_page", page);
 
   const targetId = ROUTES[page] || ROUTES.home;
 
@@ -182,25 +184,19 @@ function hideAllPages() {
 // =====================================================
 
 function applyUIState(page) {
-
   const topbar = document.getElementById("appTopbar");
   const clock = document.getElementById("adminClockContainer");
-  const switchBtn = document.getElementById("roleSwitchBtn");
 
   if (page === "login") {
     topbar?.classList.add("d-none");
     return;
   }
 
+  // ALWAYS SHOW TOPBAR (admin + user)
   topbar?.classList.remove("d-none");
 
-  clock?.classList.add("d-none");
-  switchBtn?.classList.add("d-none");
-
-  if (page === "admin") {
-    clock?.classList.remove("d-none");
-  }
-
+  // ALWAYS SHOW CLOCK (your requirement)
+  clock?.classList.remove("d-none");
   if (page === "dashboard") {
 
     renderTimeLogger?.();
@@ -215,12 +211,13 @@ function applyUIState(page) {
 
 function applyRoleUI() {
 
-  const switchBtn = document.getElementById("roleSwitchBtn");
-  if (!switchBtn) return;
-
   const isAdmin = APP.role === "admin" || APP.role === "owner";
 
-  switchBtn.classList.toggle("d-none", !isAdmin);
+  const adminMenu = document.getElementById("adminMenuItem");
+
+  if (adminMenu) {
+    adminMenu.classList.toggle("d-none", !isAdmin);
+  }
 }
 
 // =====================================================

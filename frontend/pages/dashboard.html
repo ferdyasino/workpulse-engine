@@ -36,11 +36,6 @@
           <div id="dashboardSummaryList">
 
             <div class="d-flex justify-content-between py-1">
-              <span>Status</span>
-              <strong id="summaryStatus">--</strong>
-            </div>
-
-            <div class="d-flex justify-content-between py-1">
               <span>Time In</span>
               <strong id="summaryTimeIn">--</strong>
             </div>
@@ -97,10 +92,21 @@
 
         </div>
 
-        <div class="text-muted-custom">
-          <i class="bi bi-circle-fill me-1 small"></i>
-          <span id="currWorkStatus">Not Started</span>
-        </div>
+        <div class="mt-1 d-flex align-items-center gap-2">
+
+        <span class="status-dot" id="statusDot"></span>
+
+        <strong id="globalStatusText">NOT STARTED</strong>
+
+      </div>
+
+      <div class="mt-2 d-flex gap-2">
+
+        <button id="b1Btn" class="btn btn-sm btn-outline-warning">B1</button>
+        <button id="b2Btn" class="btn btn-sm btn-outline-warning">B2</button>
+        <button id="b3Btn" class="btn btn-sm btn-outline-warning">B3</button>
+
+      </div>
       </div>
 
       <!-- RIGHT: BADGE -->
