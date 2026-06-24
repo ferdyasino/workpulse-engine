@@ -58,12 +58,10 @@
 
         const lower = raw.toLowerCase();
 
-        // forced acronym uppercase
         if (DISPLAY_ACRONYMS.has(lower)) {
           return raw.toUpperCase();
         }
 
-        // handles slash-based tokens like ui/ux
         if (raw.includes("/")) {
           return raw
             .split("/")
@@ -79,7 +77,6 @@
             .join("/");
         }
 
-        // default title case
         return lower.charAt(0).toUpperCase() + lower.slice(1);
       })
       .join(" ");
@@ -87,7 +84,6 @@
 
   // =====================================================
   // DISPLAY NORMALIZER
-  // Frontend only
   // =====================================================
 
   const DISPLAY = {
@@ -170,13 +166,11 @@
 
     const str = String(value).trim();
 
-    // If plain shift time like "6:00" or "14:30"
     if (/^\d{1,2}:\d{2}$/.test(str)) {
       return window.formatShift(str);
     }
 
     const d = new Date(value);
-
     if (isNaN(d.getTime())) return "--";
 
     return d.toLocaleTimeString([], {
@@ -187,9 +181,6 @@
 
   // =====================================================
   // OPTIONAL SHIFT LABEL HELPER
-  // Example:
-  // { shift_name:"MORNING", start_time:"6:00", end_time:"14:00" }
-  // => "Morning (6:00 AM - 2:00 PM)"
   // =====================================================
 
   window.formatShiftLabel = function(shift = {}) {
@@ -200,6 +191,268 @@
     const end = window.formatShift(shift.end_time);
 
     return `${name} (${start} - ${end})`;
+  };
+
+  // =====================================================
+  // SHIFT / ATTENDANCE TIME HELPERS
+  // PURE DISPLAY + EVALUATION HELPERS ONLY
+  // =====================================================
+
+  window.parseShiftTimeToDate = function(value, baseDate = new Date()) {
+    if (!value) return null;
+
+    const raw = String(value).trim();
+
+    const base = new Date(
+      baseDate.getFullYear(),
+      baseDate.getMonth(),
+      baseDate.getDate(),
+      0, 0, 0, 0
+    );
+
+    // supports 24h HH:mm
+    let match = raw.match(/^(\d{1,2}):(\d{2})$/);
+    if (match) {
+      const hh = Number(match[1]);
+      const mm = Number(match[2]);
+
+      if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+
+      base.setHours(hh, mm, 0, 0);
+      return base;
+    }
+
+    // supports 12h h:mm AM/PM
+    match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (match) {
+      let hh = Number(match[1]);
+      const mm = Number(match[2]);
+      const suffix = match[3].toUpperCase();
+
+      if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+
+      if (suffix === "PM" && hh !== 12) hh += 12;
+      if (suffix === "AM" && hh === 12) hh = 0;
+
+      base.setHours(hh, mm, 0, 0);
+      return base;
+    }
+
+    return null;
+  };
+
+  window.addMinutes = function(date, minutes = 0) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return null;
+    return new Date(date.getTime() + Number(minutes || 0) * 60000);
+  };
+
+  window.diffMinutes = function(later, earlier) {
+    const d1 = later instanceof Date ? later : new Date(later);
+    const d2 = earlier instanceof Date ? earlier : new Date(earlier);
+
+    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0;
+    return Math.floor((d1.getTime() - d2.getTime()) / 60000);
+  };
+
+  window.formatMinutesDuration = function(minutes = 0) {
+    const total = Math.abs(Number(minutes || 0));
+    const hrs = Math.floor(total / 60);
+    const mins = total % 60;
+
+    if (hrs > 0) return `${hrs}h ${mins}m`;
+    return `${mins}m`;
+  };
+
+  // =====================================================
+  // SHIFT WINDOW NORMALIZER
+  // Accepts:
+  // {
+  //   shift_name,
+  //   start_time,
+  //   end_time,
+  //   grace_minutes | grace
+  // }
+  // =====================================================
+
+  window.normalizeShift = function(shift = {}) {
+    if (!shift || typeof shift !== "object") {
+      return {
+        shift_name: "",
+        start_time: "",
+        end_time: "",
+        grace_minutes: 0
+      };
+    }
+
+    return {
+      shift_name: shift.shift_name || "",
+      start_time: shift.start_time || "",
+      end_time: shift.end_time || "",
+      grace_minutes: Number(
+        shift.grace_minutes ??
+        shift.grace ??
+        0
+      )
+    };
+  };
+
+  // =====================================================
+  // SHIFT ATTENDANCE EVALUATOR
+  // PURE EVALUATION ONLY
+  // DOES NOT TOUCH APP / DOM
+  // =====================================================
+
+  window.evaluateShiftAttendance = function({
+    shift = {},
+    time_in = null,
+    time_out = null
+  } = {}) {
+    const normalizedShift = window.normalizeShift(shift);
+
+    const scheduledStart = window.parseShiftTimeToDate(normalizedShift.start_time);
+    const scheduledEnd = window.parseShiftTimeToDate(normalizedShift.end_time);
+    const graceEnd = scheduledStart
+      ? window.addMinutes(scheduledStart, normalizedShift.grace_minutes)
+      : null;
+
+    const actualTimeIn = time_in ? new Date(time_in) : null;
+    const actualTimeOut = time_out ? new Date(time_out) : null;
+
+    const validTimeIn =
+      actualTimeIn instanceof Date && !isNaN(actualTimeIn.getTime())
+        ? actualTimeIn
+        : null;
+
+    const validTimeOut =
+      actualTimeOut instanceof Date && !isNaN(actualTimeOut.getTime())
+        ? actualTimeOut
+        : null;
+
+    let timeInStatus = {
+      code: "NOT_TIMED_IN",
+      label: "Not Timed In",
+      minutes_late: 0,
+      minutes_early: 0
+    };
+
+    if (validTimeIn && scheduledStart) {
+      if (validTimeIn <= scheduledStart) {
+        timeInStatus = {
+          code: "ON_TIME",
+          label: "On Time",
+          minutes_late: 0,
+          minutes_early: Math.max(0, window.diffMinutes(scheduledStart, validTimeIn))
+        };
+      } else if (graceEnd && validTimeIn <= graceEnd) {
+        timeInStatus = {
+          code: "WITHIN_GRACE",
+          label: "Within Grace Period",
+          minutes_late: Math.max(0, window.diffMinutes(validTimeIn, scheduledStart)),
+          minutes_early: 0
+        };
+      } else {
+        timeInStatus = {
+          code: "LATE",
+          label: "Late",
+          minutes_late: Math.max(0, window.diffMinutes(validTimeIn, scheduledStart)),
+          minutes_early: 0
+        };
+      }
+    }
+
+    let timeOutStatus = {
+      code: "NOT_TIMED_OUT",
+      label: "Not Timed Out",
+      minutes_early_out: 0,
+      overtime_minutes: 0
+    };
+
+    if (validTimeOut && scheduledEnd) {
+      const minutesDiff = window.diffMinutes(validTimeOut, scheduledEnd);
+
+      if (minutesDiff < 0) {
+        timeOutStatus = {
+          code: "EARLY_OUT",
+          label: "Early Out",
+          minutes_early_out: Math.abs(minutesDiff),
+          overtime_minutes: 0
+        };
+      } else if (minutesDiff === 0) {
+        timeOutStatus = {
+          code: "ON_SCHEDULE",
+          label: "On Schedule",
+          minutes_early_out: 0,
+          overtime_minutes: 0
+        };
+      } else {
+        timeOutStatus = {
+          code: "OVERTIME",
+          label: "Overtime",
+          minutes_early_out: 0,
+          overtime_minutes: minutesDiff
+        };
+      }
+    }
+
+    return {
+      shift: normalizedShift,
+      scheduled_start: scheduledStart,
+      scheduled_end: scheduledEnd,
+      grace_end: graceEnd,
+      actual_time_in: validTimeIn,
+      actual_time_out: validTimeOut,
+      time_in_status: timeInStatus,
+      time_out_status: timeOutStatus
+    };
+  };
+
+  // =====================================================
+  // ATTENDANCE DISPLAY TEXT HELPERS
+  // PURE PRESENTATION TEXT ONLY
+  // =====================================================
+
+  window.getTimeInDisplayText = function(evaluation = {}) {
+    const status = evaluation.time_in_status || {};
+    const actual = evaluation.actual_time_in;
+
+    if (!actual) return "No time-in yet";
+
+    switch (status.code) {
+      case "ON_TIME":
+        return status.minutes_early > 0
+          ? `On Time (${window.formatMinutesDuration(status.minutes_early)} early)`
+          : "On Time";
+
+      case "WITHIN_GRACE":
+        return `Within Grace Period (${window.formatMinutesDuration(status.minutes_late)} late)`;
+
+      case "LATE":
+        return `Late (${window.formatMinutesDuration(status.minutes_late)})`;
+
+      default:
+        return status.label || "No time-in yet";
+    }
+  };
+
+  window.getTimeOutDisplayText = function(evaluation = {}) {
+    const status = evaluation.time_out_status || {};
+    const actual = evaluation.actual_time_out;
+
+    if (!actual) return "No time-out yet";
+
+    switch (status.code) {
+      case "EARLY_OUT":
+        return `Early Out (${window.formatMinutesDuration(status.minutes_early_out)} early)`;
+
+      case "ON_SCHEDULE":
+        return "On Schedule";
+
+      case "OVERTIME":
+        return `Overtime (+${window.formatMinutesDuration(status.overtime_minutes)})`;
+
+      default:
+        return status.label || "No time-out yet";
+    }
   };
 
   // =====================================================
