@@ -1,6 +1,6 @@
 <script>
 // =====================================================
-// SERVER DATA HELPER
+// SERVER DATA HELPERS
 // =====================================================
 
 function getServerData() {
@@ -14,29 +14,34 @@ function getServerData() {
   }
 }
 
-function embedServerData() {
+function parseServerData() {
   const data = getServerData();
 
-  const emailInput = document.getElementById("email");
+  const workspaceSlug = data.workspaceSlug || data.w || "";
+  const email = data.email || "";
 
-  // Save workspace slug if available
-  if (data.workspaceSlug) {
-    localStorage.setItem("workspaceSlug", data.workspaceSlug);
+  APP.workspaceSlug = workspaceSlug;
+  APP.serverEmail = email;
+
+  if (workspaceSlug) {
+    localStorage.setItem(STORAGE_KEYS.WORKSPACE_SLUG, workspaceSlug);
   }
 
-  // Prefill email if available
-  if (emailInput && data.email) {
-    emailInput.value = data.email;
+  const emailInput = document.getElementById("email");
+  if (emailInput && email) {
+    emailInput.value = email;
   }
 
   return data;
 }
 
+function embedServerData() {
+  return parseServerData();
+}
 
 // =====================================================
 // LOGIN HANDLER
 // =====================================================
-
 
 document.getElementById("loginForm")?.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -48,7 +53,7 @@ document.getElementById("loginForm")?.addEventListener("submit", (e) => {
 
   const workspaceSlug =
     APP.workspaceSlug ||
-    localStorage.getItem("workspace_slug") ||
+    localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) ||
     "";
 
   if (!email) {
@@ -69,6 +74,7 @@ document.getElementById("loginForm")?.addEventListener("submit", (e) => {
 // =====================================================
 
 function handleLoginSuccess(result) {
+  console.log("res",result.sched.start_time);
   hideLoader?.();
 
   if (!result) {
@@ -76,21 +82,24 @@ function handleLoginSuccess(result) {
     return;
   }
 
-  const user = setCurrentUser(result);
+  // clear previous user session completely before applying new user
+  resetAppSessionState();
+  clearDashboardUI?.();
+
+  setCurrentUser(result);
+
+  APP.workStatus = "NOT STARTED";
 
   renderUserHeader();
   applyRoleUI?.();
 
-  const isAdmin =
-    APP.role === "admin" ||
-    APP.role === "owner";
-
+  const isAdmin = APP.role === "admin" || APP.role === "owner";
   if (isAdmin) {
     UserInit?.();
   }
+
   go("dashboard");
 }
-
 
 // =====================================================
 // LOGIN ERROR
@@ -109,73 +118,67 @@ function handleLoginError(err) {
   go("login");
 }
 
-
 // =====================================================
 // LOGOUT
 // =====================================================
 
 function logout() {
-  // keep workspaceSlug if you want the login page to still know which workspace it belongs to
-  const workspaceSlug = localStorage.getItem("workspaceSlug") || "";
+  const workspaceSlug =
+    localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) ||
+    APP.workspaceSlug ||
+    "";
 
   localStorage.clear();
 
   if (workspaceSlug) {
-    localStorage.setItem("workspaceSlug", workspaceSlug);
+    localStorage.setItem(STORAGE_KEYS.WORKSPACE_SLUG, workspaceSlug);
   }
 
-  APP.user = null;
-  APP.role = "guest";
-  APP.currentPage = "login";
+  resetAppSessionState();
+  APP.workspaceSlug = workspaceSlug;
+
+  resetUIAfterLogout();
 
   showToast?.("Logged out successfully", "info");
   go("login");
 }
 
+// =====================================================
+// SESSION RESET
+// =====================================================
+
+function resetAppSessionState() {
+  APP.user = null;
+  APP.role = "guest";
+  APP.currentPage = "login";
+
+  APP.serverEmail = "";
+  APP.workStatus = "NOT STARTED";
+  APP.timeLogs = [];
+  APP.dashboardData = null;
+  APP.attendanceState = null;
+  APP.selectedUser = null;
+}
 
 // =====================================================
-// SESSION RESTORE
+// UI RESET
 // =====================================================
 
-// function restoreSession() {
-//   const email = localStorage.getItem("email");
-//   const role = (localStorage.getItem("role") || "guest").toLowerCase();
-//   const workspaceId = localStorage.getItem("workspace_id");
+function resetUIAfterLogout() {
+  const emailInput = document.getElementById("email");
+  if (emailInput) emailInput.value = "";
 
-//   // no valid session
-//   if (!email || !workspaceId) {
-//     APP.user = null;
-//     APP.role = "guest";
-//     go("login");
-//     return;
-//   }
+  const usernameEl = document.getElementById("currUsername");
+  if (usernameEl) usernameEl.textContent = "User";
 
-//   const user = getCurrentUser();
+  const initialsEl = document.getElementById("currInitials");
+  if (initialsEl) initialsEl.textContent = "--";
 
-//   APP.user = user;
-//   APP.role = role;
+  const statusEl = document.getElementById("currWorkStatus");
+  if (statusEl) statusEl.textContent = "NOT STARTED";
 
-//   renderUserHeader();
-//   applyRoleUI?.();
-
-//   const isAdmin = role === "admin" || role === "owner";
-//   const lastPage = localStorage.getItem("last_page");
-
-//   let targetPage = "dashboard";
-
-//   if (isAdmin) {
-//     UserInit?.();
-//     targetPage =
-//       lastPage === "dashboard" || lastPage === "admin"
-//         ? lastPage
-//         : "admin";
-//   } else {
-//     targetPage = "dashboard";
-//   }
-
-//   go(targetPage);
-// }
-
+  clearDashboardUI?.();
+}
 
 // =====================================================
 // USER STATE
@@ -190,38 +193,86 @@ function setCurrentUser(result) {
     name: result.fullname || result.name || "",
     role: (result.role || "guest").toLowerCase(),
     shift_id: result.shift_id || "",
-    workspace_id: result.workspace_id || ""
+    shift_name: result.sched.shift_name || "",
+    workspace_id: result.workspace_id || "",
+    dept_name: result.dept_name || "",
+    start_time: formatShift(result.sched.start_time) || "",
+    end_time: formatShift(result.sched.end_time) || "",
+    grace: result.sched.grace_minutes || ""
   };
 
   APP.user = user;
   APP.role = user.role;
 
-  localStorage.setItem("user_id", user.user_id);
-  localStorage.setItem("email", user.email);
-  localStorage.setItem("name", user.name);
-  localStorage.setItem("role", user.role);
-  localStorage.setItem("workspace_id", user.workspace_id);
-  localStorage.setItem("shift_id", user.shift_id);
+  localStorage.setItem(STORAGE_KEYS.USER_ID, user.user_id);
+  localStorage.setItem(STORAGE_KEYS.EMAIL, user.email);
+  localStorage.setItem(STORAGE_KEYS.NAME, user.name);
+  localStorage.setItem(STORAGE_KEYS.ROLE, user.role);
+  localStorage.setItem(STORAGE_KEYS.WORKSPACE_ID, user.workspace_id);
+  localStorage.setItem(STORAGE_KEYS.SHIFT_ID, user.shift_id);
+  localStorage.setItem(STORAGE_KEYS.SHIFT_NAME, user.shift_name);
+  localStorage.setItem(STORAGE_KEYS.DEPT_NAME, user.dept_name);
+  localStorage.setItem(STORAGE_KEYS.START_TIME, user.start_time);
+  localStorage.setItem(STORAGE_KEYS.END_TIME, user.end_time);
+  localStorage.setItem(STORAGE_KEYS.GRACE, user.grace);
 
   return user;
 }
 
-
-// =====================================================
-// GET USER
-// =====================================================
-
 function getCurrentUser() {
   return APP.user || {
-    user_id: localStorage.getItem("user_id") || "",
-    email: localStorage.getItem("email") || "",
-    name: localStorage.getItem("name") || "",
-    role: localStorage.getItem("role") || "guest",
-    shift_id: localStorage.getItem("shift_id") || "",
-    workspace_id: localStorage.getItem("workspace_id") || ""
+    user_id: localStorage.getItem(STORAGE_KEYS.USER_ID) || "",
+    email: localStorage.getItem(STORAGE_KEYS.EMAIL) || "",
+    name: localStorage.getItem(STORAGE_KEYS.NAME) || "",
+    role: localStorage.getItem(STORAGE_KEYS.ROLE) || "guest",
+    shift_id: localStorage.getItem(STORAGE_KEYS.SHIFT_ID) || "",
+    shift_id: localStorage.getItem(STORAGE_KEYS.SHIFT_NAME) || "",
+    workspace_id: localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "",
+    dept_name: localStorage.getItem(STORAGE_KEYS.DEPT_NAME) || "",
+    start_time: localStorage.getItem(STORAGE_KEYS.START_TIME) || "",
+    end_time: localStorage.getItem(STORAGE_KEYS.END_TIME) || "",
+    grace: localStorage.getItem(STORAGE_KEYS.GRACE) || ""
   };
 }
 
+// =====================================================
+// SESSION RESTORE
+// =====================================================
+
+function restoreSession() {
+  const user_id = localStorage.getItem(STORAGE_KEYS.USER_ID);
+  const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
+  const role = localStorage.getItem(STORAGE_KEYS.ROLE);
+  const workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID);
+
+  if (!user_id || !email || !role || !workspace_id) {
+    APP.user = null;
+    APP.role = "guest";
+    APP.currentPage = "login";
+    return;
+  }
+
+  const user = getCurrentUser();
+
+  APP.user = user;
+  APP.role = (user.role || "guest").toLowerCase();
+
+  renderUserHeader();
+  applyRoleUI?.();
+
+  const isAdmin = APP.role === "admin" || APP.role === "owner";
+  const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
+
+  if (isAdmin) {
+    UserInit?.();
+    APP.currentPage =
+      lastPage === "dashboard" || lastPage === "admin"
+        ? lastPage
+        : "admin";
+  } else {
+    APP.currentPage = "dashboard";
+  }
+}
 
 // =====================================================
 // HEADER
@@ -230,19 +281,28 @@ function getCurrentUser() {
 function renderUserHeader() {
   const user = getCurrentUser();
   const name = user.name || "User";
+  const deptName = `${user.dept_name.toUpperCase()} Department`
+  const sched = `${user.start_time} - ${user.end_time}`;
 
   const usernameEl = document.getElementById("currUsername");
-  if (usernameEl) usernameEl.textContent = name;
+  if (usernameEl) usernameEl.textContent = name;  
+
+  const deptNameEl = document.getElementById("currDepartment");
+  if (deptNameEl) deptNameEl.textContent = deptName;
+
+  const shiftEl = document.getElementById("currShiftLabel");
+  if (shiftEl) shiftEl.textContent = sched;
+
 
   const initials = name
     .split(" ")
-    .map(n => n?.[0] || "")
+    .map(part => part?.[0] || "")
     .join("")
     .substring(0, 2)
     .toUpperCase();
 
   const initialsEl = document.getElementById("currInitials");
-  if (initialsEl) initialsEl.textContent = initials;
+  if (initialsEl) initialsEl.textContent = initials || "--";
 
   const statusEl = document.getElementById("currWorkStatus");
   if (statusEl) {

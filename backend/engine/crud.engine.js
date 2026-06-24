@@ -27,7 +27,7 @@ function find(dbRef, table, filters = {}) {
   const sheet = db.getSheetByName(table.sheet);
   if (!sheet) throw new Error(`Sheet not found: ${table.sheet}`);
 
-  const values = sheet.getDataRange().getValues();
+  const values = sheet.getDataRange().getDisplayValues();
   const headers = values.shift();
 
   return values

@@ -1,5 +1,4 @@
 <script>
-
 function openCreateDepartmentFromUserModal() {
   // close employee form first so modals do not stack badly
   UsersModal.closeFormModal?.();
@@ -8,14 +7,12 @@ function openCreateDepartmentFromUserModal() {
     onSubmit(formData) {
       UsersAPI.createDepartment(
         formData,
-
         async () => {
           showToast("Department created", "success");
-          
+
           await reloadAllReferences();
 
           DepartmentModal.closeFormModal?.();
-
 
           const newDepartmentId =
             findDepartmentIdByName(formData.department_name);
@@ -24,7 +21,6 @@ function openCreateDepartmentFromUserModal() {
             department_id: newDepartmentId
           });
         },
-
         (err) => {
           showToast(err.message || "Failed to create department", "error");
         }
@@ -34,7 +30,6 @@ function openCreateDepartmentFromUserModal() {
 }
 
 function renderDepartmentList(depts) {
-
   const el = document.getElementById("departmentList");
   if (!el) return;
 
@@ -43,21 +38,20 @@ function renderDepartmentList(depts) {
     return;
   }
 
-  el.innerHTML = depts.map(normalizeDepartment).map(d => `
+  el.innerHTML = depts
+    .map(mapDepartmentForView)
+    .map(d => `
+      <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+        <div>
+          <strong>${escapeHtml(d.department_name)}</strong>
+        </div>
 
-    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-
-      <div>
-        <strong>${escapeHtml(d.department_name)}</strong>
+        <span class="badge ${getDepartmentStatusClass(d.status_raw)}">
+          ${escapeHtml(d.status)}
+        </span>
       </div>
-
-      <span class="badge ${getDepartmentStatusClass(d.status)}">
-        ${d.status}
-      </span>
-
-    </div>
-
-  `).join("");
+    `)
+    .join("");
 }
 
 function findDepartmentIdByName(name) {
@@ -73,13 +67,16 @@ function findDepartmentIdByName(name) {
 }
 
 /* =========================
-   NORMALIZER (CRITICAL FOR CONSISTENCY)
+   VIEW MAPPER
 ========================= */
-function normalizeDepartment(d) {
+function mapDepartmentForView(d = {}) {
+  const rawStatus = String(d.status || "ACTIVE").trim().toUpperCase();
+
   return {
     department_id: d.department_id || "",
-    department_name: d.department_name || "UNKNOWN",
-    status: (d.status || "ACTIVE").toUpperCase()
+    department_name: DISPLAY.label(d.department_name || "UNKNOWN"),
+    status_raw: rawStatus,
+    status: DISPLAY.status(rawStatus)
   };
 }
 
@@ -87,9 +84,7 @@ function normalizeDepartment(d) {
    STATUS UI MAPPING
 ========================= */
 function getDepartmentStatusClass(status) {
-
-  switch ((status || "").toUpperCase()) {
-
+  switch (String(status || "").trim().toUpperCase()) {
     case "ACTIVE":
       return "badge-success";
 
@@ -99,16 +94,5 @@ function getDepartmentStatusClass(status) {
     default:
       return "badge-secondary";
   }
-}
-
-/* =========================
-   SAFE HTML ESCAPE
-========================= */
-function escapeHtml(str) {
-  return String(str || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }
 </script>

@@ -2,61 +2,32 @@ const DEPT_TABLE = TABLES.DEPARTMENTS;
 
 /**
  * =====================================================
- * NORMALIZER (single source of truth)
- * =====================================================
- */
-function normalizeDeptName(name) {
-  if (typeof name !== "string") return "";
-  return name.trim().toLowerCase();
-}
-
-/**
- * Safe row sanitizer (DO NOT mutate DB row)
- */
-function sanitizeDepartment(row) {
-  if (!row) return null;
-
-  return {
-    department_id: row.department_id,
-    department_name: normalizeDeptName(row.department_name),
-    description: row.description || "",
-    created_at: row.created_at
-  };
-}
-
-/**
- * =====================================================
- * CREATE DEPARTMENT (IDEMPOTENT SAFE)
+ * CREATE DEPARTMENT
  * =====================================================
  */
 function createDepartment(workspace_id, payload, options = {}) {
   const { skipIfExists = false } = options;
 
-  // =========================
-  // 1. VALIDATION
-  // =========================
   if (!payload?.department_name?.trim()) {
     throw new Error("department_name is required");
   }
 
-  const name = normalizeDeptName(payload.department_name);
+  const departmentName = normalize("department_name", payload.department_name);
 
-  if (name.length < 2) {
+  if (departmentName.length < 2) {
     throw new Error("department_name must be at least 2 characters");
   }
 
-  // =========================
-  // 2. DUPLICATE CHECK
-  // =========================
-  const existing = find(workspace_id, DEPT_TABLE)
-    .map(sanitizeDepartment)
-    .filter(d => d?.department_name === name);
+  const existing = find(workspace_id, DEPT_TABLE).find(d =>
+    normalize("department_name", d.department_name).toLowerCase() ===
+    departmentName.toLowerCase()
+  );
 
-  if (existing.length > 0) {
+  if (existing) {
     if (skipIfExists) {
       return {
         success: true,
-        data: existing[0],
+        data: existing,
         message: "Department already exists"
       };
     }
@@ -67,19 +38,13 @@ function createDepartment(workspace_id, payload, options = {}) {
     };
   }
 
-  // =========================
-  // 3. DOMAIN MODEL
-  // =========================
   const department = {
     department_id: generateId("DEP"),
-    department_name: name,
-    description: payload.description?.trim() || "",
+    department_name: departmentName,
+    description: normalize("description", payload.description),
     created_at: new Date().toISOString()
   };
 
-  // =========================
-  // 4. PERSIST
-  // =========================
   const result = insert(workspace_id, DEPT_TABLE, department);
 
   return {
@@ -94,11 +59,9 @@ function createDepartment(workspace_id, payload, options = {}) {
  * =====================================================
  */
 function getDepartmentById(workspace_id, departmentId) {
-  const result = find(workspace_id, DEPT_TABLE, {
+  return findOne(workspace_id, DEPT_TABLE, {
     department_id: departmentId
   });
-
-  return result.length ? sanitizeDepartment(result[0]) : null;
 }
 
 /**
@@ -107,14 +70,12 @@ function getDepartmentById(workspace_id, departmentId) {
  * =====================================================
  */
 function getAllDepartments(workspace_id) {
-  return find(workspace_id, DEPT_TABLE)
-    .map(sanitizeDepartment)
-    .filter(Boolean);
+  return find(workspace_id, DEPT_TABLE);
 }
 
 /**
  * =====================================================
- * UPDATE
+ * UPDATE DEPARTMENT
  * =====================================================
  */
 function updateDepartment(workspace_id, departmentId, updates) {
@@ -123,31 +84,32 @@ function updateDepartment(workspace_id, departmentId, updates) {
 
   const safeUpdates = { ...updates };
 
-  // normalize name if provided
   if (safeUpdates.department_name !== undefined) {
-    const name = normalizeDeptName(safeUpdates.department_name);
+    const departmentName = normalize("department_name", safeUpdates.department_name);
 
-    if (name.length < 2) {
+    if (departmentName.length < 2) {
       throw new Error("department_name must be at least 2 characters");
     }
 
-    // duplicate check (safe)
-    const existing = find(workspace_id, DEPT_TABLE)
-      .map(sanitizeDepartment)
-      .filter(d =>
-        d.department_id !== departmentId &&
-        d.department_name === name
-      );
+    const duplicate = find(workspace_id, DEPT_TABLE).find(d =>
+      d.department_id !== departmentId &&
+      normalize("department_name", d.department_name).toLowerCase() ===
+      departmentName.toLowerCase()
+    );
 
-    if (existing.length > 0) {
+    if (duplicate) {
       return {
         success: false,
         message: "Department name already exists",
-        data: existing[0]
+        data: duplicate
       };
     }
 
-    safeUpdates.department_name = name;
+    safeUpdates.department_name = departmentName;
+  }
+
+  if (safeUpdates.description !== undefined) {
+    safeUpdates.description = normalize("description", safeUpdates.description);
   }
 
   const updated = update(workspace_id, DEPT_TABLE, departmentId, safeUpdates);
@@ -160,21 +122,18 @@ function updateDepartment(workspace_id, departmentId, updates) {
 
 /**
  * =====================================================
- * DELETE (SAFE GUARD)
+ * DELETE DEPARTMENT
  * =====================================================
  */
 function deleteDepartment(workspace_id, departmentId) {
   const dept = getDepartmentById(workspace_id, departmentId);
   if (!dept) throw new Error("Department not found");
 
-  // prevent deletion if users exist
   const usersInDept = find(workspace_id, TABLES.USERS)
     .filter(u => u.department_id === departmentId);
 
   if (usersInDept.length > 0) {
-    throw new Error(
-      "Cannot delete department: users are assigned to it"
-    );
+    throw new Error("Cannot delete department: users are assigned to it");
   }
 
   const result = remove(workspace_id, DEPT_TABLE, departmentId);

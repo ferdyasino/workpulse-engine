@@ -1,7 +1,7 @@
 <script>
 
 /* =====================================================
-   SAFE DEPARTMENT RESOLVER (IMPORTANT FIX)
+   SAFE DEPARTMENT RESOLVER
 ===================================================== */
 
 function getDepartmentsForPosition(config) {
@@ -17,24 +17,19 @@ function getDepartmentsForPosition(config) {
 ===================================================== */
 
 function openCreatePositionFromUserModal() {
-
   UsersModal.closeFormModal?.();
 
   PositionModal.openCreateModal({}, {
     departments: state.departments,
     onSubmit(formData) {
-
       UsersAPI.createPosition(
         formData,
-
         async () => {
-
           showToast("Position created", "success");
-          
-          await reloadAllReferences();
-          
-          PositionModal.closeFormModal?.();
 
+          await reloadAllReferences();
+
+          PositionModal.closeFormModal?.();
 
           const newPositionId =
             findPositionIdByName(formData.position_name);
@@ -42,26 +37,20 @@ function openCreatePositionFromUserModal() {
           openCreateUser({
             position_id: newPositionId
           });
-
         },
-
         (err) => {
           showToast(err.message || "Failed to create position", "error");
         }
-
       );
-
     }
   });
-
 }
 
 /* =====================================================
-   POSITION LIST RENDERER (NORMALIZED + SAFE)
+   POSITION LIST RENDERER
 ===================================================== */
 
 function renderPositionList(positions) {
-
   const el = document.getElementById("positionList");
   if (!el) return;
 
@@ -71,33 +60,28 @@ function renderPositionList(positions) {
   }
 
   el.innerHTML = positions
-    .map(normalizePosition)
+    .map(mapPositionForView)
     .map(p => `
-
       <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-
         <div>
           <strong>${escapeHtml(p.position_name)}</strong>
         </div>
 
         <div class="text-end">
-          <span class="badge ${getPositionStatusClass(p.status)}">
-            ${p.status}
+          <span class="badge ${getPositionStatusClass(p.status_raw)}">
+            ${escapeHtml(p.status)}
           </span>
         </div>
-
       </div>
-
-    `).join("");
+    `)
+    .join("");
 }
 
 /* =====================================================
    SAFE POSITION ID RESOLUTION
-   (IMPORTANT: avoids duplicate-name bugs)
 ===================================================== */
 
 function findPositionIdByName(name) {
-
   const normalized = String(name || "").trim().toLowerCase();
 
   const found = [...(state.positions || [])]
@@ -112,16 +96,19 @@ function findPositionIdByName(name) {
 }
 
 /* =====================================================
-   NORMALIZER (FRONTEND SAFE LAYER)
+   VIEW MAPPER
 ===================================================== */
 
-function normalizePosition(p) {
+function mapPositionForView(p = {}) {
+  const rawStatus = String(p.status || "ACTIVE").trim().toUpperCase();
+
   return {
     position_id: p.position_id || "",
-    position_name: p.position_name || "UNKNOWN",
+    position_name: DISPLAY.label(p.position_name || "UNKNOWN"),
     department_id: p.department_id || "",
     description: p.description || "",
-    status: (p.status || "ACTIVE").toUpperCase()
+    status_raw: rawStatus,
+    status: DISPLAY.status(rawStatus)
   };
 }
 
@@ -130,9 +117,7 @@ function normalizePosition(p) {
 ===================================================== */
 
 function getPositionStatusClass(status) {
-
-  switch ((status || "").toUpperCase()) {
-
+  switch (String(status || "").trim().toUpperCase()) {
     case "ACTIVE":
       return "badge-success";
 
@@ -142,18 +127,6 @@ function getPositionStatusClass(status) {
     default:
       return "badge-secondary";
   }
-}
-
-/* =====================================================
-   HTML ESCAPE SAFETY
-===================================================== */
-
-function escapeHtml(str) {
-  return String(str || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }
 
 </script>

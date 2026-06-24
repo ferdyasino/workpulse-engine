@@ -1,42 +1,31 @@
 <script>
 function openCreateShiftFromUserModal() {
-
   UsersModal.closeFormModal?.();
 
   ShiftModal.openCreateModal({}, {
     onSubmit(formData) {
-
       UsersAPI.createShift(
         formData,
-
         async () => {
-
           showToast("Shift created", "success");
-          
+
           await reloadAllReferences();
 
           ShiftModal.closeFormModal?.();
 
-
           openCreateUser({
             shift_id: findShiftIdByName(formData.shift_name)
           });
-
         },
-
         (err) => {
           showToast(err.message || "Failed to create shift", "error");
         }
-
       );
-
     }
   });
-
 }
 
 function renderShiftList(shifts) {
-
   const el = document.getElementById("shiftList");
   if (!el) return;
 
@@ -45,28 +34,26 @@ function renderShiftList(shifts) {
     return;
   }
 
-  el.innerHTML = shifts.map(normalizeShift).map(s => `
+  el.innerHTML = shifts
+    .map(mapShiftForView)
+    .map(s => `
+      <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+        <div>
+          <strong>${escapeHtml(s.shift_name)}</strong><br>
+          <small class="text-muted">
+            ${formatShift(s.start_time)} - ${formatShift(s.end_time)}
+          </small>
+        </div>
 
-    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-
-      <div>
-        <strong>${escapeHtml(s.shift_name)}</strong><br>
-        <small class="text-muted">
-          ${formatTime(s.start_time)} - ${formatTime(s.end_time)}
-        </small>
+        <div class="text-end">
+          <span class="badge ${getShiftStatusClass(s.status_raw)}">
+            ${escapeHtml(s.status)}
+          </span>
+        </div>
       </div>
-
-      <div class="text-end">
-        <span class="badge ${getShiftStatusClass(s.status)}">
-          ${s.status}
-        </span>
-      </div>
-
-    </div>
-
-  `).join("");
+    `)
+    .join("");
 }
-
 
 function findShiftIdByName(name) {
   const normalized = String(name || "").trim().toLowerCase();
@@ -81,16 +68,18 @@ function findShiftIdByName(name) {
 }
 
 /* =========================
-   NORMALIZER (FRONTEND SAFE LAYER)
+   VIEW MAPPER
 ========================= */
-function normalizeShift(s) {
+function mapShiftForView(s = {}) {
+  const rawStatus = String(s.status || "ACTIVE").trim().toUpperCase();
+
   return {
     shift_id: s.shift_id || "",
-    shift_name: s.shift_name || "UNKNOWN",
-    start_time: s.start_time || "--",
-    end_time: s.end_time || "--",
-
-    status: (s.status || "ACTIVE").toUpperCase()
+    shift_name: DISPLAY.label(s.shift_name || "UNKNOWN"),
+    start_time: s.start_time || "",
+    end_time: s.end_time || "",
+    status_raw: rawStatus,
+    status: DISPLAY.status(rawStatus)
   };
 }
 
@@ -98,9 +87,7 @@ function normalizeShift(s) {
    STATUS STYLE
 ========================= */
 function getShiftStatusClass(status) {
-
-  switch ((status || "").toUpperCase()) {
-
+  switch (String(status || "").trim().toUpperCase()) {
     case "ACTIVE":
       return "badge-success";
 
@@ -110,24 +97,5 @@ function getShiftStatusClass(status) {
     default:
       return "badge-secondary";
   }
-}
-
-/* =========================
-   TIME FORMAT SAFETY
-========================= */
-function formatTime(t) {
-  if (!t) return "--";
-  return t;
-}
-
-/* =========================
-   HTML ESCAPE SAFETY
-========================= */
-function escapeHtml(str) {
-  return String(str || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }
 </script>

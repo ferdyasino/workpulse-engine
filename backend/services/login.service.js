@@ -155,6 +155,36 @@ function loginResolver(workspaceSlug, email) {
     throw new Error("User is not active");
   }
 
+  const dept = findOne(
+    workspaceDb,
+    TABLES.DEPARTMENTS,
+    { department_id: workspaceUser.department_id }
+  );
+
+  const schedRow = findOne(
+    workspaceDb,
+    TABLES.SHIFTS,
+    { shift_id: workspaceUser.shift_id }
+  );
+
+  const sched = schedRow
+  ? {
+      shift_name: schedRow.shift_name,
+      start_time: schedRow.start_time,
+      end_time: schedRow.end_time,
+      grace_minutes: schedRow.grace_minutes
+    }
+  : "error schedRow";
+
+  const shift_name = schedRow.shift_name || "SHIFT NAME";
+  const start_time = schedRow.start_time || "START";
+  const end_time = schedRow.end_time || "END";
+  const grace_minutes = schedRow.grace_minutes || "GRACE";
+
+
+
+  const deptName = dept.department_name || "DEPARTMENT"
+
   // =====================================================
   // 7. ROLE RESOLUTION (CLEAN + CONSISTENT)
   // =====================================================
@@ -205,7 +235,9 @@ function loginResolver(workspaceSlug, email) {
 
     role,
     status,
-
+    dept_name: deptName,
+    sched: sched,
+    
     workspace_id: workspace.workspace_id,
     workspace_url: workspace.workspace_url,
     timelog_spreadsheet_id: workspace.timelog_spreadsheet_id,

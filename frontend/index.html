@@ -113,24 +113,27 @@ id="page-error"
     window.SERVER_DATA =
       '<?= JSON.stringify(SERVER_DATA) ?>';
   </script>
-  <?!= include("frontend/scripts/dashboard.state.script"); ?>
-  <?!= include("frontend/scripts/scripts"); ?>
-  <?!= include("frontend/scripts/clock.script"); ?>
+  <?!= include("frontend/scripts/app.core.script"); ?>
+  <?!= include("frontend/scripts/helper.script"); ?>
   <?!= include("frontend/scripts/login.script"); ?>
   <?!= include("frontend/scripts/timelogs.script"); ?>
+  <?!= include("frontend/scripts/dashboard.state.script"); ?>
+  <?!= include("frontend/scripts/clock.script"); ?>
+  
   <?!= include("frontend/scripts/user.api.script"); ?>
   <?!= include("frontend/scripts/user.script"); ?>
+  <?!= include("frontend/scripts/user.action"); ?>
+  
   <?!= include("frontend/scripts/dept.script"); ?>
   <?!= include("frontend/scripts/pos.script"); ?>
   <?!= include("frontend/scripts/shift.script"); ?>
-  <?!= include("frontend/scripts/user.action"); ?>
+  
   <?!= include("frontend/scripts/modals/global.modal.script"); ?>
   <?!= include("frontend/scripts/modals/user.modal.script"); ?>
   <?!= include("frontend/scripts/modals/dept.modal.script"); ?>
   <?!= include("frontend/scripts/modals/pos.modal.script"); ?>
   <?!= include("frontend/scripts/modals/shift.modal.script"); ?>
   <?!= include("frontend/scripts/toast.script"); ?>
-
 </body>
 
 </html>
