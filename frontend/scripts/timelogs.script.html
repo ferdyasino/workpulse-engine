@@ -219,7 +219,7 @@ function renderTimeLogger() {
 // LOG TIME EVENT
 // =====================================================
 
-function logTime(action) {
+async function logTime(action) {
   const user = getCurrentUser();
 
   const email = user.email;
@@ -232,13 +232,24 @@ function logTime(action) {
     return;
   }
 
+  showLoader?.();
+
+  const geo = await getCurrentLocation();
+
+  if (!geo.success) {
+    console.warn("Geolocation failed:", geo.status, geo.message);
+  }
+
+
   const payload = {
     user_id: userId,
     email,
     action,
     shift_id: shiftId,
     device_info: navigator.userAgent,
-    location: "home",
+    location: geo.location,
+    location_status: geo.status,
+    location_message: geo.message,
     timestamp: new Date().toISOString()
   };
 
@@ -258,6 +269,17 @@ function logTime(action) {
           }
 
           showToast?.(res.message || "Logged successfully", "success");
+          
+          showToast?.(res.message || "Logged successfully", "success");
+          
+          if (!geo.success && geo.status === "DENIED") {
+            setTimeout(() => {
+              showToast?.(
+                "Location permission denied. Attendance was logged without GPS.",
+                "warning"
+              );
+            }, 600);
+          }
           getLogs();
         })
         .withFailureHandler((err) => {
