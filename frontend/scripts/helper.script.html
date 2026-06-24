@@ -1,150 +1,297 @@
 <script>
 // =====================================================
-// GLOBAL TIME FORMATTER
+// GLOBAL DISPLAY / FORMAT HELPERS
+// FRONTEND ONLY - SAFE DROP-IN VERSION
 // =====================================================
 
-window.formatTime = function(ts) {
-  if (!ts) return "--";
+(function () {
+  // prevent double registration if helper gets included twice
+  if (window.__APP_HELPERS_READY__) return;
+  window.__APP_HELPERS_READY__ = true;
 
-  const d = new Date(ts);
-  return isNaN(d.getTime())
-    ? "--"
-    : d.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-};
+  // =====================================================
+  // ACRONYM / FORCED UPPERCASE WORDS
+  // Add more here anytime
+  // =====================================================
 
-// =====================================================
-// DISPLAY NORMALIZER
-// Frontend only
-// =====================================================
+  const DISPLAY_ACRONYMS = new Set([
+    "it",
+    "hr",
+    "qa",
+    "ui",
+    "ux",
+    "uiux",
+    "bpo",
+    "seo",
+    "cto",
+    "ceo",
+    "coo",
+    "cfo",
+    "vp",
+    "avp",
+    "ops",
+    "mis",
+    "tl",
+    "csr",
+    "dev",
+    "api",
+    "ui/ux"
+  ]);
 
-window.DISPLAY = {
-  lower(value = "") {
-    return String(value ?? "").trim().toLowerCase();
-  },
+  // =====================================================
+  // INTERNAL TITLE/NAME FORMATTER
+  // =====================================================
 
-  upper(value = "") {
-    return String(value ?? "").trim().toUpperCase();
-  },
-
-  clean(value = "") {
-    return String(value ?? "")
+  function formatDisplayWords(value = "") {
+    const cleaned = String(value ?? "")
       .trim()
       .replace(/[_-]+/g, " ")
       .replace(/\s+/g, " ");
-  },
 
-  title(value = "") {
-    return DISPLAY.clean(value)
-      .toLowerCase()
-      .replace(/\b\w/g, c => c.toUpperCase());
-  },
+    if (!cleaned) return "";
 
-  label(value = "") {
-    return DISPLAY.clean(value)
-      .toLowerCase()
-      .replace(/\b\w/g, c => c.toUpperCase());
-  },
+    return cleaned
+      .split(" ")
+      .map(word => {
+        const raw = String(word || "").trim();
+        if (!raw) return "";
 
-  status(value = "") {
-    return DISPLAY.clean(value)
-      .toLowerCase()
-      .replace(/\b\w/g, c => c.toUpperCase());
-  },
+        const lower = raw.toLowerCase();
 
-  name(value = "") {
-    return DISPLAY.clean(value)
-      .toLowerCase()
-      .replace(/\b\w/g, c => c.toUpperCase());
-  }
-};
-
-// =====================================================
-// SHIFT TIME DISPLAY
-// =====================================================
-
-window.formatShift = function(value) {
-  if (!value) return "--";
-
-  const str = String(value).trim();
-  const match = str.match(/^(\d{1,2}):(\d{2})$/);
-
-  if (!match) return str;
-
-  let hours = Number(match[1]);
-  const minutes = match[2];
-
-  const suffix = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;
-
-  return `${hours}:${minutes} ${suffix}`;
-};
-
-// =====================================================
-// LOCATION
-// =====================================================
-
-window.getCurrentLocation = function() {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve({
-        success: false,
-        status: "NOT_SUPPORTED",
-        message: "Geolocation is not supported by this browser.",
-        location: null
-      });
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          success: true,
-          status: "OK",
-          message: "Location captured successfully.",
-          location: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            source: "browser_geolocation",
-            captured_at: new Date().toISOString()
-          }
-        });
-      },
-      (error) => {
-        let status = "ERROR";
-        let message = "Unable to retrieve location.";
-
-        switch (error.code) {
-          case 1:
-            status = "DENIED";
-            message = "Location permission denied by user.";
-            break;
-          case 2:
-            status = "UNAVAILABLE";
-            message = "Location information is unavailable.";
-            break;
-          case 3:
-            status = "TIMEOUT";
-            message = "Location request timed out.";
-            break;
+        // forced acronym uppercase
+        if (DISPLAY_ACRONYMS.has(lower)) {
+          return raw.toUpperCase();
         }
 
+        // handles slash-based tokens like ui/ux
+        if (raw.includes("/")) {
+          return raw
+            .split("/")
+            .map(part => {
+              const p = String(part || "").trim();
+              if (!p) return "";
+
+              const pLower = p.toLowerCase();
+              if (DISPLAY_ACRONYMS.has(pLower)) return p.toUpperCase();
+
+              return pLower.charAt(0).toUpperCase() + pLower.slice(1);
+            })
+            .join("/");
+        }
+
+        // default title case
+        return lower.charAt(0).toUpperCase() + lower.slice(1);
+      })
+      .join(" ");
+  }
+
+  // =====================================================
+  // DISPLAY NORMALIZER
+  // Frontend only
+  // =====================================================
+
+  const DISPLAY = {
+    lower(value = "") {
+      return String(value ?? "").trim().toLowerCase();
+    },
+
+    upper(value = "") {
+      return String(value ?? "").trim().toUpperCase();
+    },
+
+    clean(value = "") {
+      return String(value ?? "")
+        .trim()
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ");
+    },
+
+    title(value = "") {
+      return formatDisplayWords(value);
+    },
+
+    label(value = "") {
+      return formatDisplayWords(value);
+    },
+
+    status(value = "") {
+      return formatDisplayWords(value);
+    },
+
+    name(value = "") {
+      return formatDisplayWords(value);
+    },
+
+    email(value = "") {
+      return String(value ?? "").trim().toLowerCase();
+    },
+
+    role(value = "") {
+      return formatDisplayWords(value);
+    }
+  };
+
+  window.DISPLAY = DISPLAY;
+
+  // =====================================================
+  // SHIFT TIME DISPLAY
+  // Converts "6:00" => "6:00 AM"
+  // =====================================================
+
+  window.formatShift = function(value) {
+    if (!value) return "--";
+
+    const str = String(value).trim();
+    const match = str.match(/^(\d{1,2}):(\d{2})$/);
+
+    if (!match) return str;
+
+    let hours = Number(match[1]);
+    const minutes = match[2];
+
+    if (Number.isNaN(hours)) return str;
+
+    const suffix = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+
+    return `${hours}:${minutes} ${suffix}`;
+  };
+
+  // =====================================================
+  // GLOBAL TIME FORMATTER
+  // SAFE for:
+  // - ISO timestamps
+  // - Date-compatible strings
+  // - plain HH:mm shift values
+  // =====================================================
+
+  window.formatTime = function(value) {
+    if (!value) return "--";
+
+    const str = String(value).trim();
+
+    // If plain shift time like "6:00" or "14:30"
+    if (/^\d{1,2}:\d{2}$/.test(str)) {
+      return window.formatShift(str);
+    }
+
+    const d = new Date(value);
+
+    if (isNaN(d.getTime())) return "--";
+
+    return d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
+  // =====================================================
+  // OPTIONAL SHIFT LABEL HELPER
+  // Example:
+  // { shift_name:"MORNING", start_time:"6:00", end_time:"14:00" }
+  // => "Morning (6:00 AM - 2:00 PM)"
+  // =====================================================
+
+  window.formatShiftLabel = function(shift = {}) {
+    if (!shift || typeof shift !== "object") return "--";
+
+    const name = DISPLAY.label(shift.shift_name || "Unnamed Shift");
+    const start = window.formatShift(shift.start_time);
+    const end = window.formatShift(shift.end_time);
+
+    return `${name} (${start} - ${end})`;
+  };
+
+  // =====================================================
+  // COMMON LOOKUP / SAFE DISPLAY HELPERS
+  // =====================================================
+
+  window.escapeHtml = function(str = "") {
+    return String(str ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  };
+
+  window.getStatusClass = function(status) {
+    switch (String(status || "").trim().toUpperCase()) {
+      case "ACTIVE":
+        return "badge-success";
+      case "PENDING":
+        return "badge-warning";
+      case "INACTIVE":
+        return "badge-danger";
+      default:
+        return "badge-secondary";
+    }
+  };
+
+  // =====================================================
+  // LOCATION
+  // =====================================================
+
+  window.getCurrentLocation = function() {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
         resolve({
           success: false,
-          status,
-          message,
+          status: "NOT_SUPPORTED",
+          message: "Geolocation is not supported by this browser.",
           location: null
         });
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        return;
       }
-    );
-  });
-};
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            success: true,
+            status: "OK",
+            message: "Location captured successfully.",
+            location: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+              source: "browser_geolocation",
+              captured_at: new Date().toISOString()
+            }
+          });
+        },
+        (error) => {
+          let status = "ERROR";
+          let message = "Unable to retrieve location.";
+
+          switch (error.code) {
+            case 1:
+              status = "DENIED";
+              message = "Location permission denied by user.";
+              break;
+            case 2:
+              status = "UNAVAILABLE";
+              message = "Location information is unavailable.";
+              break;
+            case 3:
+              status = "TIMEOUT";
+              message = "Location request timed out.";
+              break;
+          }
+
+          resolve({
+            success: false,
+            status,
+            message,
+            location: null
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    });
+  };
+})();
 </script>

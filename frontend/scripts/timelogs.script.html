@@ -273,12 +273,12 @@ async function logTime(action) {
           showToast?.(res.message || "Logged successfully", "success");
           
           if (!geo.success && geo.status === "DENIED") {
-            setTimeout(() => {
-              showToast?.(
-                "Location permission denied. Attendance was logged without GPS.",
-                "warning"
-              );
-            }, 600);
+            // setTimeout(() => {
+            //   showToast?.(
+            //     "Location permission denied. Attendance was logged without GPS.",
+            //     "warning"
+            //   );
+            // }, 600);
           }
           getLogs();
         })
