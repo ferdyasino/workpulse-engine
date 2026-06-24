@@ -31,6 +31,10 @@ const STORAGE_KEYS = {
   NAME: "name",
   ROLE: "role",
   SHIFT_ID: "shift_id",
+  SHIFT_NAME: "shift_name",
+  START_TIME: "start_time",
+  END_TIME: "end_time",
+  GRACE: "grace_minutes",
   DEPT_NAME: "dept_name",
   WORKSPACE_ID: "workspace_id",
   WORKSPACE_SLUG: "workspace_slug",
@@ -91,81 +95,5 @@ function showLoader() {
 
 function hideLoader() {
   document.getElementById("loader")?.classList.add("d-none");
-}
-
-// =====================================================
-// GENERIC TIME FORMATTER
-// =====================================================
-
-function formatTime(ts) {
-  if (!ts) return "--";
-
-  return new Date(ts).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
-}
-
-function getCurrentLocation() {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve({
-        success: false,
-        status: "NOT_SUPPORTED",
-        message: "Geolocation is not supported by this browser.",
-        location: null
-      });
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          success: true,
-          status: "OK",
-          message: "Location captured successfully.",
-          location: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            source: "browser_geolocation",
-            captured_at: new Date().toISOString()
-          }
-        });
-      },
-      (error) => {
-        let status = "ERROR";
-        let message = "Unable to retrieve location.";
-
-        switch (error.code) {
-          case 1:
-            status = "DENIED";
-            message = "Location permission denied by user.";
-            break;
-          case 2:
-            status = "UNAVAILABLE";
-            message = "Location information is unavailable.";
-            break;
-          case 3:
-            status = "TIMEOUT";
-            message = "Location request timed out.";
-            break;
-        }
-
-        resolve({
-          success: false,
-          status,
-          message,
-          location: null
-        });
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
-    );
-  });
 }
 </script>

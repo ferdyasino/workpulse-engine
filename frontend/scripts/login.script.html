@@ -74,7 +74,7 @@ document.getElementById("loginForm")?.addEventListener("submit", (e) => {
 // =====================================================
 
 function handleLoginSuccess(result) {
-  console.log("sched", result.sched);
+  console.log("res",result.sched.start_time);
   hideLoader?.();
 
   if (!result) {
@@ -193,8 +193,12 @@ function setCurrentUser(result) {
     name: result.fullname || result.name || "",
     role: (result.role || "guest").toLowerCase(),
     shift_id: result.shift_id || "",
+    shift_name: result.sched.shift_name || "",
     workspace_id: result.workspace_id || "",
-    dept_name: result.dept_name || ""
+    dept_name: result.dept_name || "",
+    start_time: formatShift(result.sched.start_time) || "",
+    end_time: formatShift(result.sched.end_time) || "",
+    grace: result.sched.grace_minutes || ""
   };
 
   APP.user = user;
@@ -206,7 +210,11 @@ function setCurrentUser(result) {
   localStorage.setItem(STORAGE_KEYS.ROLE, user.role);
   localStorage.setItem(STORAGE_KEYS.WORKSPACE_ID, user.workspace_id);
   localStorage.setItem(STORAGE_KEYS.SHIFT_ID, user.shift_id);
+  localStorage.setItem(STORAGE_KEYS.SHIFT_NAME, user.shift_name);
   localStorage.setItem(STORAGE_KEYS.DEPT_NAME, user.dept_name);
+  localStorage.setItem(STORAGE_KEYS.START_TIME, user.start_time);
+  localStorage.setItem(STORAGE_KEYS.END_TIME, user.end_time);
+  localStorage.setItem(STORAGE_KEYS.GRACE, user.grace);
 
   return user;
 }
@@ -218,8 +226,12 @@ function getCurrentUser() {
     name: localStorage.getItem(STORAGE_KEYS.NAME) || "",
     role: localStorage.getItem(STORAGE_KEYS.ROLE) || "guest",
     shift_id: localStorage.getItem(STORAGE_KEYS.SHIFT_ID) || "",
+    shift_id: localStorage.getItem(STORAGE_KEYS.SHIFT_NAME) || "",
     workspace_id: localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "",
-    dept_name: localStorage.getItem(STORAGE_KEYS.DEPT_NAME) || ""
+    dept_name: localStorage.getItem(STORAGE_KEYS.DEPT_NAME) || "",
+    start_time: localStorage.getItem(STORAGE_KEYS.START_TIME) || "",
+    end_time: localStorage.getItem(STORAGE_KEYS.END_TIME) || "",
+    grace: localStorage.getItem(STORAGE_KEYS.GRACE) || ""
   };
 }
 
@@ -269,11 +281,17 @@ function renderUserHeader() {
   const user = getCurrentUser();
   const name = user.name || "User";
   const deptName = `${user.dept_name.toUpperCase()} Department`
+  const sched = `${user.start_time} - ${user.end_time}`;
 
   const usernameEl = document.getElementById("currUsername");
   if (usernameEl) usernameEl.textContent = name;  
+
   const deptNameEl = document.getElementById("currDepartment");
   if (deptNameEl) deptNameEl.textContent = deptName;
+
+  const shiftEl = document.getElementById("currShiftLabel");
+  if (shiftEl) shiftEl.textContent = sched;
+
 
   const initials = name
     .split(" ")

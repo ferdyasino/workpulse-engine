@@ -1,0 +1,94 @@
+<script>
+// =====================================================
+// HELPER
+// =====================================================
+
+function formatTime(ts) {
+  if (!ts) return "--";
+
+  return new Date(ts).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+function formatShift(value) {
+  if (!value) return "--";
+
+  const str = String(value).trim();
+
+  const match = str.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return str;
+
+  let hours = Number(match[1]);
+  const minutes = match[2];
+
+  const suffix = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+
+  return `${hours}:${minutes} ${suffix}`;
+}
+
+function getCurrentLocation() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve({
+        success: false,
+        status: "NOT_SUPPORTED",
+        message: "Geolocation is not supported by this browser.",
+        location: null
+      });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          success: true,
+          status: "OK",
+          message: "Location captured successfully.",
+          location: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            source: "browser_geolocation",
+            captured_at: new Date().toISOString()
+          }
+        });
+      },
+      (error) => {
+        let status = "ERROR";
+        let message = "Unable to retrieve location.";
+
+        switch (error.code) {
+          case 1:
+            status = "DENIED";
+            message = "Location permission denied by user.";
+            break;
+          case 2:
+            status = "UNAVAILABLE";
+            message = "Location information is unavailable.";
+            break;
+          case 3:
+            status = "TIMEOUT";
+            message = "Location request timed out.";
+            break;
+        }
+
+        resolve({
+          success: false,
+          status,
+          message,
+          location: null
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  });
+}
+</script>
