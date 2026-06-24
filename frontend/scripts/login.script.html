@@ -74,6 +74,7 @@ document.getElementById("loginForm")?.addEventListener("submit", (e) => {
 // =====================================================
 
 function handleLoginSuccess(result) {
+  console.log("sched", result.sched);
   hideLoader?.();
 
   if (!result) {
@@ -192,7 +193,8 @@ function setCurrentUser(result) {
     name: result.fullname || result.name || "",
     role: (result.role || "guest").toLowerCase(),
     shift_id: result.shift_id || "",
-    workspace_id: result.workspace_id || ""
+    workspace_id: result.workspace_id || "",
+    dept_name: result.dept_name || ""
   };
 
   APP.user = user;
@@ -204,6 +206,7 @@ function setCurrentUser(result) {
   localStorage.setItem(STORAGE_KEYS.ROLE, user.role);
   localStorage.setItem(STORAGE_KEYS.WORKSPACE_ID, user.workspace_id);
   localStorage.setItem(STORAGE_KEYS.SHIFT_ID, user.shift_id);
+  localStorage.setItem(STORAGE_KEYS.DEPT_NAME, user.dept_name);
 
   return user;
 }
@@ -215,7 +218,8 @@ function getCurrentUser() {
     name: localStorage.getItem(STORAGE_KEYS.NAME) || "",
     role: localStorage.getItem(STORAGE_KEYS.ROLE) || "guest",
     shift_id: localStorage.getItem(STORAGE_KEYS.SHIFT_ID) || "",
-    workspace_id: localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || ""
+    workspace_id: localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "",
+    dept_name: localStorage.getItem(STORAGE_KEYS.DEPT_NAME) || ""
   };
 }
 
@@ -264,9 +268,12 @@ function restoreSession() {
 function renderUserHeader() {
   const user = getCurrentUser();
   const name = user.name || "User";
+  const deptName = `${user.dept_name.toUpperCase()} Department`
 
   const usernameEl = document.getElementById("currUsername");
-  if (usernameEl) usernameEl.textContent = name;
+  if (usernameEl) usernameEl.textContent = name;  
+  const deptNameEl = document.getElementById("currDepartment");
+  if (deptNameEl) deptNameEl.textContent = deptName;
 
   const initials = name
     .split(" ")
