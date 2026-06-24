@@ -1,0 +1,108 @@
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// =====================================================
+// APP STATE
+// =====================================================
+
+const APP = {
+  user: null,
+  role: "guest",
+  currentPage: null,
+
+  workspaceSlug: "",
+  serverEmail: "",
+
+  // runtime dashboard state
+  workStatus: "NOT STARTED",
+  timeLogs: [],
+  attendanceState: null,
+  dashboardData: null,
+  selectedUser: null
+};
+
+// =====================================================
+// STORAGE KEYS
+// =====================================================
+
+const STORAGE_KEYS = {
+  USER_ID: "user_id",
+  EMAIL: "email",
+  NAME: "name",
+  ROLE: "role",
+  SHIFT_ID: "shift_id",
+  WORKSPACE_ID: "workspace_id",
+  WORKSPACE_SLUG: "workspace_slug",
+  LAST_PAGE: "last_page"
+};
+
+// =====================================================
+// ROUTES
+// =====================================================
+
+const ROUTES = {
+  home: "page-home",
+  dashboard: "page-dashboard",
+  admin: "page-admin-dashboard",
+  login: "page-login",
+  error: "page-error"
+};
+
+// =====================================================
+// TIME LOG ACTIONS
+// =====================================================
+
+const TIME_LOG_ACTIONS = {
+  TIME_IN: "time_in",
+  TIME_OUT: "time_out",
+
+  BREAK_1_START: "break_1_start",
+  BREAK_1_END: "break_1_end",
+
+  BREAK_2_START: "break_2_start",
+  BREAK_2_END: "break_2_end",
+
+  BREAK_3_START: "break_3_start",
+  BREAK_3_END: "break_3_end",
+
+  LUNCH_START: "lunch_start",
+  LUNCH_END: "lunch_end"
+};
+
+// =====================================================
+// PAGE TITLES
+// =====================================================
+
+const PAGE_TITLES = {
+  admin: "Admin Dashboard",
+  dashboard: "Employee Dashboard",
+  home: "System Home",
+  login: "Login"
+};
+
+// =====================================================
+// LOADER
+// =====================================================
+
+function showLoader() {
+  document.getElementById("loader")?.classList.remove("d-none");
+}
+
+function hideLoader() {
+  document.getElementById("loader")?.classList.add("d-none");
+}
+
+// =====================================================
+// GENERIC TIME FORMATTER
+// =====================================================
+
+function formatTime(ts) {
+  if (!ts) return "--";
+
+  return new Date(ts).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+</script>

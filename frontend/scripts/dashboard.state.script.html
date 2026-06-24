@@ -1,102 +1,137 @@
 <script>
-window.renderGlobalState = function(state = {}) {
-  const statusText = document.getElementById("globalStatusText");
-  const dot = document.getElementById("statusDot");
+// =====================================================
+// APP BOOT
+// =====================================================
 
-  const currentStatus = String(state.status || "NOT STARTED").toUpperCase();
-
-  // =====================================================
-  // HEADER STATUS TEXT
-  // =====================================================
-  if (statusText) {
-    statusText.textContent = state.status || "NOT STARTED";
+function bootApp() {
+  if (!APP.currentPage) {
+    APP.currentPage = "login";
   }
 
-  // =====================================================
-  // STATUS DOT
-  // =====================================================
-  if (dot) {
-    dot.className = "status-dot";
-
-    switch (currentStatus) {
-      case "WORKING":
-        dot.classList.add("bg-success");
-        break;
-
-      case "ON BREAK":
-        dot.classList.add("bg-warning");
-        break;
-
-      case "AT LUNCH":
-        dot.classList.add("bg-info");
-        break;
-
-      case "CLOCKED OUT":
-        dot.classList.add("bg-danger");
-        break;
-
-      default:
-        dot.classList.add("bg-secondary");
-        break;
-    }
-  }
-
-  // =====================================================
-  // BREAK BUTTONS
-  // Expected break item shape:
-  // {
-  //   in: "...",   // break start timestamp
-  //   out: "..."   // break end timestamp
-  // }
-  //
-  // Rules:
-  // - no in, no out   => AVAILABLE  => yellow outline
-  // - in, no out      => ACTIVE     => green
-  // - in + out        => ENDED      => gray disabled
-  // =====================================================
-  const breaks = Array.isArray(state.breaks) ? state.breaks : [];
-
-  applyBreakButtonState("b1Btn", getBreakButtonState(breaks[0]), "B1");
-  applyBreakButtonState("b2Btn", getBreakButtonState(breaks[1]), "B2");
-  applyBreakButtonState("b3Btn", getBreakButtonState(breaks[2]), "B3");
-};
-
-function getBreakButtonState(breakItem) {
-  if (!breakItem) return "AVAILABLE";
-
-  const hasIn = !!breakItem.in;
-  const hasOut = !!breakItem.out;
-
-  if (hasIn && hasOut) return "ENDED";
-  if (hasIn && !hasOut) return "ACTIVE";
-
-  return "AVAILABLE";
+  go(APP.currentPage);
 }
 
-function applyBreakButtonState(buttonId, breakState, label) {
-  const btn = document.getElementById(buttonId);
-  if (!btn) return;
+// =====================================================
+// ROUTER
+// =====================================================
 
-  // hard reset
-  btn.className = "btn btn-sm";
-  btn.disabled = false;
-  btn.textContent = label;
-  btn.dataset.breakState = breakState;
+function go(page) {
+  APP.currentPage = page;
 
-  switch (breakState) {
-    case "ACTIVE":
-      btn.classList.add("btn-success");
-      break;
+  localStorage.setItem(STORAGE_KEYS.LAST_PAGE, page);
 
-    case "ENDED":
-      btn.classList.add("btn-break-ended");
-      btn.disabled = true;
-      break;
+  const targetId = ROUTES[page] || ROUTES.home;
 
-    case "AVAILABLE":
-    default:
-      btn.classList.add("btn-outline-warning");
-      break;
+  hideAllPages();
+
+  const el = document.getElementById(targetId);
+
+  if (!el) {
+    console.error("Invalid page:", page);
+    showToast?.("Page not found", "error");
+    return;
+  }
+
+  el.classList.remove("d-none");
+
+  applyUIState(page);
+  applyRoleUI();
+  updateDashboardTitle(page);
+
+  console.log("ROUTE →", page);
+}
+
+// =====================================================
+// PAGE HANDLER
+// =====================================================
+
+function hideAllPages() {
+  document.querySelectorAll(".app-page")
+    .forEach(pageEl => pageEl.classList.add("d-none"));
+}
+
+// =====================================================
+// UI STATE
+// =====================================================
+
+function applyUIState(page) {
+  const topbar = document.getElementById("appTopbar");
+  const clock = document.getElementById("adminClockContainer");
+
+  if (page === "login") {
+    topbar?.classList.add("d-none");
+    clock?.classList.add("d-none");
+    return;
+  }
+
+  topbar?.classList.remove("d-none");
+
+  if (page === "admin") {
+    clock?.classList.remove("d-none");
+  } else {
+    clock?.classList.add("d-none");
+  }
+
+  if (page === "dashboard") {
+    clearDashboardUI?.();
+    renderTimeLogger?.();
+    syncDashboard?.();
   }
 }
+
+// =====================================================
+// ROLE UI
+// =====================================================
+
+function applyRoleUI() {
+  const isAdmin = APP.role === "admin" || APP.role === "owner";
+  const adminMenu = document.getElementById("adminMenuItem");
+
+  if (adminMenu) {
+    adminMenu.classList.toggle("d-none", !isAdmin);
+  }
+}
+
+// =====================================================
+// TITLE
+// =====================================================
+
+function updateDashboardTitle(page) {
+  const el = document.getElementById("dashboardTitle");
+  if (!el) return;
+
+  el.textContent = PAGE_TITLES[page] || "Dashboard";
+}
+
+// =====================================================
+// DASHBOARD TOGGLE
+// =====================================================
+
+function toggleDashboard() {
+  const isAdmin = APP.role === "admin" || APP.role === "owner";
+
+  if (!isAdmin) {
+    showToast?.("Access denied", "error");
+    return;
+  }
+
+  if (APP.currentPage === "admin") {
+    showToast?.("Switching to dashboard", "info");
+    go("dashboard");
+  } else {
+    showToast?.("Switching to admin panel", "info");
+    go("admin");
+  }
+}
+
+// =====================================================
+// INIT
+// =====================================================
+
+window.addEventListener("DOMContentLoaded", () => {
+  parseServerData();
+  restoreSession();
+  renderUserHeader();
+  bootApp();
+});
 </script>

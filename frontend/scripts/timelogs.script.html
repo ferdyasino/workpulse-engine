@@ -1,16 +1,168 @@
 <script>
-
 /**
  * =====================================================
- * TIME LOGGER SYSTEM (PRODUCTION SAFE VERSION)
+ * DASHBOARD / TIME LOGGER MODULE
  * =====================================================
  */
 
-/* =========================
-   RENDER LOGGER UI
-========================= */
-function renderTimeLogger() {
+// =====================================================
+// DASHBOARD RESET
+// =====================================================
 
+function clearDashboardUI() {
+  const dashboardTimelogsList = document.getElementById("dashboardTimelogsList");
+  if (dashboardTimelogsList) dashboardTimelogsList.innerHTML = "";
+
+  const leftTimelogsList = document.getElementById("leftTimelogsList");
+  if (leftTimelogsList) {
+    leftTimelogsList.innerHTML = `<div class="text-muted-custom">No break activity yet</div>`;
+  }
+
+  const summaryTimeIn = document.getElementById("summaryTimeIn");
+  if (summaryTimeIn) summaryTimeIn.textContent = "--";
+
+  const summaryTimeOut = document.getElementById("summaryTimeOut");
+  if (summaryTimeOut) summaryTimeOut.textContent = "--";
+
+  const currWorkStatus = document.getElementById("currWorkStatus");
+  if (currWorkStatus) currWorkStatus.textContent = "NOT STARTED";
+
+  const globalStatusText = document.getElementById("globalStatusText");
+  if (globalStatusText) globalStatusText.textContent = "NOT STARTED";
+
+  const dot = document.getElementById("statusDot");
+  if (dot) {
+    dot.className = "status-dot bg-secondary";
+  }
+
+  applyBreakButtonState("b1Btn", "AVAILABLE", "B1");
+  applyBreakButtonState("b2Btn", "AVAILABLE", "B2");
+  applyBreakButtonState("b3Btn", "AVAILABLE", "B3");
+}
+
+// =====================================================
+// DASHBOARD SYNC
+// =====================================================
+
+function syncDashboard() {
+  const user = getCurrentUser();
+  const email = user.email;
+  const workspace_id = user.workspace_id;
+
+  if (!email || !workspace_id) return;
+
+  showLoader?.();
+
+  google.script.run
+    .withSuccessHandler((res) => {
+      hideLoader?.();
+
+      const logs = Array.isArray(res) ? res : [];
+      const state = buildTimeLogState(logs);
+
+      APP.timeLogs = logs;
+      APP.attendanceState = state;
+      APP.workStatus = state.status || "NOT STARTED";
+
+      renderTimeLogger();
+      renderBreakActivity(logs);
+      renderGlobalState(state);
+      renderTimeSummary(state);
+      renderUserHeader();
+    })
+    .withFailureHandler((err) => {
+      hideLoader?.();
+      console.error("syncDashboard error:", err);
+    })
+    .findTimeLogs(workspace_id, { email });
+}
+
+// =====================================================
+// GLOBAL STATUS RENDER
+// =====================================================
+
+window.renderGlobalState = function(state = {}) {
+  const statusText = document.getElementById("globalStatusText");
+  const dot = document.getElementById("statusDot");
+
+  const currentStatus = String(state.status || "NOT STARTED").toUpperCase();
+
+  if (statusText) {
+    statusText.textContent = state.status || "NOT STARTED";
+  }
+
+  if (dot) {
+    dot.className = "status-dot";
+
+    switch (currentStatus) {
+      case "WORKING":
+        dot.classList.add("bg-success");
+        break;
+      case "ON BREAK":
+        dot.classList.add("bg-warning");
+        break;
+      case "AT LUNCH":
+        dot.classList.add("bg-info");
+        break;
+      case "CLOCKED OUT":
+        dot.classList.add("bg-danger");
+        break;
+      default:
+        dot.classList.add("bg-secondary");
+        break;
+    }
+  }
+
+  const breaks = Array.isArray(state.breaks) ? state.breaks : [];
+
+  applyBreakButtonState("b1Btn", getBreakButtonState(breaks[0]), "B1");
+  applyBreakButtonState("b2Btn", getBreakButtonState(breaks[1]), "B2");
+  applyBreakButtonState("b3Btn", getBreakButtonState(breaks[2]), "B3");
+};
+
+function getBreakButtonState(breakItem) {
+  if (!breakItem) return "AVAILABLE";
+
+  const hasIn = !!breakItem.in;
+  const hasOut = !!breakItem.out;
+
+  if (hasIn && hasOut) return "ENDED";
+  if (hasIn && !hasOut) return "ACTIVE";
+
+  return "AVAILABLE";
+}
+
+function applyBreakButtonState(buttonId, breakState, label) {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
+
+  btn.className = "btn btn-sm";
+  btn.disabled = false;
+  btn.textContent = label;
+  btn.dataset.breakState = breakState;
+
+  switch (breakState) {
+    case "ACTIVE":
+      btn.classList.add("btn-success");
+      break;
+
+    case "ENDED":
+      btn.classList.add("btn-break-ended");
+      btn.disabled = true;
+      break;
+
+    case "AVAILABLE":
+    default:
+      btn.classList.add("btn-outline-warning");
+      break;
+  }
+}
+
+// =====================================================
+// RENDER LOGGER UI
+// =====================================================
+
+function renderTimeLogger() {
   const container = document.getElementById("dashboardTimelogsList");
   if (!container) return;
 
@@ -63,21 +215,20 @@ function renderTimeLogger() {
   `;
 }
 
-/* =========================
-   LOG TIME EVENT
-========================= */
+// =====================================================
+// LOG TIME EVENT
+// =====================================================
+
 function logTime(action) {
+  const user = getCurrentUser();
 
-  const email = localStorage.getItem("email");
-  const workspace_id =
-    localStorage.getItem("workspace_id") ||
-    document.getElementById("sid")?.value;
-  const shiftId = localStorage.getItem("shift_id");
-
-  const userId = localStorage.getItem("user_id");
+  const email = user.email;
+  const workspace_id = user.workspace_id || document.getElementById("sid")?.value;
+  const shiftId = user.shift_id;
+  const userId = user.user_id;
 
   if (!email || !workspace_id || !userId) {
-    showToast?.(err?.message,"Session expired. Please login again.", "error");
+    showToast?.("Session expired. Please login again.", "error");
     return;
   }
 
@@ -91,16 +242,14 @@ function logTime(action) {
     timestamp: new Date().toISOString()
   };
 
-  validate(workspace_id, payload,
-    (result) => {
-
-      console.log("VALID OK:", result);
-
+  validate(
+    workspace_id,
+    payload,
+    () => {
       showLoader?.();
 
       google.script.run
         .withSuccessHandler((res) => {
-
           hideLoader?.();
 
           if (!res?.success) {
@@ -116,7 +265,6 @@ function logTime(action) {
           showToast?.(err?.message || "Server error", "error");
         })
         .insertTimeLog(workspace_id, payload);
-
     },
     (err) => {
       showToast?.(err?.message || "Validation failed", "error");
@@ -124,44 +272,47 @@ function logTime(action) {
   );
 }
 
-/* =========================
-   FETCH LOGS
-========================= */
-function getLogs() {
+// =====================================================
+// FETCH LOGS
+// =====================================================
 
-  const email = localStorage.getItem("email");
-  const workspace_id =
-    localStorage.getItem("workspace_id") ||
-    document.getElementById("sid")?.value;
+function getLogs() {
+  const user = getCurrentUser();
+  const email = user.email;
+  const workspace_id = user.workspace_id || document.getElementById("sid")?.value;
 
   if (!workspace_id || !email) return;
 
   google.script.run
     .withSuccessHandler((res) => {
-
       const logs = Array.isArray(res) ? res : [];
 
-      // OPTIONAL: dedupe safety layer
       const unique = Array.from(
-        new Map(logs.map(l => [`${l.action}_${l.timestamp}`, l])).values()
+        new Map(logs.map(log => [`${log.action}_${log.timestamp}`, log])).values()
       );
 
       const state = buildTimeLogState(unique);
 
+      APP.timeLogs = unique;
+      APP.attendanceState = state;
+      APP.workStatus = state.status || "NOT STARTED";
+
       renderTimeSummary(state);
       renderGlobalState(state);
       renderBreakActivity(unique);
-
+      renderUserHeader();
     })
     .withFailureHandler(console.error)
     .findTimeLogs(workspace_id, { email });
 }
 
+// =====================================================
+// VALIDATION
+// =====================================================
+
 function validate(workspace_id, payload, callback, errCallback) {
-
   google.script.run
-    .withSuccessHandler(res => {
-
+    .withSuccessHandler((res) => {
       if (!res) {
         errCallback?.({ message: "Empty response from server" });
         return;
@@ -174,41 +325,21 @@ function validate(workspace_id, payload, callback, errCallback) {
 
       callback?.(res);
     })
-    .withFailureHandler(err => {
-
+    .withFailureHandler((err) => {
       console.error("VALIDATION ERROR:", err);
 
       errCallback?.({
         message: err?.message || "Server error"
       });
-
     })
     .recordTimeLogAction(workspace_id, payload);
 }
 
-/* =========================
-   LOG LIST
-========================= */
-// function renderTimeLogs(logs) {
-
-//   const container = document.getElementById("dashboardSummaryList");
-//   if (!container) return;
-
-//   if (!Array.isArray(logs) || logs.length === 0) {
-//     container.innerHTML = `<div class="text-muted-custom">No logs yet</div>`;
-//     return;
-//   }
-
-//   container.innerHTML = logs.map(log => `
-//     <div class="d-flex justify-content-between border-bottom py-2">
-//       <div>${formatLabel(log.action)}</div>
-//       <div class="text-muted-custom">${formatTimeSafe(log.timestamp)}</div>
-//     </div>
-//   `).join("");
-// }
+// =====================================================
+// BREAK ACTIVITY
+// =====================================================
 
 function renderBreakActivity(logs) {
-
   const container = document.getElementById("leftTimelogsList");
   if (!container) return;
 
@@ -230,19 +361,14 @@ function renderBreakActivity(logs) {
   `).join("");
 }
 
-/* =========================
-   SUMMARY
-========================= */
-function renderTimeSummary(state) {
+// =====================================================
+// SUMMARY
+// =====================================================
 
+function renderTimeSummary(state) {
   const currWorkStatus = document.getElementById("currWorkStatus");
   const summaryTimeIn = document.getElementById("summaryTimeIn");
   const summaryTimeOut = document.getElementById("summaryTimeOut");
-  const summaryStatus = document.getElementById("summaryStatus");
-
-  // if (summaryStatus) {
-  //   summaryStatus.textContent = state.status || "NOT_STARTED";
-  // }
 
   if (summaryTimeIn) {
     summaryTimeIn.textContent = state.time_in
@@ -257,15 +383,15 @@ function renderTimeSummary(state) {
   }
 
   if (currWorkStatus) {
-    currWorkStatus.textContent = state.status || "NOT_STARTED";
+    currWorkStatus.textContent = state.status || "NOT STARTED";
   }
 }
 
-/* =========================
-   STATE ENGINE (FIXED BREAK LOGIC)
-========================= */
-function buildTimeLogState(timeLogs) {
+// =====================================================
+// STATE ENGINE
+// =====================================================
 
+function buildTimeLogState(timeLogs) {
   const state = {
     status: "NOT_STARTED",
     time_in: null,
@@ -275,9 +401,7 @@ function buildTimeLogState(timeLogs) {
   };
 
   for (const log of timeLogs) {
-
     switch (log.action) {
-
       case "time_in":
         state.time_in = log.timestamp;
         state.status = "WORKING";
@@ -297,11 +421,12 @@ function buildTimeLogState(timeLogs) {
 
       case "break_1_end":
       case "break_2_end":
-      case "break_3_end":
+      case "break_3_end": {
         const lastBreak = state.breaks.findLast(b => !b.out);
         if (lastBreak) lastBreak.out = log.timestamp;
         state.status = "WORKING";
         break;
+      }
 
       case "lunch_start":
         state.lunch.in = log.timestamp;
@@ -318,15 +443,21 @@ function buildTimeLogState(timeLogs) {
   return state;
 }
 
-/* =========================
-   HELPERS
-========================= */
+// =====================================================
+// HELPERS
+// =====================================================
+
 function formatTimeSafe(ts) {
-  if (!ts) return "--"; 
+  if (!ts) return "--";
+
   const d = new Date(ts);
   return isNaN(d.getTime())
     ? "--"
-    : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    : d.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
 }
 
 function formatLabel(action) {
@@ -334,14 +465,4 @@ function formatLabel(action) {
     .replaceAll("_", " ")
     .replace(/\b\w/g, c => c.toUpperCase());
 }
-
-/* =========================
-   CACHE
-========================= */
-function clearAllCache() {
-  google.script.run
-    .withSuccessHandler(res => console.log(res))
-    .clearAllCache();
-}
-
 </script>
