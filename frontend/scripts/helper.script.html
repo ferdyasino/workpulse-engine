@@ -1,24 +1,76 @@
 <script>
 // =====================================================
-// HELPER
+// GLOBAL TIME FORMATTER
 // =====================================================
 
-function formatTime(ts) {
+window.formatTime = function(ts) {
   if (!ts) return "--";
 
-  return new Date(ts).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
-}
+  const d = new Date(ts);
+  return isNaN(d.getTime())
+    ? "--"
+    : d.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+};
 
-function formatShift(value) {
+// =====================================================
+// DISPLAY NORMALIZER
+// Frontend only
+// =====================================================
+
+window.DISPLAY = {
+  lower(value = "") {
+    return String(value ?? "").trim().toLowerCase();
+  },
+
+  upper(value = "") {
+    return String(value ?? "").trim().toUpperCase();
+  },
+
+  clean(value = "") {
+    return String(value ?? "")
+      .trim()
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ");
+  },
+
+  title(value = "") {
+    return DISPLAY.clean(value)
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase());
+  },
+
+  label(value = "") {
+    return DISPLAY.clean(value)
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase());
+  },
+
+  status(value = "") {
+    return DISPLAY.clean(value)
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase());
+  },
+
+  name(value = "") {
+    return DISPLAY.clean(value)
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase());
+  }
+};
+
+// =====================================================
+// SHIFT TIME DISPLAY
+// =====================================================
+
+window.formatShift = function(value) {
   if (!value) return "--";
 
   const str = String(value).trim();
-
   const match = str.match(/^(\d{1,2}):(\d{2})$/);
+
   if (!match) return str;
 
   let hours = Number(match[1]);
@@ -28,9 +80,13 @@ function formatShift(value) {
   hours = hours % 12 || 12;
 
   return `${hours}:${minutes} ${suffix}`;
-}
+};
 
-function getCurrentLocation() {
+// =====================================================
+// LOCATION
+// =====================================================
+
+window.getCurrentLocation = function() {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
       resolve({
@@ -90,5 +146,5 @@ function getCurrentLocation() {
       }
     );
   });
-}
+};
 </script>

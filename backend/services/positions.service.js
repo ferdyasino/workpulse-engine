@@ -2,52 +2,21 @@ const POSITION_TABLE = TABLES.POSITIONS;
 
 /**
  * =====================================================
- * NORMALIZER
- * =====================================================
- */
-function normalizePosition(row) {
-  if (!row) return null;
-
-  return {
-    position_id: row.position_id,
-    position_name: row.position_name,
-    department_id: row.department_id || "",
-    description: row.description || "",
-    status: row.status || "ACTIVE",
-    created_at: row.created_at
-  };
-}
-
-/**
- * =====================================================
- * CREATE POSITION (SAFE + CONSISTENT)
+ * CREATE POSITION
  * =====================================================
  */
 function createPosition(workspace_id, payload) {
-
-  // =========================
-  // 1. VALIDATION
-  // =========================
   if (!payload?.position_name?.trim()) {
     throw new Error("position_name is required");
   }
 
-  const positionName = payload.position_name.trim().toUpperCase();
-  const departmentId = payload.department_id || "";
+  const positionName = normalize("position_name", payload.position_name);
+  const departmentId = String(payload.department_id || "");
 
-  // =========================
-  // 2. LOAD EXISTING
-  // =========================
-  const existingPositions = find(workspace_id, POSITION_TABLE)
-    .map(normalizePosition)
-    .filter(Boolean);
-
-  // =========================
-  // 3. DUPLICATE CHECK
-  // =========================
-  const existing = existingPositions.find(p =>
-    (p.position_name || "").trim().toUpperCase() === positionName &&
-    (p.department_id || "") === departmentId
+  const existing = find(workspace_id, POSITION_TABLE).find(p =>
+    normalize("position_name", p.position_name).toLowerCase() ===
+      positionName.toLowerCase() &&
+    String(p.department_id || "") === departmentId
   );
 
   if (existing) {
@@ -58,21 +27,15 @@ function createPosition(workspace_id, payload) {
     };
   }
 
-  // =========================
-  // 4. DOMAIN MODEL
-  // =========================
   const position = {
     position_id: generateId("POS"),
     position_name: positionName,
     department_id: departmentId,
-    description: payload.description?.trim() || "",
+    description: normalize("description", payload.description),
     status: "ACTIVE",
     created_at: new Date().toISOString()
   };
 
-  // =========================
-  // 5. PERSIST
-  // =========================
   const result = insert(workspace_id, POSITION_TABLE, position);
 
   return {
@@ -87,11 +50,9 @@ function createPosition(workspace_id, payload) {
  * =====================================================
  */
 function getPositionById(workspace_id, positionId) {
-  const result = find(workspace_id, POSITION_TABLE, {
+  return findOne(workspace_id, POSITION_TABLE, {
     position_id: positionId
   });
-
-  return result.length ? normalizePosition(result[0]) : null;
 }
 
 /**
@@ -100,9 +61,7 @@ function getPositionById(workspace_id, positionId) {
  * =====================================================
  */
 function getAllPositions(workspace_id) {
-  return find(workspace_id, POSITION_TABLE)
-    .map(normalizePosition)
-    .filter(Boolean);
+  return find(workspace_id, POSITION_TABLE);
 }
 
 /**
@@ -111,51 +70,53 @@ function getAllPositions(workspace_id) {
  * =====================================================
  */
 function updatePosition(workspace_id, positionId, updates) {
-
   const position = getPositionById(workspace_id, positionId);
   if (!position) throw new Error("Position not found");
 
   const safeUpdates = { ...updates };
 
-  // =========================
-  // NAME VALIDATION
-  // =========================
-  if (safeUpdates.position_name) {
+  const nextPositionName =
+    safeUpdates.position_name !== undefined
+      ? normalize("position_name", safeUpdates.position_name)
+      : normalize("position_name", position.position_name);
 
-    const newName = safeUpdates.position_name.trim().toUpperCase();
-    const departmentId =
-      safeUpdates.department_id || position.department_id;
+  const nextDepartmentId =
+    safeUpdates.department_id !== undefined
+      ? String(safeUpdates.department_id || "")
+      : String(position.department_id || "");
 
-    const existingPositions = find(workspace_id, POSITION_TABLE)
-      .map(normalizePosition)
-      .filter(Boolean);
+  const duplicate = find(workspace_id, POSITION_TABLE).find(p =>
+    p.position_id !== positionId &&
+    normalize("position_name", p.position_name).toLowerCase() ===
+      nextPositionName.toLowerCase() &&
+    String(p.department_id || "") === nextDepartmentId
+  );
 
-    const duplicate = existingPositions.find(p =>
-      p.position_id !== positionId &&
-      (p.position_name || "").trim().toUpperCase() === newName &&
-      (p.department_id || "") === departmentId
-    );
-
-    if (duplicate) {
-      return {
-        success: false,
-        message: `Position '${newName}' already exists in this department`,
-        data: duplicate
-      };
-    }
-
-    safeUpdates.position_name = newName;
+  if (duplicate) {
+    return {
+      success: false,
+      message: `Position '${nextPositionName}' already exists in this department`,
+      data: duplicate
+    };
   }
 
-  // =========================
-  // PERSIST
-  // =========================
-  const updated = update(
-    workspace_id,
-    POSITION_TABLE,
-    positionId,
-    safeUpdates
-  );
+  if (safeUpdates.position_name !== undefined) {
+    if (!String(safeUpdates.position_name).trim()) {
+      throw new Error("position_name is required");
+    }
+
+    safeUpdates.position_name = normalize("position_name", safeUpdates.position_name);
+  }
+
+  if (safeUpdates.description !== undefined) {
+    safeUpdates.description = normalize("description", safeUpdates.description);
+  }
+
+  if (safeUpdates.department_id !== undefined) {
+    safeUpdates.department_id = String(safeUpdates.department_id || "");
+  }
+
+  const updated = update(workspace_id, POSITION_TABLE, positionId, safeUpdates);
 
   return {
     success: true,
@@ -165,15 +126,13 @@ function updatePosition(workspace_id, positionId, updates) {
 
 /**
  * =====================================================
- * DELETE POSITION (SAFE GUARD)
+ * DELETE POSITION
  * =====================================================
  */
 function deletePosition(workspace_id, positionId) {
-
   const position = getPositionById(workspace_id, positionId);
   if (!position) throw new Error("Position not found");
 
-  // prevent deletion if users are assigned
   const usersUsingPosition = find(workspace_id, TABLES.USERS)
     .filter(u => u.position_id === positionId);
 

@@ -264,6 +264,7 @@ function restoreSession() {
   const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
 
   if (isAdmin) {
+    UserInit?.();
     APP.currentPage =
       lastPage === "dashboard" || lastPage === "admin"
         ? lastPage
