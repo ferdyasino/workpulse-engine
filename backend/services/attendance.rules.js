@@ -1,3 +1,12 @@
+/* =========================
+   TIMELOG ACTION RULES
+   SINGLE SOURCE OF TRUTH
+========================= */
+
+/**
+ * Public safe validation entry
+ * Frontend can call this before actual insert
+ */
 function recordTimeLogAction(workspace_id, payload) {
   try {
     if (!workspace_id) {

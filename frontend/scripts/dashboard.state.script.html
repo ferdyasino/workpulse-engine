@@ -1,206 +1,219 @@
 <script>
-// =====================================================
-// APP BOOT
-// =====================================================
+  // =====================================================
+  // APP BOOT
+  // =====================================================
 
-function bootApp() {
-  if (!APP.currentPage) {
-    APP.currentPage = "login";
+  function bootApp() {
+    if (!APP.currentPage) {
+      APP.currentPage = "login";
+    }
+
+    go(APP.currentPage);
   }
 
-  go(APP.currentPage);
-}
+  // =====================================================
+  // ROUTER
+  // =====================================================
 
-// =====================================================
-// ROUTER
-// =====================================================
+  function go(page) {
+    APP.currentPage = page;
 
-function go(page) {
-  APP.currentPage = page;
+    localStorage.setItem(STORAGE_KEYS.LAST_PAGE, page);
 
-  localStorage.setItem(STORAGE_KEYS.LAST_PAGE, page);
+    const targetId = ROUTES[page] || ROUTES.home;
 
-  const targetId = ROUTES[page] || ROUTES.home;
+    hideAllPages();
 
-  hideAllPages();
+    const el = document.getElementById(targetId);
 
-  const el = document.getElementById(targetId);
+    if (!el) {
+      console.error("Invalid page:", page);
+      showToast?.("Page not found", "error");
+      return;
+    }
 
-  if (!el) {
-    console.error("Invalid page:", page);
-    showToast?.("Page not found", "error");
-    return;
+    el.classList.remove("d-none");
+
+    applyUIState(page);
+    applyRoleUI();
+    updateDashboardTitle(page);
+
+    console.log("ROUTE →", page);
   }
 
-  el.classList.remove("d-none");
+  // =====================================================
+  // PAGE HANDLER
+  // =====================================================
 
-  applyUIState(page);
-  applyRoleUI();
-  updateDashboardTitle(page);
-
-  console.log("ROUTE →", page);
-}
-
-// =====================================================
-// PAGE HANDLER
-// =====================================================
-
-function hideAllPages() {
-  document.querySelectorAll(".app-page")
-    .forEach(pageEl => pageEl.classList.add("d-none"));
-}
-
-// =====================================================
-// UI STATE
-// =====================================================
-
-function applyUIState(page) {
-  const topbar = document.getElementById("appTopbar");
-  const clock = document.getElementById("adminClockContainer");
-
-  if (page === "login") {
-    topbar?.classList.add("d-none");
-    clock?.classList.add("d-none");
-    return;
+  function hideAllPages() {
+    document
+      .querySelectorAll(".app-page")
+      .forEach((pageEl) => pageEl.classList.add("d-none"));
   }
 
-  topbar?.classList.remove("d-none");
+  // =====================================================
+  // UI STATE
+  // =====================================================
 
-  if (page === "admin") {
-    clock?.classList.remove("d-none");
-  } else {
-    clock?.classList.add("d-none");
+  function applyUIState(page) {
+    const topbar = document.getElementById("appTopbar");
+    const clock = document.getElementById("adminClockContainer");
+
+    if (page === "login") {
+      topbar?.classList.add("d-none");
+      clock?.classList.add("d-none");
+      return;
+    }
+
+    topbar?.classList.remove("d-none");
+
+    if (page === "admin") {
+      clock?.classList.remove("d-none");
+    } else {
+      clock?.classList.add("d-none");
+    }
+
+    if (page === "dashboard") {
+      clearDashboardUI?.();
+
+      // IMPORTANT:
+      // only ONE sync pipeline is allowed (prevents double-render bugs)
+      syncAttendanceState();
+    }
   }
 
-  if (page === "dashboard") {
-    clearDashboardUI?.();
-    renderTimeLogger?.();
-    syncDashboard?.();
-  }
-}
+  // =====================================================
+  // ROLE UI
+  // =====================================================
 
-// =====================================================
-// ROLE UI
-// =====================================================
+  function applyRoleUI() {
+    const isAdmin = APP.role === "admin" || APP.role === "owner";
+    const adminMenu = document.getElementById("adminMenuItem");
 
-function applyRoleUI() {
-  const isAdmin = APP.role === "admin" || APP.role === "owner";
-  const adminMenu = document.getElementById("adminMenuItem");
-
-  if (adminMenu) {
-    adminMenu.classList.toggle("d-none", !isAdmin);
-  }
-}
-
-// =====================================================
-// TITLE
-// =====================================================
-
-function updateDashboardTitle(page) {
-  const el = document.getElementById("dashboardTitle");
-  if (!el) return;
-
-  el.textContent = PAGE_TITLES[page] || "Dashboard";
-}
-
-// =====================================================
-// DASHBOARD TOGGLE
-// =====================================================
-
-function toggleDashboard() {
-  const isAdmin = APP.role === "admin" || APP.role === "owner";
-
-  if (!isAdmin) {
-    showToast?.("Access denied", "error");
-    return;
+    if (adminMenu) {
+      adminMenu.classList.toggle("d-none", !isAdmin);
+    }
   }
 
-  if (APP.currentPage === "admin") {
-    showToast?.("Switching to dashboard", "info");
-    go("dashboard");
-  } else {
-    showToast?.("Switching to admin panel", "info");
-    go("admin");
-  }
-}
+  // =====================================================
+  // TITLE
+  // =====================================================
 
-function clearDashboardUI() {
-  const dashboardTimelogsList = document.getElementById("dashboardTimelogsList");
-  if (dashboardTimelogsList) {
-    dashboardTimelogsList.innerHTML = `<div class="text-muted-custom">No logs yet</div>`;
+  function updateDashboardTitle(page) {
+    const el = document.getElementById("dashboardTitle");
+    if (!el) return;
+
+    el.textContent = PAGE_TITLES[page] || "Dashboard";
   }
 
-  const leftTimelogsList = document.getElementById("leftTimelogsList");
-  if (leftTimelogsList) {
-    leftTimelogsList.innerHTML = `<div class="text-muted-custom">No break activity yet</div>`;
+  // =====================================================
+  // DASHBOARD TOGGLE
+  // =====================================================
+
+  function toggleDashboard() {
+    const isAdmin = APP.role === "admin" || APP.role === "owner";
+
+    if (!isAdmin) {
+      showToast?.("Access denied", "error");
+      return;
+    }
+
+    if (APP.currentPage === "admin") {
+      showToast?.("Switching to dashboard", "info");
+      go("dashboard");
+    } else {
+      showToast?.("Switching to admin panel", "info");
+      go("admin");
+    }
   }
 
-  const summaryTimeIn = document.getElementById("summaryTimeIn");
-  if (summaryTimeIn) summaryTimeIn.textContent = "--";
+  // =====================================================
+  // CLEAN DASHBOARD RESET (NO BREAK BUTTON ASSUMPTION)
+  // =====================================================
 
-  const summaryTimeOut = document.getElementById("summaryTimeOut");
-  if (summaryTimeOut) summaryTimeOut.textContent = "--";
+  function clearDashboardUI() {
+    const dashboardTimelogsList = document.getElementById(
+      "dashboardTimelogsList",
+    );
+    if (dashboardTimelogsList) {
+      dashboardTimelogsList.innerHTML = `<div class="text-muted-custom">No logs yet</div>`;
+    }
 
-  const globalStatusText = document.getElementById("globalStatusText");
-  if (globalStatusText) globalStatusText.textContent = "NOT STARTED";
+    const leftTimelogsList = document.getElementById("leftTimelogsList");
+    if (leftTimelogsList) {
+      leftTimelogsList.innerHTML = `<div class="text-muted-custom">No break activity yet</div>`;
+    }
 
-  const dot = document.getElementById("statusDot");
-  if (dot) {
-    dot.className = "status-dot bg-secondary";
+    const summaryTimeIn = document.getElementById("summaryTimeIn");
+    if (summaryTimeIn) summaryTimeIn.textContent = "--";
+
+    const summaryTimeOut = document.getElementById("summaryTimeOut");
+    if (summaryTimeOut) summaryTimeOut.textContent = "--";
+
+    const globalStatusText = document.getElementById("globalStatusText");
+    if (globalStatusText) globalStatusText.textContent = "NOT STARTED";
+
+    const dot = document.getElementById("statusDot");
+    if (dot) {
+      dot.className = "status-dot bg-secondary";
+    }
+
+    // ❌ REMOVED:
+    // applyBreakButtonState("b1Btn"...)
+    // applyBreakButtonState("b2Btn"...)
+    // applyBreakButtonState("b3Btn"...)
+
+    // NOW BREAK UI IS FULLY DYNAMIC via renderGlobalState()
   }
 
-  applyBreakButtonState("b1Btn", "AVAILABLE", "B1");
-  applyBreakButtonState("b2Btn", "AVAILABLE", "B2");
-  applyBreakButtonState("b3Btn", "AVAILABLE", "B3");
-}
+  // =====================================================
+  // SINGLE SOURCE DASHBOARD SYNC (PRIMARY)
+  // =====================================================
 
-// =====================================================
-// DASHBOARD SYNC
-// =====================================================
+  function syncAttendanceState() {
+    const user = getCurrentUser();
+    const email = user?.email;
+    const workspace_id = user?.workspace_id;
 
-function syncDashboard() {
-  const user = getCurrentUser();
-  const email = user?.email;
-  const workspace_id = user?.workspace_id;
+    if (!email || !workspace_id) return;
 
-  if (!email || !workspace_id) return;
+    showLoader?.();
 
-  showLoader?.();
+    google.script.run
+      .withSuccessHandler((logs) => {
+        hideLoader?.();
 
-  google.script.run
-    .withSuccessHandler((res) => {
-      hideLoader?.();
+        const safeLogs = dedupeTimeLogs(Array.isArray(logs) ? logs : []);
+        const state = buildTimeLogState(safeLogs);
 
-      const logs = dedupeTimeLogs(Array.isArray(res) ? res : []);
-      const state = buildTimeLogState(logs);
+        APP.timeLogs = safeLogs;
+        APP.attendanceState = state;
+        APP.workStatus = state.status || "NOT STARTED";
 
-      APP.timeLogs = logs;
-      APP.attendanceState = state;
-      APP.workStatus = state.status || "NOT STARTED";
+        // =================================================
+        // SINGLE RENDER PIPELINE (ORDER MATTERS)
+        // =================================================
+        renderGlobalState(state);
+        renderTimeSummary(state);
+        renderBreakActivity(state);
+        renderTimeLogger();
+        renderUserHeader?.();
+      })
+      .withFailureHandler((err) => {
+        hideLoader?.();
+        console.error("syncAttendanceState error:", err);
+      })
+      .findTimeLogs(workspace_id, { email });
+  }
 
-      renderTimeLogger();
-      renderTimeline(state, logs); // now buttons only
-      renderBreakActivity(state);
-      renderGlobalState(state);
-      renderTimeSummary(state);
-      renderUserHeader?.();
-    })
-    .withFailureHandler((err) => {
-      hideLoader?.();
-      console.error("syncDashboard error:", err);
-    })
-    .findTimeLogs(workspace_id, { email });
-}
+  // =====================================================
+  // INIT
+  // =====================================================
 
-
-// =====================================================
-// INIT
-// =====================================================
-
-window.addEventListener("DOMContentLoaded", () => {
-  parseServerData();
-  restoreSession();
-  renderUserHeader();
-  bootApp();
-});
+  window.addEventListener("DOMContentLoaded", () => {
+    parseServerData();
+    restoreSession();
+    renderUserHeader();
+    bootApp();
+  });
 </script>

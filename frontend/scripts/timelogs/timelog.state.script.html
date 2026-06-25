@@ -4,16 +4,21 @@
       status: "NOT STARTED",
       time_in: null,
       time_out: null,
-      lunch: {
-        in: null,
-        out: null,
-      },
+      lunch: { in: null, out: null },
       breaks: [],
     };
 
-    for (const log of Array.isArray(timeLogs) ? timeLogs : []) {
+    const logs = Array.isArray(timeLogs) ? timeLogs : [];
+
+    let breakCounter = 0;
+
+    for (const log of logs) {
       const action = String(log?.action || "").trim();
       const timestamp = log?.timestamp || null;
+
+      /* =========================
+       CORE EVENTS
+    ========================= */
 
       if (action === "time_in") {
         state.time_in = timestamp;
@@ -23,7 +28,6 @@
 
       if (action === "time_out") {
         state.time_out = timestamp;
-        state.status = "CLOCKED OUT";
         continue;
       }
 
@@ -39,36 +43,79 @@
         continue;
       }
 
-      const breakMatch = action.match(/^break_(\d+)_(start|end)$/);
-      if (breakMatch) {
-        const breakNumber = Number(breakMatch[1]);
-        const breakIndex = breakNumber - 1;
-        const breakType = breakMatch[2];
+      /* =========================
+       NEW BREAK MODEL (SAFE)
+    ========================= */
 
-        if (!state.breaks[breakIndex]) {
-          state.breaks[breakIndex] = {
-            key: `B${breakNumber}`,
+      if (action === "break_start") {
+        state.breaks.push({
+          key: `B${++breakCounter}`,
+          in: timestamp,
+          out: null,
+        });
+
+        state.status = "ON BREAK";
+        continue;
+      }
+
+      if (action === "break_end") {
+        const openBreak = [...state.breaks].reverse().find((b) => b && !b.out);
+
+        if (openBreak) {
+          openBreak.out = timestamp;
+        }
+
+        state.status = "WORKING";
+        continue;
+      }
+
+      /* =========================
+       LEGACY MODEL (ISOLATED)
+    ========================= */
+
+      const legacy = action.match(/^break_(\d+)_(start|end)$/);
+
+      if (legacy) {
+        const index = Number(legacy[1]) - 1;
+        const type = legacy[2];
+
+        if (!state.breaks[index]) {
+          state.breaks[index] = {
+            key: `B${index + 1}`,
             in: null,
             out: null,
           };
         }
 
-        if (breakType === "start") {
-          state.breaks[breakIndex].in = timestamp;
-          state.status = "ON BREAK";
-        } else {
-          state.breaks[breakIndex].out = timestamp;
-          state.status = "WORKING";
+        if (type === "start") {
+          state.breaks[index].in = timestamp;
         }
+
+        if (type === "end") {
+          state.breaks[index].out = timestamp;
+        }
+
+        continue;
       }
     }
+
+    /* =========================
+     FINAL STATE RESOLUTION
+  ========================= */
 
     state.breaks = state.breaks.filter(Boolean);
 
     if (state.time_out) {
       state.status = "CLOCKED OUT";
+    } else if (state.lunch?.in && !state.lunch?.out) {
+      state.status = "AT LUNCH";
+    } else if (state.breaks.some((b) => b.in && !b.out)) {
+      state.status = "ON BREAK";
+    } else if (state.time_in) {
+      state.status = "WORKING";
     }
 
     return state;
   }
 </script>
+>

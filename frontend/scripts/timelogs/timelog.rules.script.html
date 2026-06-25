@@ -1,7 +1,8 @@
 <script>
-  /* =========================
-    SAFE TIME LOG ACTION ENTRY
-    ========================= */
+  /* =====================================================
+   SAFE TIME LOG ACTION ENTRY (FRONT → BACK VALIDATION)
+===================================================== */
+
   function recordTimeLogAction(workspace_id, payload) {
     try {
       if (!workspace_id) {
@@ -16,289 +17,250 @@
 
       return {
         success: true,
-        message: `${payload.action} validated for shift ${payload.shift_id}`,
+        message: `${payload.action} validated for shift ${payload.shift_id || ""}`,
       };
     } catch (err) {
       return {
         success: false,
-        message: err.message || "Validation failed",
+        message: err?.message || "Validation failed",
       };
     }
   }
 
-  /* =========================
-    VALID ACTIONS
-    ========================= */
+  /* =====================================================
+   ALLOWED ACTIONS (SOURCE OF TRUTH)
+===================================================== */
+
   function getAllowedTimeLogActions() {
     return [
       "time_in",
       "time_out",
+      "lunch_start",
+      "lunch_end",
       "break_1_start",
       "break_1_end",
       "break_2_start",
       "break_2_end",
       "break_3_start",
       "break_3_end",
-      "lunch_start",
-      "lunch_end",
     ];
   }
 
-  /* =========================
-    ACTION VALIDATOR
-    ========================= */
+  /* =====================================================
+   VALIDATION ENTRYPOINT
+===================================================== */
+
   function validateTimeLogAction(workspace_id, payload) {
-    const email = String(payload.email || "")
+    const email = String(payload?.email || "")
       .trim()
       .toLowerCase();
-    const action = String(payload.action || "").trim();
+    const action = String(payload?.action || "").trim();
+    const shiftId = payload?.shift_id || null;
 
     if (!email) throw new Error("email is required");
     if (!action) throw new Error("action is required");
 
-    const allowed = getAllowedTimeLogActions();
-
-    if (!allowed.includes(action)) {
+    if (!getAllowedTimeLogActions().includes(action)) {
       throw new Error(`Invalid action: ${action}`);
     }
 
-    // SHIFT-BASED STATE (not session-based)
-    const state = getCurrentState(workspace_id, email, payload.shift_id);
+    const state = getCurrentState(workspace_id, email, shiftId);
 
     switch (action) {
       case "time_in":
         assertCanTimeIn(state);
-        break;
+        return true;
 
       case "time_out":
         assertCanTimeOut(state);
-        break;
+        return true;
 
       case "lunch_start":
         assertCanStartLunch(state);
-        break;
+        return true;
 
       case "lunch_end":
         assertCanEndLunch(state);
-        break;
+        return true;
 
       case "break_1_start":
       case "break_2_start":
       case "break_3_start":
         assertCanStartBreak(state, action);
-        break;
+        return true;
 
       case "break_1_end":
       case "break_2_end":
       case "break_3_end":
         assertCanEndBreak(state, action);
-        break;
+        return true;
 
       default:
         throw new Error(`Unsupported action: ${action}`);
     }
-
-    return true;
   }
 
-  /* =========================
-    TIME IN RULE
-    ========================= */
+  /* =====================================================
+   STATE HELPERS
+===================================================== */
+
+  function getBreakMap(state) {
+    const list = Array.isArray(state.breaks) ? state.breaks : [];
+
+    return {
+      1: list[0] || null,
+      2: list[1] || null,
+      3: list[2] || null,
+    };
+  }
+
+  function getActiveBreak(state) {
+    return (state.breaks || []).find((b) => b && b.in && !b.out) || null;
+  }
+
+  function extractBreakNumber(action) {
+    const m = String(action).match(/^break_(\d+)_(start|end)$/);
+    return m ? Number(m[1]) : null;
+  }
+
+  function getBreakIndexSafe(state, breakObj) {
+    return (
+      (state.breaks || []).findIndex(
+        (b) => b?.key && breakObj?.key && b.key === breakObj.key,
+      ) + 1
+    );
+  }
+
+  /* =====================================================
+   TIME RULES
+===================================================== */
+
   function assertCanTimeIn(state) {
-    if (state.time_in) {
-      throw new Error("You already timed in for this shift.");
-    }
-
+    if (state.time_in) throw new Error("Already timed in.");
     return true;
   }
 
-  /* =========================
-    TIME OUT RULE
-    ========================= */
   function assertCanTimeOut(state) {
-    if (!state.time_in) {
-      throw new Error("You must time in first before timing out.");
-    }
+    if (!state.time_in) throw new Error("Time in required first.");
+    if (state.time_out) throw new Error("Already timed out.");
 
-    if (state.time_out) {
-      throw new Error("You already timed out for this shift.");
-    }
-
-    const activeBreak = (state.breaks || []).find((b) => b && b.in && !b.out);
-    if (activeBreak) {
-      const idx = (state.breaks || []).indexOf(activeBreak) + 1;
-      throw new Error(
-        `You are currently on Break ${idx}. End Break ${idx} before timing out.`,
-      );
+    if (getActiveBreak(state)) {
+      throw new Error("End active break first.");
     }
 
     if (state.lunch?.in && !state.lunch?.out) {
-      throw new Error(
-        "You are currently on lunch. End lunch before timing out.",
-      );
+      throw new Error("End lunch first.");
     }
 
     return true;
   }
-  /* =========================
-    LUNCH RULES
-    ========================= */
-  function assertCanStartLunch(state) {
-    if (!state.time_in) {
-      throw new Error("You must time in first.");
-    }
 
-    if (state.time_out) {
-      throw new Error("Cannot start lunch after time out.");
-    }
+  /* =====================================================
+   LUNCH RULES
+===================================================== */
+
+  function assertCanStartLunch(state) {
+    if (!state.time_in) throw new Error("Time in required.");
+    if (state.time_out) throw new Error("Already timed out.");
 
     if (state.lunch?.in && !state.lunch?.out) {
-      throw new Error("Lunch already in progress.");
+      throw new Error("Lunch already active.");
     }
 
-    const activeBreak = (state.breaks || []).find((b) => b && !b.out);
-
-    if (activeBreak) {
-      const idx = (state.breaks || []).indexOf(activeBreak) + 1;
-      throw new Error(`End Break ${idx} before starting lunch.`);
+    if (getActiveBreak(state)) {
+      throw new Error("End break before lunch.");
     }
 
     return true;
   }
 
   function assertCanEndLunch(state) {
-    if (!state.lunch?.in) {
-      throw new Error("Cannot end lunch because it was not started.");
-    }
-
-    if (state.lunch?.out) {
-      throw new Error("Lunch already completed for this shift.");
-    }
-
+    if (!state.lunch?.in) throw new Error("Lunch not started.");
+    if (state.lunch?.out) throw new Error("Lunch already ended.");
     return true;
   }
 
-  /* =========================
-    BREAK HELPERS
-    ========================= */
-  function extractBreakNumber(action) {
-    const match = String(action).match(/^break_(\d+)_(start|end)$/);
-    return match ? Number(match[1]) : null;
-  }
+  /* =====================================================
+   BREAK RULES (STRICT SEQUENTIAL MODEL)
+===================================================== */
 
-  function getBreakStateMap(state) {
-    const breaks = Array.isArray(state.breaks) ? state.breaks : [];
-
-    return {
-      1: breaks[0] || null,
-      2: breaks[1] || null,
-      3: breaks[2] || null,
-    };
-  }
-
-  function getActiveBreak(state) {
-    return (state.breaks || []).find((b) => b && !b.out) || null;
-  }
-
-  /* =========================
-    BREAK RULES (STRICT ORDER + SAFE STATE)
-    ========================= */
   function assertCanStartBreak(state, action) {
-    if (!state.time_in) {
-      throw new Error("You must time in first.");
+    if (!state.time_in) throw new Error("Time in required.");
+    if (state.time_out) throw new Error("Already timed out.");
+
+    const n = extractBreakNumber(action);
+    const map = getBreakMap(state);
+
+    if (getActiveBreak(state)) {
+      throw new Error("Finish active break first.");
     }
 
-    if (state.time_out) {
-      throw new Error("Cannot start a break after time out.");
+    if (n === 1 && map[1]) throw new Error("Break 1 already done.");
+
+    if (n === 2) {
+      if (!map[1]?.out) throw new Error("Complete Break 1 first.");
+      if (map[2]) throw new Error("Break 2 already done.");
     }
 
-    const breakNumber = extractBreakNumber(action);
-    const map = getBreakStateMap(state);
-
-    const activeBreak = getActiveBreak(state);
-
-    if (activeBreak) {
-      const idx = (state.breaks || []).indexOf(activeBreak) + 1;
-      throw new Error(`Finish Break ${idx} before starting a new break.`);
-    }
-
-    if (breakNumber === 1) {
-      if (map[1]) throw new Error("Break 1 already completed for this shift.");
-    }
-
-    if (breakNumber === 2) {
-      if (!map[1]?.out) {
-        throw new Error("You must complete Break 1 before starting Break 2.");
-      }
-      if (map[2]) throw new Error("Break 2 already completed for this shift.");
-    }
-
-    if (breakNumber === 3) {
-      if (!map[2]?.out) {
-        throw new Error("You must complete Break 2 before starting Break 3.");
-      }
-      if (map[3]) throw new Error("Break 3 already completed for this shift.");
+    if (n === 3) {
+      if (!map[2]?.out) throw new Error("Complete Break 2 first.");
+      if (map[3]) throw new Error("Break 3 already done.");
     }
 
     return true;
   }
 
   function assertCanEndBreak(state, action) {
-    const breakNumber = extractBreakNumber(action);
-    const activeBreak = getActiveBreak(state);
+    const n = extractBreakNumber(action);
+    const active = getActiveBreak(state);
 
-    if (!activeBreak) {
-      throw new Error("No active break to end.");
-    }
+    if (!active) throw new Error("No active break.");
 
-    const activeIndex = (state.breaks || []).indexOf(activeBreak) + 1;
+    const idx = getBreakIndexSafe(state, active);
 
-    if (activeIndex !== breakNumber) {
-      throw new Error(`You must end Break ${activeIndex} first.`);
+    if (idx !== n) {
+      throw new Error(`Must end Break ${idx} first.`);
     }
 
     return true;
   }
+
+  /* =====================================================
+   SUMMARY UI
+===================================================== */
+
+  function renderTimeSummary(state = {}) {
+    const inEl = document.getElementById("summaryTimeIn");
+    const outEl = document.getElementById("summaryTimeOut");
+    const statusEl = document.getElementById("globalStatusText");
+
+    if (inEl)
+      inEl.textContent = state.time_in ? formatTime(state.time_in) : "--";
+    if (outEl)
+      outEl.textContent = state.time_out ? formatTime(state.time_out) : "--";
+    if (statusEl)
+      statusEl.textContent = DISPLAY.status(state.status || "NOT STARTED");
+  }
+
+  /* =====================================================
+   BREAK ACTIVITY UI
+===================================================== */
 
   function renderBreakActivity(state = {}) {
     const container = document.getElementById("leftTimelogsList");
     if (!container) return;
 
     const rows = [];
-    const breaks = Array.isArray(state.breaks) ? state.breaks : [];
+    const breaks = state.breaks || [];
     const lunch = state.lunch || {};
 
-    breaks.forEach((item, index) => {
-      const label = `Break ${index + 1}`;
-
-      if (item?.in) {
-        rows.push({
-          label: `${label} Start`,
-          time: item.in,
-        });
-      }
-
-      if (item?.out) {
-        rows.push({
-          label: `${label} End`,
-          time: item.out,
-        });
-      }
+    breaks.forEach((b, i) => {
+      if (b?.in) rows.push({ label: `Break ${i + 1} Start`, time: b.in });
+      if (b?.out) rows.push({ label: `Break ${i + 1} End`, time: b.out });
     });
 
-    if (lunch.in) {
-      rows.push({
-        label: "Lunch Start",
-        time: lunch.in,
-      });
-    }
-
-    if (lunch.out) {
-      rows.push({
-        label: "Lunch End",
-        time: lunch.out,
-      });
-    }
+    if (lunch.in) rows.push({ label: "Lunch Start", time: lunch.in });
+    if (lunch.out) rows.push({ label: "Lunch End", time: lunch.out });
 
     if (!rows.length) {
       container.innerHTML = `<div class="text-muted-custom">No break activity yet</div>`;
@@ -307,77 +269,29 @@
 
     container.innerHTML = rows
       .map(
-        (row) => `
-          <div class="d-flex justify-content-between py-1">
-            <span>${escapeHtml(row.label)}</span>
-            <strong>${escapeHtml(formatTime(row.time))}</strong>
-          </div>
-        `,
+        (r) => `
+    <div class="d-flex justify-content-between py-1">
+      <span>${escapeHtml(r.label)}</span>
+      <strong>${escapeHtml(formatTime(r.time))}</strong>
+    </div>
+  `,
       )
       .join("");
   }
 
-  // =====================================================
-  // SUMMARY
-  // =====================================================
+  /* =====================================================
+   GOOGLE APPS SCRIPT VALIDATION WRAPPER
+===================================================== */
 
-  function renderTimeSummary(state = {}) {
-    const summaryTimeIn = document.getElementById("summaryTimeIn");
-    const summaryTimeOut = document.getElementById("summaryTimeOut");
-    const globalStatusText = document.getElementById("globalStatusText");
-
-    if (summaryTimeIn) {
-      summaryTimeIn.textContent = state.time_in
-        ? formatTime(state.time_in)
-        : "--";
-    }
-
-    if (summaryTimeOut) {
-      summaryTimeOut.textContent = state.time_out
-        ? formatTime(state.time_out)
-        : "--";
-    }
-
-    if (globalStatusText) {
-      globalStatusText.textContent = DISPLAY.status(
-        state.status || "NOT STARTED",
-      );
-    }
-  }
-
-  function validate(workspace_id, payload, callback, errCallback) {
+  function validate(workspace_id, payload, onSuccess, onError) {
     google.script.run
       .withSuccessHandler((res) => {
-        if (!res) {
-          errCallback?.({ message: "Empty response from server" });
-          return;
-        }
-
-        if (!res.success) {
-          errCallback?.(res);
-          return;
-        }
-
-        callback?.(res);
+        if (!res?.success) return onError?.(res);
+        onSuccess?.(res);
       })
       .withFailureHandler((err) => {
-        console.error("VALIDATION ERROR:", err);
-        errCallback?.({
-          message: err?.message || "Server error",
-        });
+        onError?.({ message: err?.message || "Server error" });
       })
       .recordTimeLogAction(workspace_id, payload);
-  }
-
-  // =====================================================
-  // TIMELINE
-  // BUTTONS ONLY NOW
-  // =====================================================
-
-  function renderTimeline(state = {}, logs = []) {
-    const container = document.getElementById("dashboardTimelogsList");
-    if (!container) return;
-
-    container.innerHTML = getTimeLoggerHtml();
   }
 </script>
