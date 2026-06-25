@@ -49,23 +49,37 @@
     return "AVAILABLE";
   }
 
-  /* =====================================================
-     HEADER BREAK INDICATORS
-     - visual only
-     - rendered below status
-  ===================================================== */
+  function getBreakIndicatorLimit() {
+    return Number(
+      APP?.settings?.attendance?.max_breaks ??
+        APP?.attendancePolicy?.max_breaks ??
+        3,
+    );
+  }
+
   function renderBreakIndicators(state = {}) {
     const container = document.getElementById("breakButtonContainer");
     if (!container) return;
 
-    const breaks = Array.isArray(state.breaks) ? state.breaks : [];
-    const maxBreaks = Math.max(3, breaks.length);
+    const rawBreaks = Array.isArray(state.breaks) ? state.breaks : [];
+
+    // only count real used breaks
+    const breaks = rawBreaks.filter((b) => b && (b.in || b.out));
 
     container.innerHTML = "";
 
-    for (let i = 0; i < maxBreaks; i++) {
+    // no break used yet = no indicators shown
+    if (!breaks.length) return;
+
+    const limit = Math.max(0, getBreakIndicatorLimit());
+
+    // if limit is 0, show none
+    if (!limit) return;
+
+    const visibleBreaks = breaks.slice(0, limit);
+
+    visibleBreaks.forEach((breakItem, i) => {
       const index = i + 1;
-      const breakItem = breaks[i] || null;
       const breakState = getBreakState(breakItem);
 
       const badge = document.createElement("button");
@@ -83,7 +97,7 @@
       }
 
       container.appendChild(badge);
-    }
+    });
   }
 
   /* =====================================================
