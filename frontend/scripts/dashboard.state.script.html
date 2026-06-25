@@ -74,11 +74,15 @@
     }
 
     if (page === "dashboard") {
+      // 1) Reset dashboard data display only
       clearDashboardUI?.();
 
-      // IMPORTANT:
-      // only ONE sync pipeline is allowed (prevents double-render bugs)
-      syncAttendanceState();
+      // 2) Render attendance shell immediately (logger + empty placeholders)
+      initDashboardAttendanceUI?.();
+
+      // 3) Hydrate actual attendance state in background
+      // silent:true = do not block dashboard with loader on initial dashboard load
+      syncAttendanceState({ silent: true });
     }
   }
 
@@ -128,16 +132,13 @@
   }
 
   // =====================================================
-  // CLEAN DASHBOARD RESET (NO BREAK BUTTON ASSUMPTION)
+  // CLEAN DASHBOARD RESET
+  // IMPORTANT:
+  // - DO NOT destroy the logger container here
+  // - logger is persistent shell rendered by initDashboardAttendanceUI()
   // =====================================================
 
   function clearDashboardUI() {
-    const dashboardTimelogsList = document.getElementById(
-      "dashboardTimelogsList",
-    );
-    if (dashboardTimelogsList) {
-      dashboardTimelogsList.innerHTML = "";
-    }
     const leftTimelogsList = document.getElementById("leftTimelogsList");
     if (leftTimelogsList) {
       leftTimelogsList.innerHTML = `<div class="text-muted-custom">No break activity yet</div>`;
@@ -157,30 +158,37 @@
       dot.className = "status-dot bg-secondary";
     }
 
-    // ❌ REMOVED:
-    // applyBreakButtonState("b1Btn"...)
-    // applyBreakButtonState("b2Btn"...)
-    // applyBreakButtonState("b3Btn"...)
+    const breakButtonContainer = document.getElementById(
+      "breakButtonContainer",
+    );
+    if (breakButtonContainer) {
+      breakButtonContainer.innerHTML = "";
+    }
 
-    // NOW BREAK UI IS FULLY DYNAMIC via renderGlobalState()
+    // IMPORTANT:
+    // dashboardTimelogsList is NOT cleared here anymore.
+    // Logger shell must persist and be managed by renderTimeLogger().
   }
 
   // =====================================================
   // SINGLE SOURCE DASHBOARD SYNC (PRIMARY)
+  // - fetch logs once
+  // - build state once
+  // - hydrate through one pipeline
   // =====================================================
 
-  function syncAttendanceState() {
+  function syncAttendanceState({ silent = false } = {}) {
     const user = getCurrentUser();
     const email = user?.email;
     const workspace_id = user?.workspace_id;
 
     if (!email || !workspace_id) return;
 
-    showLoader?.();
+    if (!silent) showLoader?.();
 
     google.script.run
       .withSuccessHandler((logs) => {
-        hideLoader?.();
+        if (!silent) hideLoader?.();
 
         const safeLogs = dedupeTimeLogs(Array.isArray(logs) ? logs : []);
         const state = buildTimeLogState(safeLogs);
@@ -189,17 +197,11 @@
         APP.attendanceState = state;
         APP.workStatus = state.status || "NOT STARTED";
 
-        // =================================================
-        // SINGLE RENDER PIPELINE (ORDER MATTERS)
-        // =================================================
-        renderGlobalState(state);
-        renderTimeSummary(state);
-        renderBreakActivity(state);
-        renderTimeLogger();
+        hydrateAttendanceUI?.(state);
         renderUserHeader?.();
       })
       .withFailureHandler((err) => {
-        hideLoader?.();
+        if (!silent) hideLoader?.();
         console.error("syncAttendanceState error:", err);
       })
       .findTimeLogs(workspace_id, { email });
@@ -212,7 +214,7 @@
   window.addEventListener("DOMContentLoaded", () => {
     parseServerData();
     restoreSession();
-    renderUserHeader();
+    renderUserHeader?.();
     bootApp();
   });
 </script>

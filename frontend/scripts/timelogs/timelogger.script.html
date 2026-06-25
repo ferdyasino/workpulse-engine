@@ -11,6 +11,19 @@
    */
 
   /* =====================================================
+     DASHBOARD ATTENDANCE SHELL INIT
+     - render logger immediately
+     - paint empty/default placeholders
+     - safe to call repeatedly
+  ===================================================== */
+  window.initDashboardAttendanceUI = function () {
+    renderTimeLogger();
+    renderGlobalState({});
+    renderTimeSummary({});
+    renderBreakActivity({});
+  };
+
+  /* =====================================================
      GLOBAL STATE ENTRYPOINT
   ===================================================== */
   window.renderGlobalState = function (state = {}) {
@@ -147,12 +160,20 @@
 
   /* =====================================================
      TIME LOGGER UI
-     - only REAL action buttons
-     - BREAK row is BETWEEN time and lunch
+     - persistent shell
+     - render once, then only rebind buttons
+     - do NOT rebuild on every state hydration
   ===================================================== */
   function renderTimeLogger() {
     const container = document.getElementById("dashboardTimelogsList");
     if (!container) return;
+
+    const existing = document.getElementById("timeLogger");
+
+    if (existing) {
+      syncLoggerButtons();
+      return;
+    }
 
     container.innerHTML = `
       <div id="timeLogger" class="glass-card mb-4">
@@ -232,6 +253,8 @@
      LOG TIME
      - uses submitTimeLogAction()
      - validation + insert in one backend call
+     - if backend returns fresh state, hydrate immediately
+     - otherwise fallback to primary dashboard sync pipeline
   ===================================================== */
   async function logTime(action) {
     const user = getCurrentUser() || {};
@@ -297,8 +320,8 @@
           return;
         }
 
-        // Fallback: re-fetch logs if state wasn't returned
-        getLogs();
+        // Fallback: use the single dashboard sync pipeline
+        syncAttendanceState?.();
       })
       .withFailureHandler((err) => {
         hideLoader?.();
@@ -309,44 +332,11 @@
 
   /* =====================================================
      FETCH LOGS
+     - compatibility wrapper only
+     - delegates to single dashboard sync pipeline
   ===================================================== */
-  function getLogs() {
-    const user = getCurrentUser() || {};
-    const email = user.email;
-    const workspace_id =
-      user.workspace_id || document.getElementById("sid")?.value;
-
-    if (!workspace_id || !email) return;
-
-    showLoader?.();
-
-    google.script.run
-      .withSuccessHandler((res) => {
-        hideLoader?.();
-
-        const logs = Array.isArray(res) ? res : [];
-
-        const unique = Array.from(
-          new Map(
-            logs.map((log) => [`${log.action}_${log.timestamp}`, log]),
-          ).values(),
-        );
-
-        const state = buildTimeLogState(unique);
-
-        APP.timeLogs = unique;
-        APP.attendanceState = state;
-        APP.workStatus = state.status || "NOT STARTED";
-
-        hydrateAttendanceUI(state);
-        renderUserHeader?.();
-      })
-      .withFailureHandler((err) => {
-        hideLoader?.();
-        console.error("GET LOGS ERROR:", err);
-        showToast?.("Failed to load attendance logs.", "error");
-      })
-      .findTimeLogs(workspace_id, { email });
+  function getLogs(options = {}) {
+    syncAttendanceState?.(options);
   }
 
   /* =====================================================
@@ -427,11 +417,14 @@
 
   /* =====================================================
      SINGLE HYDRATION ENTRY POINT
+     IMPORTANT:
+     - update state-driven UI only
+     - do NOT recreate logger DOM here
   ===================================================== */
   function hydrateAttendanceUI(state = {}) {
     renderGlobalState(state);
     renderTimeSummary(state);
     renderBreakActivity(state);
-    renderTimeLogger();
+    syncLoggerButtons();
   }
 </script>
