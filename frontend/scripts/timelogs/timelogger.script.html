@@ -4,9 +4,9 @@
    * TIME LOGGER UI MODULE
    * - HEADER: B1 / B2 / B3 indicators only
    * - LOGGER: actual action buttons only
-   *   Time In | Time Out
-   *   Break Start | Break End
-   *   Lunch Start | Lunch End
+   * - BACKEND IS SOURCE OF TRUTH FOR VALIDATION
+   * - BREAK ACTIONS USE:
+   *   break_start / break_end
    * =====================================================
    */
 
@@ -36,7 +36,6 @@
       dot.classList.add(map[status] || "bg-secondary");
     }
 
-    // HEADER ONLY
     renderBreakIndicators(state);
   };
 
@@ -48,25 +47,6 @@
     if (breakItem.in && breakItem.out) return "ENDED";
     if (breakItem.in && !breakItem.out) return "ACTIVE";
     return "AVAILABLE";
-  }
-
-  function getActiveBreakIndex(state = {}) {
-    const breaks = Array.isArray(state.breaks) ? state.breaks : [];
-    const idx = breaks.findIndex((b) => b && b.in && !b.out);
-    return idx >= 0 ? idx + 1 : null;
-  }
-
-  function getNextBreakIndex(state = {}) {
-    const breaks = Array.isArray(state.breaks) ? state.breaks : [];
-
-    for (let i = 0; i < breaks.length; i++) {
-      const b = breaks[i];
-      if (!b) return i + 1;
-      if (!b.in) return i + 1;
-      if (b.in && !b.out) return i + 1;
-    }
-
-    return breaks.length + 1;
   }
 
   /* =====================================================
@@ -107,138 +87,56 @@
   }
 
   /* =====================================================
-     LOGGER BREAK ACTION BUTTONS STATE
-     - decides what break action should be fired
-     - supports sequential break model
+     LOGGER BUTTON BINDING
+     IMPORTANT:
+     - DO NOT disable buttons for now
+     - backend validation is the source of truth
   ===================================================== */
-  function getBreakActionMeta(state = {}) {
-    const activeBreakIndex = getActiveBreakIndex(state);
-
-    // if currently on break, only break end should be active
-    if (activeBreakIndex) {
-      return {
-        startAction: null,
-        endAction: `break_${activeBreakIndex}_end`,
-        activeBreakIndex,
-      };
-    }
-
-    // otherwise next break start
-    const nextBreakIndex = getNextBreakIndex(state);
-
-    return {
-      startAction: `break_${nextBreakIndex}_start`,
-      endAction: null,
-      activeBreakIndex: null,
-    };
-  }
-
-  /* =====================================================
-     LOGGER ACTION BUTTON STATE APPLIER
-     - updates button enabled/disabled state after logger HTML exists
-  ===================================================== */
-  function syncLoggerButtons(state = {}) {
+  function syncLoggerButtons() {
     const timeInBtn = document.getElementById("loggerTimeInBtn");
     const timeOutBtn = document.getElementById("loggerTimeOutBtn");
-    const lunchStartBtn = document.getElementById("loggerLunchStartBtn");
-    const lunchEndBtn = document.getElementById("loggerLunchEndBtn");
     const breakStartBtn = document.getElementById("loggerBreakStartBtn");
     const breakEndBtn = document.getElementById("loggerBreakEndBtn");
+    const lunchStartBtn = document.getElementById("loggerLunchStartBtn");
+    const lunchEndBtn = document.getElementById("loggerLunchEndBtn");
 
-    const status = String(state.status || "NOT STARTED").toUpperCase();
-    const breakMeta = getBreakActionMeta(state);
-
-    const hasTimeIn = !!state.time_in;
-    const hasTimeOut = !!state.time_out;
-    const lunchStarted = !!state.lunch?.in;
-    const lunchEnded = !!state.lunch?.out;
-    const onLunch = lunchStarted && !lunchEnded;
-    const onBreak = !!breakMeta.activeBreakIndex;
-
-    /* -------------------------
-       TIME IN
-    ------------------------- */
     if (timeInBtn) {
-      timeInBtn.disabled = hasTimeIn;
+      timeInBtn.disabled = false;
+      timeInBtn.onclick = () => logTime("time_in");
     }
 
-    /* -------------------------
-       TIME OUT
-    ------------------------- */
     if (timeOutBtn) {
-      timeOutBtn.disabled = !hasTimeIn || hasTimeOut || onBreak || onLunch;
+      timeOutBtn.disabled = false;
+      timeOutBtn.onclick = () => logTime("time_out");
     }
 
-    /* -------------------------
-       LUNCH START
-    ------------------------- */
-    if (lunchStartBtn) {
-      lunchStartBtn.disabled = !hasTimeIn || hasTimeOut || onBreak || onLunch;
-    }
-
-    /* -------------------------
-       LUNCH END
-    ------------------------- */
-    if (lunchEndBtn) {
-      lunchEndBtn.disabled = !lunchStarted || lunchEnded || hasTimeOut;
-    }
-
-    /* -------------------------
-       BREAK START
-    ------------------------- */
     if (breakStartBtn) {
-      breakStartBtn.disabled =
-        !hasTimeIn ||
-        hasTimeOut ||
-        onLunch ||
-        onBreak ||
-        !breakMeta.startAction;
-
-      breakStartBtn.className = "btn btn-warning w-100";
-
-      if (breakMeta.startAction) {
-        breakStartBtn.onclick = () => logTime(breakMeta.startAction);
-      } else {
-        breakStartBtn.onclick = null;
-      }
+      breakStartBtn.disabled = false;
+      breakStartBtn.onclick = () => logTime("break_start");
     }
 
-    /* -------------------------
-       BREAK END
-    ------------------------- */
     if (breakEndBtn) {
-      breakEndBtn.disabled =
-        !hasTimeIn || hasTimeOut || !onBreak || !breakMeta.endAction;
-
-      breakEndBtn.className = "btn btn-outline-warning w-100";
-
-      if (breakMeta.endAction) {
-        breakEndBtn.onclick = () => logTime(breakMeta.endAction);
-      } else {
-        breakEndBtn.onclick = null;
-      }
+      breakEndBtn.disabled = false;
+      breakEndBtn.onclick = () => logTime("break_end");
     }
 
-    /* -------------------------
-       OPTIONAL ACTIVE VISUAL STATE
-    ------------------------- */
-    if (status === "ON BREAK" && breakEndBtn) {
-      breakEndBtn.className = "btn btn-success w-100";
+    if (lunchStartBtn) {
+      lunchStartBtn.disabled = false;
+      lunchStartBtn.onclick = () => logTime("lunch_start");
     }
 
-    if (status === "AT LUNCH" && lunchEndBtn) {
-      lunchEndBtn.className = "btn btn-success w-100";
+    if (lunchEndBtn) {
+      lunchEndBtn.disabled = false;
+      lunchEndBtn.onclick = () => logTime("lunch_end");
     }
   }
 
   /* =====================================================
      TIME LOGGER UI
-     IMPORTANT:
-     - no indicator buttons here
-     - only real action buttons
-     - break row is BETWEEN time and lunch
+     - only REAL action buttons
+     - BREAK row is BETWEEN time and lunch
   ===================================================== */
-  function renderTimeLogger(state = {}) {
+  function renderTimeLogger() {
     const container = document.getElementById("dashboardTimelogsList");
     if (!container) return;
 
@@ -251,7 +149,7 @@
             <button
               id="loggerTimeInBtn"
               class="btn btn-success w-100"
-              onclick="logTime('time_in')"
+              type="button"
             >
               Time In
             </button>
@@ -261,7 +159,7 @@
             <button
               id="loggerTimeOutBtn"
               class="btn btn-danger w-100"
-              onclick="logTime('time_out')"
+              type="button"
             >
               Time Out
             </button>
@@ -293,7 +191,7 @@
             <button
               id="loggerLunchStartBtn"
               class="btn btn-dark w-100"
-              onclick="logTime('lunch_start')"
+              type="button"
             >
               Lunch Start
             </button>
@@ -303,7 +201,7 @@
             <button
               id="loggerLunchEndBtn"
               class="btn btn-info w-100"
-              onclick="logTime('lunch_end')"
+              type="button"
             >
               Lunch End
             </button>
@@ -313,7 +211,128 @@
       </div>
     `;
 
-    syncLoggerButtons(state);
+    syncLoggerButtons();
+  }
+
+  /* =====================================================
+     LOG TIME
+     - uses submitTimeLogAction()
+     - validation + insert in one backend call
+  ===================================================== */
+  async function logTime(action) {
+    const user = getCurrentUser() || {};
+
+    const email = user.email;
+    const workspace_id =
+      user.workspace_id || document.getElementById("sid")?.value;
+    const shiftId = user.shift_id;
+    const userId = user.user_id;
+
+    if (!email || !workspace_id || !userId) {
+      showToast?.("Session expired. Please login again.", "error");
+      return;
+    }
+
+    showLoader?.();
+
+    let geo = {
+      success: false,
+      location: null,
+      status: "UNAVAILABLE",
+      message: "Geolocation unavailable",
+    };
+
+    try {
+      geo = await getCurrentLocation();
+      if (!geo.success) {
+        console.warn("Geolocation failed:", geo.status, geo.message);
+      }
+    } catch (err) {
+      console.warn("Geolocation error:", err);
+    }
+
+    const payload = {
+      user_id: userId,
+      email,
+      action,
+      shift_id: shiftId,
+      device_info: navigator.userAgent,
+      location: geo.location || null,
+      location_status: geo.status || "UNAVAILABLE",
+      location_message: geo.message || "",
+      timestamp: new Date().toISOString(),
+    };
+
+    google.script.run
+      .withSuccessHandler((res) => {
+        hideLoader?.();
+
+        if (!res?.success) {
+          showToast?.(res.message || "Action failed", "error");
+          return;
+        }
+
+        showToast?.(res.message || "Logged successfully", "success");
+
+        // Preferred path: backend returns fresh state
+        if (res.state) {
+          APP.attendanceState = res.state;
+          APP.workStatus = res.state.status || "NOT STARTED";
+          hydrateAttendanceUI(res.state);
+          renderUserHeader?.();
+          return;
+        }
+
+        // Fallback: re-fetch logs if state wasn't returned
+        getLogs();
+      })
+      .withFailureHandler((err) => {
+        hideLoader?.();
+        showToast?.(err?.message || "Server error", "error");
+      })
+      .submitTimeLogAction(workspace_id, payload);
+  }
+
+  /* =====================================================
+     FETCH LOGS
+  ===================================================== */
+  function getLogs() {
+    const user = getCurrentUser() || {};
+    const email = user.email;
+    const workspace_id =
+      user.workspace_id || document.getElementById("sid")?.value;
+
+    if (!workspace_id || !email) return;
+
+    showLoader?.();
+
+    google.script.run
+      .withSuccessHandler((res) => {
+        hideLoader?.();
+
+        const logs = Array.isArray(res) ? res : [];
+
+        const unique = Array.from(
+          new Map(
+            logs.map((log) => [`${log.action}_${log.timestamp}`, log]),
+          ).values(),
+        );
+
+        const state = buildTimeLogState(unique);
+
+        APP.timeLogs = unique;
+        APP.attendanceState = state;
+        APP.workStatus = state.status || "NOT STARTED";
+
+        hydrateAttendanceUI(state);
+        renderUserHeader?.();
+      })
+      .withFailureHandler((err) => {
+        hideLoader?.();
+        console.error("GET LOGS ERROR:", err);
+        showToast?.("Failed to load attendance logs.", "error");
+      })
+      .findTimeLogs(workspace_id, { email });
   }
 
   /* =====================================================
@@ -394,16 +413,11 @@
 
   /* =====================================================
      SINGLE HYDRATION ENTRY POINT
-     ORDER:
-     1) header state + break indicators
-     2) summary
-     3) break activity
-     4) logger action buttons
   ===================================================== */
   function hydrateAttendanceUI(state = {}) {
-    renderGlobalState(state); // includes header B1/B2/B3 indicators
+    renderGlobalState(state);
     renderTimeSummary(state);
     renderBreakActivity(state);
-    renderTimeLogger(state); // real buttons only
+    renderTimeLogger();
   }
 </script>

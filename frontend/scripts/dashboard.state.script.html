@@ -136,9 +136,8 @@
       "dashboardTimelogsList",
     );
     if (dashboardTimelogsList) {
-      dashboardTimelogsList.innerHTML = `<div class="text-muted-custom">No logs yet</div>`;
+      dashboardTimelogsList.innerHTML = "";
     }
-
     const leftTimelogsList = document.getElementById("leftTimelogsList");
     if (leftTimelogsList) {
       leftTimelogsList.innerHTML = `<div class="text-muted-custom">No break activity yet</div>`;
