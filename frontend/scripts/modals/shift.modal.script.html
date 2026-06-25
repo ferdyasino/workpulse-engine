@@ -1,16 +1,15 @@
 <script>
-const ShiftModal = (() => {
+  const ShiftModal = (() => {
+    function openCreateModal(shift = {}, config = {}) {
+      const isEdit = Boolean(shift?.shift_id || config.isEdit);
+      const showStatus = config.showStatus ?? isEdit;
 
-  function openCreateModal(shift = {}, config = {}) {
-    GlobalModal.openForm({
-      title: shift.shift_id ? "Edit Shift" : "Create Shift",
-
-      fields: [
+      const fields = [
         {
           name: "shift_name",
           label: "Shift Name",
           value: shift.shift_name || "",
-          required: true
+          required: true,
         },
 
         {
@@ -18,7 +17,7 @@ const ShiftModal = (() => {
           label: "Start Time",
           type: "time",
           value: shift.start_time || "",
-          required: true
+          required: true,
         },
 
         {
@@ -26,42 +25,60 @@ const ShiftModal = (() => {
           label: "End Time",
           type: "time",
           value: shift.end_time || "",
-          required: true
+          required: true,
         },
 
         {
           name: "grace_minutes",
           label: "Grace Minutes",
           type: "number",
-          value: shift.grace_minutes || 0
+          value: shift.grace_minutes ?? 10,
+          required: false,
         },
+      ];
 
-        {
+      if (showStatus) {
+        fields.push({
           name: "status",
           label: "Status",
           type: "select",
           value: shift.status || "ACTIVE",
           options: [
             { value: "ACTIVE", label: "Active" },
-            { value: "INACTIVE", label: "Inactive" }
-          ]
-        }
-      ],
-
-      onSubmit: (formData) => {
-        config.onSubmit?.(formData, shift);
+            { value: "INACTIVE", label: "Inactive" },
+          ],
+        });
       }
-    });
-  }
 
-  function closeFormModal() {
-    GlobalModal.hide("globalFormModal");
-  }
+      GlobalModal.openForm({
+        title: isEdit ? "Edit Shift" : "Create Shift",
+        fields,
 
-  return {
-    openCreateModal,
-    closeFormModal
-  };
+        onSubmit: (formData) => {
+          const payload = {
+            ...formData,
+            shift_name: String(formData.shift_name || "").trim(),
+            start_time: String(formData.start_time || "").trim(),
+            end_time: String(formData.end_time || "").trim(),
+            grace_minutes:
+              formData.grace_minutes === "" || formData.grace_minutes == null
+                ? 10
+                : Number(formData.grace_minutes),
+            status: formData.status || "ACTIVE",
+          };
 
-})();
+          config.onSubmit?.(payload, shift);
+        },
+      });
+    }
+
+    function closeFormModal() {
+      GlobalModal.hide("globalFormModal");
+    }
+
+    return {
+      openCreateModal,
+      closeFormModal,
+    };
+  })();
 </script>

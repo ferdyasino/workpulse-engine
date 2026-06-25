@@ -38,6 +38,11 @@
     applyRoleUI();
     updateDashboardTitle(page);
 
+    // IMPORTANT:
+    // Page-specific data loaders run AFTER shell/UI state is applied.
+    // This keeps existing flow intact and allows admin pages to hydrate safely.
+    loadPageData(page);
+
     console.log("ROUTE →", page);
   }
 
@@ -108,6 +113,106 @@
     if (!el) return;
 
     el.textContent = PAGE_TITLES[page] || "Dashboard";
+  }
+
+  // =====================================================
+  // PAGE DATA LOADER DISPATCH
+  // IMPORTANT:
+  // - Keeps routing separate from page-specific data fetching
+  // - Safe no-op for pages that do not have a loader yet
+  // - Does NOT interfere with existing dashboard flow
+  // =====================================================
+
+  function loadPageData(page) {
+    try {
+      switch (page) {
+        case "dashboard":
+          // Dashboard hydration already happens inside applyUIState()
+          break;
+
+        case "users":
+          // Future / current employee management page
+          loadUsersAdminPage?.();
+          break;
+
+        case "admin":
+          // Optional admin home loader if you add one later
+          loadAdminHomePage?.();
+          break;
+
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error("loadPageData error:", error);
+    }
+  }
+
+  // =====================================================
+  // USERS ADMIN PAGE LOADER
+  // PURPOSE:
+  // - safe hook for employee management page
+  // - loads users + departments + positions + shifts
+  // - only runs if the page and API/render functions actually exist
+  // - prevents breaking current app if users page is not fully wired yet
+  // =====================================================
+
+  async function loadUsersAdminPage() {
+    // Prevent duplicate loads if router fires repeatedly
+    if (APP.__usersPageLoading) return;
+
+    // If the users page DOM isn't mounted yet, skip safely
+    const usersTableBody = document.getElementById("usersTableBody");
+    const departmentList = document.getElementById("departmentList");
+    const positionList = document.getElementById("positionList");
+    const shiftList = document.getElementById("shiftList");
+
+    const hasUsersPageUI =
+      !!usersTableBody || !!departmentList || !!positionList || !!shiftList;
+
+    if (!hasUsersPageUI) return;
+
+    APP.__usersPageLoading = true;
+
+    try {
+      showLoader?.();
+
+      // 1) Load references first if API exists
+      if (typeof reloadAllReferences === "function") {
+        await reloadAllReferences();
+      }
+
+      // 2) Render reference cards if renderer exists
+      if (typeof renderReferenceCards === "function") {
+        renderReferenceCards();
+      }
+
+      // 3) Load users table + stats if loader exists
+      if (typeof loadUsersTableAndStats === "function") {
+        await loadUsersTableAndStats();
+      }
+      // fallback compatibility:
+      else if (typeof loadUsers === "function") {
+        // Only call if your existing loadUsers() is your employee-page loader
+        loadUsers();
+      }
+    } catch (error) {
+      console.error("loadUsersAdminPage error:", error);
+      showToast?.(error.message || "Failed to load users page", "error");
+    } finally {
+      APP.__usersPageLoading = false;
+      hideLoader?.();
+    }
+  }
+
+  // =====================================================
+  // OPTIONAL ADMIN HOME LOADER
+  // - safe placeholder for future admin dashboard page logic
+  // =====================================================
+
+  function loadAdminHomePage() {
+    // Intentionally empty for now
+    // Add admin landing-page hydration here later if needed
   }
 
   // =====================================================
