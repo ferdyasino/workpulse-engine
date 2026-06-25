@@ -203,3 +203,20 @@ function sanitizeTimeLogActionSuccessMessage(action, message) {
       return "Timelog action saved successfully.";
   }
 }
+
+function getWorkspaceSettings(workspace_id) {
+  const db = getWorkspaceDb(workspace_id);
+  const sheet = db.getSheetByName("Settings");
+
+  if (!sheet) throw new Error("Settings sheet not found");
+
+  const rows = sheet.getDataRange().getValues();
+
+  const settings = {};
+
+  rows.forEach(([key, value]) => {
+    if (key) settings[key] = value;
+  });
+
+  return settings;
+}

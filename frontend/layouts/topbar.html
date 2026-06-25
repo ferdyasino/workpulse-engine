@@ -1,66 +1,53 @@
 <div id="appTopbar" class="topbar">
-
-  <div id="dashboardTitle" class="topbar-left">
-    Dashboard
-  </div>
+  <div id="dashboardTitle" class="topbar-left">Dashboard</div>
 
   <div class="topbar-center">
+    <div id="adminClockContainer" class="text-center d-none admin-clock">
+      <div id="adminClockTime" class="admin-clock-time">--:--:--</div>
 
-  <div id="adminClockContainer" class="text-center d-none admin-clock">
-    
-    <div id="adminClockTime" class="admin-clock-time">
-      --:--:--
+      <div id="adminClockDate" class="admin-clock-date">---</div>
     </div>
+  </div>
 
-    <div id="adminClockDate" class="admin-clock-date">
-      ---
+  <div class="topbar-right d-flex align-items-center gap-2">
+    <span class="status-dot"></span>
+    <span>Online</span>
+
+    <div class="dropdown">
+      <button
+        class="btn btn-glass btn-sm dropdown-toggle"
+        data-bs-toggle="dropdown"
+      >
+        ⚙
+      </button>
+
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+          <button class="dropdown-item" onclick="go('dashboard')">
+            Dashboard
+          </button>
+        </li>
+
+        <li id="adminMenuItem" class="d-none">
+          <button class="dropdown-item" onclick="go('admin')">
+            Admin Dashboard
+          </button>
+        </li>
+
+        <li>
+          <button class="dropdown-item" onclick="openSettingsModal()">
+            Settings
+          </button>
+        </li>
+
+        <li><hr class="dropdown-divider" /></li>
+
+        <li>
+          <button class="dropdown-item text-danger" onclick="logout()">
+            Logout
+          </button>
+        </li>
+      </ul>
     </div>
-
   </div>
-
-  </div>
-
-<div class="topbar-right d-flex align-items-center gap-2">
-
-  <span class="status-dot"></span>
-  <span>Online</span>
-
-  <!-- SETTINGS DROPDOWN -->
-  <div class="dropdown">
-
-    <button class="btn btn-glass btn-sm dropdown-toggle"
-            data-bs-toggle="dropdown">
-      ⚙
-    </button>
-
-    <ul class="dropdown-menu dropdown-menu-end">
-
-      <!-- COMMON -->
-      <li>
-        <button class="dropdown-item" onclick="go('dashboard')">
-          Dashboard
-        </button>
-      </li>
-
-      <!-- ADMIN ONLY -->
-      <li id="adminMenuItem" class="d-none">
-        <button class="dropdown-item" onclick="go('admin')">
-          Admin Dashboard
-        </button>
-      </li>
-
-      <li><hr class="dropdown-divider"></li>
-
-      <li>
-        <button class="dropdown-item text-danger" onclick="logout()">
-          Logout
-        </button>
-      </li>
-
-    </ul>
-  </div>
-
-</div>
-
-
 </div>

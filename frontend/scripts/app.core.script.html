@@ -1,132 +1,157 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-// =====================================================
-// APP STATE
-// =====================================================
+  // =====================================================
+  // APP STATE
+  // =====================================================
 
-const APP = {
-  // session / auth
-  user: null,
-  role: "guest",
-  currentPage: null,
+  const APP = {
+    // session / auth
+    user: null,
+    role: "guest",
+    currentPage: null,
 
-  workspaceSlug: "",
-  serverEmail: "",
+    workspaceSlug: "",
+    serverEmail: "",
 
-  // attendance / dashboard
-  workStatus: "NOT STARTED",
-  timeLogs: [],
-  attendanceState: null,
-  dashboardData: null,
-  shiftSummary: null,
+    // attendance / dashboard
+    workStatus: "NOT STARTED",
+    timeLogs: [],
+    attendanceState: null,
+    dashboardData: null,
+    shiftSummary: null,
 
-  // admin / misc
-  selectedUser: null,
-  currentLocation: null
-};
+    // admin / misc
+    selectedUser: null,
+    currentLocation: null,
+  };
 
-// =====================================================
-// STORAGE KEYS
-// =====================================================
+  // =====================================================
+  // STORAGE KEYS
+  // =====================================================
 
-const STORAGE_KEYS = Object.freeze({
-  USER_ID: "user_id",
-  EMAIL: "email",
-  NAME: "name",
-  ROLE: "role",
-  SHIFT_ID: "shift_id",
-  SHIFT_NAME: "shift_name",
-  START_TIME: "start_time",
-  END_TIME: "end_time",
-  GRACE: "grace_minutes",
-  DEPT_NAME: "dept_name",
-  WORKSPACE_ID: "workspace_id",
-  WORKSPACE_SLUG: "workspace_slug",
-  LAST_PAGE: "last_page"
-});
+  const STORAGE_KEYS = Object.freeze({
+    USER_ID: "user_id",
+    EMAIL: "email",
+    NAME: "name",
+    ROLE: "role",
+    SHIFT_ID: "shift_id",
+    SHIFT_NAME: "shift_name",
+    START_TIME: "start_time",
+    END_TIME: "end_time",
+    GRACE: "grace_minutes",
+    DEPT_NAME: "dept_name",
+    WORKSPACE_ID: "workspace_id",
+    WORKSPACE_SLUG: "workspace_slug",
+    LAST_PAGE: "last_page",
+  });
 
-// =====================================================
-// ROUTES
-// =====================================================
+  // =====================================================
+  // ROUTES
+  // =====================================================
 
-const ROUTES = Object.freeze({
-  home: "page-home",
-  dashboard: "page-dashboard",
-  admin: "page-admin-dashboard",
-  login: "page-login",
-  error: "page-error"
-});
+  const ROUTES = Object.freeze({
+    home: "page-home",
+    dashboard: "page-dashboard",
+    admin: "page-admin-dashboard",
+    login: "page-login",
+    error: "page-error",
+  });
 
-// =====================================================
-// TIME LOG ACTIONS
-// =====================================================
+  // =====================================================
+  // TIME LOG ACTIONS
+  // =====================================================
 
-const TIME_LOG_ACTIONS = Object.freeze({
-  TIME_IN: "time_in",
-  TIME_OUT: "time_out",
+  const TIME_LOG_ACTIONS = Object.freeze({
+    TIME_IN: "time_in",
+    TIME_OUT: "time_out",
 
-  BREAK_1_START: "break_1_start",
-  BREAK_1_END: "break_1_end",
+    BREAK_1_START: "break_1_start",
+    BREAK_1_END: "break_1_end",
 
-  BREAK_2_START: "break_2_start",
-  BREAK_2_END: "break_2_end",
+    BREAK_2_START: "break_2_start",
+    BREAK_2_END: "break_2_end",
 
-  BREAK_3_START: "break_3_start",
-  BREAK_3_END: "break_3_end",
+    BREAK_3_START: "break_3_start",
+    BREAK_3_END: "break_3_end",
 
-  LUNCH_START: "lunch_start",
-  LUNCH_END: "lunch_end"
-});
+    LUNCH_START: "lunch_start",
+    LUNCH_END: "lunch_end",
+  });
 
-// =====================================================
-// PAGE TITLES
-// =====================================================
+  // =====================================================
+  // PAGE TITLES
+  // =====================================================
 
-const PAGE_TITLES = Object.freeze({
-  admin: "Admin Dashboard",
-  dashboard: "Employee Dashboard",
-  home: "System Home",
-  login: "Login"
-});
+  const PAGE_TITLES = Object.freeze({
+    admin: "Admin Dashboard",
+    dashboard: "Employee Dashboard",
+    home: "System Home",
+    login: "Login",
+  });
 
-// =====================================================
-// APP STATE HELPERS
-// Keep bootstrap-safe helpers here only.
-// No dashboard rendering / no server calls here.
-// =====================================================
+  const SETTINGS_KEYS = {
+    WORKSPACE_ID: "WORKSPACE_ID",
+    WORKSPACE_NAME: "WORKSPACE_NAME",
+    OWNER_EMAIL: "OWNER_EMAIL",
+    OWNER_NAME: "OWNER_NAME",
+    CREATED_AT: "CREATED_AT",
+    TIMEZONE: "TIMEZONE",
 
-function resetAttendanceRuntimeState() {
-  APP.workStatus = "NOT STARTED";
-  APP.timeLogs = [];
-  APP.attendanceState = null;
-  APP.dashboardData = null;
-  APP.shiftSummary = null;
-}
+    PERIOD_TYPE_DEFAULT: "PERIOD_TYPE_DEFAULT",
+    PERIOD_TYPE_DAILY: "PERIOD_TYPE_DAILY",
+    PERIOD_TYPE_WEEKLY: "PERIOD_TYPE_WEEKLY",
+    PERIOD_TYPE_BI_WEEKLY: "PERIOD_TYPE_BI_WEEKLY",
+    PERIOD_TYPE_MONTHLY: "PERIOD_TYPE_MONTHLY",
 
-function resetSessionRuntimeState() {
-  APP.user = null;
-  APP.role = "guest";
-  APP.currentPage = null;
+    BREAK_POLICY_ENABLED: "BREAK_POLICY_ENABLED",
+    BREAK_MAX_PER_DAY: "BREAK_MAX_PER_DAY",
+    BREAK_MINUTES_PER_DAY: "BREAK_MINUTES_PER_DAY",
+    BREAK_ALLOW_MULTIPLE_BREAKS: "BREAK_ALLOW_MULTIPLE_BREAKS",
+    BREAK_AUTO_DEDUCT_ENABLED: "BREAK_AUTO_DEDUCT_ENABLED",
+    BREAK_AUTO_DEDUCT_MINUTES: "BREAK_AUTO_DEDUCT_MINUTES",
 
-  APP.workspaceSlug = "";
-  APP.serverEmail = "";
+    LATE_GRACE_MINUTES_DEFAULT: "LATE_GRACE_MINUTES_DEFAULT",
+    REQUIRE_TIME_OUT: "REQUIRE_TIME_OUT",
+  };
 
-  resetAttendanceRuntimeState();
+  // =====================================================
+  // APP STATE HELPERS
+  // Keep bootstrap-safe helpers here only.
+  // No dashboard rendering / no server calls here.
+  // =====================================================
 
-  APP.selectedUser = null;
-  APP.currentLocation = null;
-}
+  function resetAttendanceRuntimeState() {
+    APP.workStatus = "NOT STARTED";
+    APP.timeLogs = [];
+    APP.attendanceState = null;
+    APP.dashboardData = null;
+    APP.shiftSummary = null;
+  }
 
-// =====================================================
-// LOADER
-// =====================================================
+  function resetSessionRuntimeState() {
+    APP.user = null;
+    APP.role = "guest";
+    APP.currentPage = null;
 
-function showLoader() {
-  document.getElementById("loader")?.classList.remove("d-none");
-}
+    APP.workspaceSlug = "";
+    APP.serverEmail = "";
 
-function hideLoader() {
-  document.getElementById("loader")?.classList.add("d-none");
-}
+    resetAttendanceRuntimeState();
+
+    APP.selectedUser = null;
+    APP.currentLocation = null;
+  }
+
+  // =====================================================
+  // LOADER
+  // =====================================================
+
+  function showLoader() {
+    document.getElementById("loader")?.classList.remove("d-none");
+  }
+
+  function hideLoader() {
+    document.getElementById("loader")?.classList.add("d-none");
+  }
 </script>
