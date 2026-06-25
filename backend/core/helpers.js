@@ -172,3 +172,34 @@ function getOwnerById(ownerId) {
     { owner_id: ownerId }
   );
 }
+
+function sanitizeTimeLogActionSuccessMessage(action, message) {
+  const clean = String(message || "").replace(/^Error:\s*/i, "").trim();
+
+  if (clean) {
+    return clean;
+  }
+
+  switch (String(action || "").trim()) {
+    case "time_in":
+      return "Time in logged successfully.";
+
+    case "time_out":
+      return "Time out logged successfully.";
+
+    case "break_start":
+      return "Break started successfully.";
+
+    case "break_end":
+      return "Break ended successfully.";
+
+    case "lunch_start":
+      return "Lunch started successfully.";
+
+    case "lunch_end":
+      return "Lunch ended successfully.";
+
+    default:
+      return "Timelog action saved successfully.";
+  }
+}
