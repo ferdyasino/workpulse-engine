@@ -6,6 +6,7 @@
 // =====================================================
 
 const APP = {
+  // session / auth
   user: null,
   role: "guest",
   currentPage: null,
@@ -13,10 +14,14 @@ const APP = {
   workspaceSlug: "",
   serverEmail: "",
 
+  // attendance / dashboard
   workStatus: "NOT STARTED",
   timeLogs: [],
   attendanceState: null,
   dashboardData: null,
+  shiftSummary: null,
+
+  // admin / misc
   selectedUser: null,
   currentLocation: null
 };
@@ -25,7 +30,7 @@ const APP = {
 // STORAGE KEYS
 // =====================================================
 
-const STORAGE_KEYS = {
+const STORAGE_KEYS = Object.freeze({
   USER_ID: "user_id",
   EMAIL: "email",
   NAME: "name",
@@ -39,25 +44,25 @@ const STORAGE_KEYS = {
   WORKSPACE_ID: "workspace_id",
   WORKSPACE_SLUG: "workspace_slug",
   LAST_PAGE: "last_page"
-};
+});
 
 // =====================================================
 // ROUTES
 // =====================================================
 
-const ROUTES = {
+const ROUTES = Object.freeze({
   home: "page-home",
   dashboard: "page-dashboard",
   admin: "page-admin-dashboard",
   login: "page-login",
   error: "page-error"
-};
+});
 
 // =====================================================
 // TIME LOG ACTIONS
 // =====================================================
 
-const TIME_LOG_ACTIONS = {
+const TIME_LOG_ACTIONS = Object.freeze({
   TIME_IN: "time_in",
   TIME_OUT: "time_out",
 
@@ -72,18 +77,46 @@ const TIME_LOG_ACTIONS = {
 
   LUNCH_START: "lunch_start",
   LUNCH_END: "lunch_end"
-};
+});
 
 // =====================================================
 // PAGE TITLES
 // =====================================================
 
-const PAGE_TITLES = {
+const PAGE_TITLES = Object.freeze({
   admin: "Admin Dashboard",
   dashboard: "Employee Dashboard",
   home: "System Home",
   login: "Login"
-};
+});
+
+// =====================================================
+// APP STATE HELPERS
+// Keep bootstrap-safe helpers here only.
+// No dashboard rendering / no server calls here.
+// =====================================================
+
+function resetAttendanceRuntimeState() {
+  APP.workStatus = "NOT STARTED";
+  APP.timeLogs = [];
+  APP.attendanceState = null;
+  APP.dashboardData = null;
+  APP.shiftSummary = null;
+}
+
+function resetSessionRuntimeState() {
+  APP.user = null;
+  APP.role = "guest";
+  APP.currentPage = null;
+
+  APP.workspaceSlug = "";
+  APP.serverEmail = "";
+
+  resetAttendanceRuntimeState();
+
+  APP.selectedUser = null;
+  APP.currentLocation = null;
+}
 
 // =====================================================
 // LOADER

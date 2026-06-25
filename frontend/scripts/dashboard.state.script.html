@@ -124,6 +124,75 @@ function toggleDashboard() {
   }
 }
 
+function clearDashboardUI() {
+  const dashboardTimelogsList = document.getElementById("dashboardTimelogsList");
+  if (dashboardTimelogsList) {
+    dashboardTimelogsList.innerHTML = `<div class="text-muted-custom">No logs yet</div>`;
+  }
+
+  const leftTimelogsList = document.getElementById("leftTimelogsList");
+  if (leftTimelogsList) {
+    leftTimelogsList.innerHTML = `<div class="text-muted-custom">No break activity yet</div>`;
+  }
+
+  const summaryTimeIn = document.getElementById("summaryTimeIn");
+  if (summaryTimeIn) summaryTimeIn.textContent = "--";
+
+  const summaryTimeOut = document.getElementById("summaryTimeOut");
+  if (summaryTimeOut) summaryTimeOut.textContent = "--";
+
+  const globalStatusText = document.getElementById("globalStatusText");
+  if (globalStatusText) globalStatusText.textContent = "NOT STARTED";
+
+  const dot = document.getElementById("statusDot");
+  if (dot) {
+    dot.className = "status-dot bg-secondary";
+  }
+
+  applyBreakButtonState("b1Btn", "AVAILABLE", "B1");
+  applyBreakButtonState("b2Btn", "AVAILABLE", "B2");
+  applyBreakButtonState("b3Btn", "AVAILABLE", "B3");
+}
+
+// =====================================================
+// DASHBOARD SYNC
+// =====================================================
+
+function syncDashboard() {
+  const user = getCurrentUser();
+  const email = user?.email;
+  const workspace_id = user?.workspace_id;
+
+  if (!email || !workspace_id) return;
+
+  showLoader?.();
+
+  google.script.run
+    .withSuccessHandler((res) => {
+      hideLoader?.();
+
+      const logs = dedupeTimeLogs(Array.isArray(res) ? res : []);
+      const state = buildTimeLogState(logs);
+
+      APP.timeLogs = logs;
+      APP.attendanceState = state;
+      APP.workStatus = state.status || "NOT STARTED";
+
+      renderTimeLogger();
+      renderTimeline(state, logs); // now buttons only
+      renderBreakActivity(state);
+      renderGlobalState(state);
+      renderTimeSummary(state);
+      renderUserHeader?.();
+    })
+    .withFailureHandler((err) => {
+      hideLoader?.();
+      console.error("syncDashboard error:", err);
+    })
+    .findTimeLogs(workspace_id, { email });
+}
+
+
 // =====================================================
 // INIT
 // =====================================================

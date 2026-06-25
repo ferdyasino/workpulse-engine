@@ -1,0 +1,74 @@
+<script>
+  function buildTimeLogState(timeLogs = []) {
+    const state = {
+      status: "NOT STARTED",
+      time_in: null,
+      time_out: null,
+      lunch: {
+        in: null,
+        out: null,
+      },
+      breaks: [],
+    };
+
+    for (const log of Array.isArray(timeLogs) ? timeLogs : []) {
+      const action = String(log?.action || "").trim();
+      const timestamp = log?.timestamp || null;
+
+      if (action === "time_in") {
+        state.time_in = timestamp;
+        state.status = "WORKING";
+        continue;
+      }
+
+      if (action === "time_out") {
+        state.time_out = timestamp;
+        state.status = "CLOCKED OUT";
+        continue;
+      }
+
+      if (action === "lunch_start") {
+        state.lunch.in = timestamp;
+        state.status = "AT LUNCH";
+        continue;
+      }
+
+      if (action === "lunch_end") {
+        state.lunch.out = timestamp;
+        state.status = "WORKING";
+        continue;
+      }
+
+      const breakMatch = action.match(/^break_(\d+)_(start|end)$/);
+      if (breakMatch) {
+        const breakNumber = Number(breakMatch[1]);
+        const breakIndex = breakNumber - 1;
+        const breakType = breakMatch[2];
+
+        if (!state.breaks[breakIndex]) {
+          state.breaks[breakIndex] = {
+            key: `B${breakNumber}`,
+            in: null,
+            out: null,
+          };
+        }
+
+        if (breakType === "start") {
+          state.breaks[breakIndex].in = timestamp;
+          state.status = "ON BREAK";
+        } else {
+          state.breaks[breakIndex].out = timestamp;
+          state.status = "WORKING";
+        }
+      }
+    }
+
+    state.breaks = state.breaks.filter(Boolean);
+
+    if (state.time_out) {
+      state.status = "CLOCKED OUT";
+    }
+
+    return state;
+  }
+</script>

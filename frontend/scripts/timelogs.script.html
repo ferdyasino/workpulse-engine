@@ -2,6 +2,7 @@
 /**
  * =====================================================
  * DASHBOARD / TIME LOGGER MODULE
+ * GLOBAL-HELPER-ONLY + BUTTONS-ONLY LOGGER + DYNAMIC BREAK STATE
  * =====================================================
  */
 
@@ -11,7 +12,9 @@
 
 function clearDashboardUI() {
   const dashboardTimelogsList = document.getElementById("dashboardTimelogsList");
-  if (dashboardTimelogsList) dashboardTimelogsList.innerHTML = "";
+  if (dashboardTimelogsList) {
+    dashboardTimelogsList.innerHTML = `<div class="text-muted-custom">No logs yet</div>`;
+  }
 
   const leftTimelogsList = document.getElementById("leftTimelogsList");
   if (leftTimelogsList) {
@@ -23,9 +26,6 @@ function clearDashboardUI() {
 
   const summaryTimeOut = document.getElementById("summaryTimeOut");
   if (summaryTimeOut) summaryTimeOut.textContent = "--";
-
-  const currWorkStatus = document.getElementById("currWorkStatus");
-  if (currWorkStatus) currWorkStatus.textContent = "NOT STARTED";
 
   const globalStatusText = document.getElementById("globalStatusText");
   if (globalStatusText) globalStatusText.textContent = "NOT STARTED";
@@ -46,8 +46,8 @@ function clearDashboardUI() {
 
 function syncDashboard() {
   const user = getCurrentUser();
-  const email = user.email;
-  const workspace_id = user.workspace_id;
+  const email = user?.email;
+  const workspace_id = user?.workspace_id;
 
   if (!email || !workspace_id) return;
 
@@ -57,7 +57,7 @@ function syncDashboard() {
     .withSuccessHandler((res) => {
       hideLoader?.();
 
-      const logs = Array.isArray(res) ? res : [];
+      const logs = dedupeTimeLogs(Array.isArray(res) ? res : []);
       const state = buildTimeLogState(logs);
 
       APP.timeLogs = logs;
@@ -65,10 +65,11 @@ function syncDashboard() {
       APP.workStatus = state.status || "NOT STARTED";
 
       renderTimeLogger();
-      renderBreakActivity(logs);
+      renderTimeline(state, logs); // now buttons only
+      renderBreakActivity(state);
       renderGlobalState(state);
       renderTimeSummary(state);
-      renderUserHeader();
+      renderUserHeader?.();
     })
     .withFailureHandler((err) => {
       hideLoader?.();
@@ -85,10 +86,10 @@ window.renderGlobalState = function(state = {}) {
   const statusText = document.getElementById("globalStatusText");
   const dot = document.getElementById("statusDot");
 
-  const currentStatus = String(state.status || "NOT STARTED").toUpperCase();
+  const currentStatus = String(state.status || "NOT STARTED").trim().toUpperCase();
 
   if (statusText) {
-    statusText.textContent = state.status || "NOT STARTED";
+    statusText.textContent = DISPLAY.status(state.status || "NOT STARTED");
   }
 
   if (dot) {
@@ -159,14 +160,11 @@ function applyBreakButtonState(buttonId, breakState, label) {
 }
 
 // =====================================================
-// RENDER LOGGER UI
+// LOGGER BUTTONS HTML
 // =====================================================
 
-function renderTimeLogger() {
-  const container = document.getElementById("dashboardTimelogsList");
-  if (!container) return;
-
-  container.innerHTML = `
+function getTimeLoggerHtml() {
+  return `
     <div id="timeLogger" class="glass-card mb-4">
       <div class="row g-3">
 
@@ -179,7 +177,7 @@ function renderTimeLogger() {
         </div>
 
         <div class="col-6">
-          <button class="btn btn-warning w-100" onclick="logTime('break_1_start')">B1 Start</button>
+          <button id="b1Btn" class="btn btn-outline-warning w-100" onclick="logTime('break_1_start')">B1</button>
         </div>
 
         <div class="col-6">
@@ -187,7 +185,7 @@ function renderTimeLogger() {
         </div>
 
         <div class="col-6">
-          <button class="btn btn-warning w-100" onclick="logTime('break_2_start')">B2 Start</button>
+          <button id="b2Btn" class="btn btn-outline-warning w-100" onclick="logTime('break_2_start')">B2</button>
         </div>
 
         <div class="col-6">
@@ -195,7 +193,7 @@ function renderTimeLogger() {
         </div>
 
         <div class="col-6">
-          <button class="btn btn-warning w-100" onclick="logTime('break_3_start')">B3 Start</button>
+          <button id="b3Btn" class="btn btn-outline-warning w-100" onclick="logTime('break_3_start')">B3</button>
         </div>
 
         <div class="col-6">
@@ -215,6 +213,12 @@ function renderTimeLogger() {
   `;
 }
 
+function renderTimeLogger() {
+  const container = document.getElementById("dashboardTimelogsList");
+  if (!container) return;
+  container.innerHTML = getTimeLoggerHtml();
+}
+
 // =====================================================
 // LOG TIME EVENT
 // =====================================================
@@ -222,10 +226,10 @@ function renderTimeLogger() {
 async function logTime(action) {
   const user = getCurrentUser();
 
-  const email = user.email;
-  const workspace_id = user.workspace_id || document.getElementById("sid")?.value;
-  const shiftId = user.shift_id;
-  const userId = user.user_id;
+  const email = user?.email;
+  const workspace_id = user?.workspace_id || document.getElementById("sid")?.value;
+  const shiftId = user?.shift_id;
+  const userId = user?.user_id;
 
   if (!email || !workspace_id || !userId) {
     showToast?.("Session expired. Please login again.", "error");
@@ -239,7 +243,6 @@ async function logTime(action) {
   if (!geo.success) {
     console.warn("Geolocation failed:", geo.status, geo.message);
   }
-
 
   const payload = {
     user_id: userId,
@@ -257,8 +260,6 @@ async function logTime(action) {
     workspace_id,
     payload,
     () => {
-      showLoader?.();
-
       google.script.run
         .withSuccessHandler((res) => {
           hideLoader?.();
@@ -269,17 +270,6 @@ async function logTime(action) {
           }
 
           showToast?.(res.message || "Logged successfully", "success");
-          
-          showToast?.(res.message || "Logged successfully", "success");
-          
-          if (!geo.success && geo.status === "DENIED") {
-            // setTimeout(() => {
-            //   showToast?.(
-            //     "Location permission denied. Attendance was logged without GPS.",
-            //     "warning"
-            //   );
-            // }, 600);
-          }
           getLogs();
         })
         .withFailureHandler((err) => {
@@ -289,6 +279,7 @@ async function logTime(action) {
         .insertTimeLog(workspace_id, payload);
     },
     (err) => {
+      hideLoader?.();
       showToast?.(err?.message || "Validation failed", "error");
     }
   );
@@ -300,29 +291,25 @@ async function logTime(action) {
 
 function getLogs() {
   const user = getCurrentUser();
-  const email = user.email;
-  const workspace_id = user.workspace_id || document.getElementById("sid")?.value;
+  const email = user?.email;
+  const workspace_id = user?.workspace_id || document.getElementById("sid")?.value;
 
   if (!workspace_id || !email) return;
 
   google.script.run
     .withSuccessHandler((res) => {
-      const logs = Array.isArray(res) ? res : [];
+      const logs = dedupeTimeLogs(Array.isArray(res) ? res : []);
+      const state = buildTimeLogState(logs);
 
-      const unique = Array.from(
-        new Map(logs.map(log => [`${log.action}_${log.timestamp}`, log])).values()
-      );
-
-      const state = buildTimeLogState(unique);
-
-      APP.timeLogs = unique;
+      APP.timeLogs = logs;
       APP.attendanceState = state;
       APP.workStatus = state.status || "NOT STARTED";
 
+      renderTimeline(state, logs); // buttons only
       renderTimeSummary(state);
       renderGlobalState(state);
-      renderBreakActivity(unique);
-      renderUserHeader();
+      renderBreakActivity(state);
+      renderUserHeader?.();
     })
     .withFailureHandler(console.error)
     .findTimeLogs(workspace_id, { email });
@@ -349,7 +336,6 @@ function validate(workspace_id, payload, callback, errCallback) {
     })
     .withFailureHandler((err) => {
       console.error("VALIDATION ERROR:", err);
-
       errCallback?.({
         message: err?.message || "Server error"
       });
@@ -359,26 +345,42 @@ function validate(workspace_id, payload, callback, errCallback) {
 
 // =====================================================
 // BREAK ACTIVITY
+// DYNAMIC / UNLIMITED BREAK DISPLAY
 // =====================================================
 
-function renderBreakActivity(logs) {
+function renderBreakActivity(state = {}) {
   const container = document.getElementById("leftTimelogsList");
   if (!container) return;
 
-  const filtered = logs.filter(log =>
-    log.action.startsWith("break_") ||
-    log.action.startsWith("lunch_")
-  );
+  const breaks = Array.isArray(state.breaks) ? state.breaks : [];
+  const lunch = state.lunch || {};
 
-  if (filtered.length === 0) {
+  const rows = [
+    ...breaks.map((item, index) => ({
+      label: item?.key || `B${index + 1}`,
+      in: item?.in || null,
+      out: item?.out || null
+    })),
+    {
+      label: "Lunch",
+      in: lunch.in || null,
+      out: lunch.out || null
+    }
+  ].filter(row => row.in || row.out);
+
+  if (!rows.length) {
     container.innerHTML = `<div class="text-muted-custom">No break activity yet</div>`;
     return;
   }
 
-  container.innerHTML = filtered.map(log => `
-    <div class="d-flex justify-content-between border-bottom py-2">
-      <div>${formatLabel(log.action)}</div>
-      <div class="text-muted-custom">${formatTimeSafe(log.timestamp)}</div>
+  container.innerHTML = rows.map(row => `
+    <div class="border-bottom py-2">
+      <div class="fw-semibold">${escapeHtml(row.label)}</div>
+      <div class="small text-muted-custom mt-1">
+        In: ${escapeHtml(formatTime(row.in))}
+        <span class="mx-2">•</span>
+        Out: ${escapeHtml(formatTime(row.out))}
+      </div>
     </div>
   `).join("");
 }
@@ -387,79 +389,109 @@ function renderBreakActivity(logs) {
 // SUMMARY
 // =====================================================
 
-function renderTimeSummary(state) {
-  const currWorkStatus = document.getElementById("currWorkStatus");
+function renderTimeSummary(state = {}) {
   const summaryTimeIn = document.getElementById("summaryTimeIn");
   const summaryTimeOut = document.getElementById("summaryTimeOut");
+  const globalStatusText = document.getElementById("globalStatusText");
 
   if (summaryTimeIn) {
-    summaryTimeIn.textContent = state.time_in
-      ? formatTimeSafe(state.time_in)
-      : "--";
+    summaryTimeIn.textContent = state.time_in ? formatTime(state.time_in) : "--";
   }
 
   if (summaryTimeOut) {
-    summaryTimeOut.textContent = state.time_out
-      ? formatTimeSafe(state.time_out)
-      : "--";
+    summaryTimeOut.textContent = state.time_out ? formatTime(state.time_out) : "--";
   }
 
-  if (currWorkStatus) {
-    currWorkStatus.textContent = state.status || "NOT STARTED";
+  if (globalStatusText) {
+    globalStatusText.textContent = DISPLAY.status(state.status || "NOT STARTED");
   }
 }
 
 // =====================================================
-// STATE ENGINE
+// TIMELINE
+// BUTTONS ONLY NOW
 // =====================================================
 
-function buildTimeLogState(timeLogs) {
+function renderTimeline(state = {}, logs = []) {
+  const container = document.getElementById("dashboardTimelogsList");
+  if (!container) return;
+
+  container.innerHTML = getTimeLoggerHtml();
+}
+
+// =====================================================
+// STATE ENGINE
+// DYNAMIC BREAK SUPPORT
+// =====================================================
+
+function buildTimeLogState(timeLogs = []) {
   const state = {
-    status: "NOT_STARTED",
+    status: "NOT STARTED",
     time_in: null,
     time_out: null,
-    lunch: {},
+    lunch: {
+      in: null,
+      out: null
+    },
     breaks: []
   };
 
-  for (const log of timeLogs) {
-    switch (log.action) {
-      case "time_in":
-        state.time_in = log.timestamp;
-        state.status = "WORKING";
-        break;
+  for (const log of (Array.isArray(timeLogs) ? timeLogs : [])) {
+    const action = String(log?.action || "").trim();
+    const timestamp = log?.timestamp || null;
 
-      case "time_out":
-        state.time_out = log.timestamp;
-        state.status = "CLOCKED OUT";
-        break;
+    if (action === "time_in") {
+      state.time_in = timestamp;
+      state.status = "WORKING";
+      continue;
+    }
 
-      case "break_1_start":
-      case "break_2_start":
-      case "break_3_start":
-        state.breaks.push({ in: log.timestamp, out: null });
-        state.status = "ON BREAK";
-        break;
+    if (action === "time_out") {
+      state.time_out = timestamp;
+      state.status = "CLOCKED OUT";
+      continue;
+    }
 
-      case "break_1_end":
-      case "break_2_end":
-      case "break_3_end": {
-        const lastBreak = state.breaks.findLast(b => !b.out);
-        if (lastBreak) lastBreak.out = log.timestamp;
-        state.status = "WORKING";
-        break;
+    if (action === "lunch_start") {
+      state.lunch.in = timestamp;
+      state.status = "AT LUNCH";
+      continue;
+    }
+
+    if (action === "lunch_end") {
+      state.lunch.out = timestamp;
+      state.status = "WORKING";
+      continue;
+    }
+
+    const breakMatch = action.match(/^break_(\d+)_(start|end)$/);
+    if (breakMatch) {
+      const breakNumber = Number(breakMatch[1]);
+      const breakIndex = breakNumber - 1;
+      const breakType = breakMatch[2];
+
+      if (!state.breaks[breakIndex]) {
+        state.breaks[breakIndex] = {
+          key: `B${breakNumber}`,
+          in: null,
+          out: null
+        };
       }
 
-      case "lunch_start":
-        state.lunch.in = log.timestamp;
-        state.status = "AT LUNCH";
-        break;
-
-      case "lunch_end":
-        state.lunch.out = log.timestamp;
+      if (breakType === "start") {
+        state.breaks[breakIndex].in = timestamp;
+        state.status = "ON BREAK";
+      } else {
+        state.breaks[breakIndex].out = timestamp;
         state.status = "WORKING";
-        break;
+      }
     }
+  }
+
+  state.breaks = state.breaks.filter(Boolean);
+
+  if (state.time_out) {
+    state.status = "CLOCKED OUT";
   }
 
   return state;
@@ -469,22 +501,14 @@ function buildTimeLogState(timeLogs) {
 // HELPERS
 // =====================================================
 
-function formatTimeSafe(ts) {
-  if (!ts) return "--";
-
-  const d = new Date(ts);
-  return isNaN(d.getTime())
-    ? "--"
-    : d.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-      });
-}
-
-function formatLabel(action) {
-  return (action || "")
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, c => c.toUpperCase());
+function dedupeTimeLogs(logs = []) {
+  return Array.from(
+    new Map(
+      (Array.isArray(logs) ? logs : []).map(log => [
+        `${log?.action || ""}_${log?.timestamp || ""}`,
+        log
+      ])
+    ).values()
+  );
 }
 </script>

@@ -1,0 +1,246 @@
+<script>
+  /**
+   * =====================================================
+   * TIME LOGGER UI MODULE
+   * BUTTON RENDER / BUTTON STATE / LOGGER PANEL
+   * =====================================================
+   */
+
+  // =====================================================
+  // GLOBAL STATUS RENDER
+  // =====================================================
+
+  window.renderGlobalState = function (state = {}) {
+    const statusText = document.getElementById("globalStatusText");
+    const dot = document.getElementById("statusDot");
+
+    const currentStatus = String(state.status || "NOT STARTED")
+      .trim()
+      .toUpperCase();
+
+    if (statusText) {
+      statusText.textContent = DISPLAY.status(state.status || "NOT STARTED");
+    }
+
+    if (dot) {
+      dot.className = "status-dot";
+
+      switch (currentStatus) {
+        case "WORKING":
+          dot.classList.add("bg-success");
+          break;
+        case "ON BREAK":
+          dot.classList.add("bg-warning");
+          break;
+        case "AT LUNCH":
+          dot.classList.add("bg-info");
+          break;
+        case "CLOCKED OUT":
+          dot.classList.add("bg-danger");
+          break;
+        default:
+          dot.classList.add("bg-secondary");
+          break;
+      }
+    }
+
+    const breaks = Array.isArray(state.breaks) ? state.breaks : [];
+
+    applyBreakButtonState("b1Btn", getBreakButtonState(breaks[0]), "B1");
+    applyBreakButtonState("b2Btn", getBreakButtonState(breaks[1]), "B2");
+    applyBreakButtonState("b3Btn", getBreakButtonState(breaks[2]), "B3");
+  };
+
+  function getBreakButtonState(breakItem) {
+    if (!breakItem) return "AVAILABLE";
+
+    const hasIn = !!breakItem.in;
+    const hasOut = !!breakItem.out;
+
+    if (hasIn && hasOut) return "ENDED";
+    if (hasIn && !hasOut) return "ACTIVE";
+
+    return "AVAILABLE";
+  }
+
+  function applyBreakButtonState(buttonId, breakState, label) {
+    const btn = document.getElementById(buttonId);
+    if (!btn) return;
+
+    btn.className = "btn btn-sm";
+    btn.disabled = false;
+    btn.textContent = label;
+    btn.dataset.breakState = breakState;
+
+    switch (breakState) {
+      case "ACTIVE":
+        btn.classList.add("btn-success");
+        break;
+
+      case "ENDED":
+        btn.classList.add("btn-break-ended");
+        btn.disabled = true;
+        break;
+
+      case "AVAILABLE":
+      default:
+        btn.classList.add("btn-outline-warning");
+        break;
+    }
+  }
+
+  // =====================================================
+  // LOGGER BUTTONS HTML
+  // =====================================================
+
+  function getTimeLoggerHtml() {
+    return `
+    <div id="timeLogger" class="glass-card mb-4">
+      <div class="row g-3">
+
+        <div class="col-6">
+          <button class="btn btn-success w-100" onclick="logTime('time_in')">Time In</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-danger w-100" onclick="logTime('time_out')">Time Out</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-warning w-100" onclick="logTime('break_1_start')">B1 Start</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-primary w-100" onclick="logTime('break_1_end')">B1 End</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-warning w-100" onclick="logTime('break_2_start')">B2 Start</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-primary w-100" onclick="logTime('break_2_end')">B2 End</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-warning w-100" onclick="logTime('break_3_start')">B3 Start</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-primary w-100" onclick="logTime('break_3_end')">B3 End</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-dark w-100" onclick="logTime('lunch_start')">Lunch Start</button>
+        </div>
+
+        <div class="col-6">
+          <button class="btn btn-info w-100" onclick="logTime('lunch_end')">Lunch End</button>
+        </div>
+
+      </div>
+    </div>
+  `;
+  }
+
+  function renderTimeLogger() {
+    const container = document.getElementById("dashboardTimelogsList");
+    if (!container) return;
+
+    container.innerHTML = getTimeLoggerHtml();
+  }
+
+  async function logTime(action) {
+    const user = getCurrentUser();
+
+    const email = user?.email;
+    const workspace_id =
+      user?.workspace_id || document.getElementById("sid")?.value;
+    const shiftId = user?.shift_id;
+    const userId = user?.user_id;
+
+    if (!email || !workspace_id || !userId) {
+      showToast?.("Session expired. Please login again.", "error");
+      return;
+    }
+
+    showLoader?.();
+
+    const geo = await getCurrentLocation();
+
+    if (!geo.success) {
+      console.warn("Geolocation failed:", geo.status, geo.message);
+    }
+
+    const payload = {
+      user_id: userId,
+      email,
+      action,
+      shift_id: shiftId,
+      device_info: navigator.userAgent,
+      location: geo.location,
+      location_status: geo.status,
+      location_message: geo.message,
+      timestamp: new Date().toISOString(),
+    };
+
+    validate(
+      workspace_id,
+      payload,
+      () => {
+        google.script.run
+          .withSuccessHandler((res) => {
+            hideLoader?.();
+
+            if (!res?.success) {
+              showToast?.(res.message || "Action failed", "error");
+              return;
+            }
+
+            showToast?.(res.message || "Logged successfully", "success");
+            getLogs();
+          })
+          .withFailureHandler((err) => {
+            hideLoader?.();
+            showToast?.(err?.message || "Server error", "error");
+          })
+          .insertTimeLog(workspace_id, payload);
+      },
+      (err) => {
+        hideLoader?.();
+        showToast?.(err?.message || "Validation failed", "error");
+      },
+    );
+  }
+
+  // =====================================================
+  // FETCH LOGS
+  // =====================================================
+
+  function getLogs() {
+    const user = getCurrentUser();
+    const email = user?.email;
+    const workspace_id =
+      user?.workspace_id || document.getElementById("sid")?.value;
+
+    if (!workspace_id || !email) return;
+
+    google.script.run
+      .withSuccessHandler((res) => {
+        const logs = dedupeTimeLogs(Array.isArray(res) ? res : []);
+        const state = buildTimeLogState(logs);
+
+        APP.timeLogs = logs;
+        APP.attendanceState = state;
+        APP.workStatus = state.status || "NOT STARTED";
+
+        renderTimeline(state, logs); // buttons only
+        renderTimeSummary(state);
+        renderGlobalState(state);
+        renderBreakActivity(state);
+        renderUserHeader?.();
+      })
+      .withFailureHandler(console.error)
+      .findTimeLogs(workspace_id, { email });
+  }
+</script>
