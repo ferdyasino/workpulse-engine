@@ -1,4 +1,3 @@
-
 /**
  * =====================================================
  * DATABASE CONFIG
@@ -6,6 +5,17 @@
  */
 const DB_CONFIG = {
   AUTH_SPREADSHEET_ID: "1YQJGlNZamkMwO-04VyoqDHa0GL8Ip_-C93LJWDl13aU"
+};
+
+/**
+ * =====================================================
+ * AUTH PROVIDERS
+ * =====================================================
+ */
+const AUTH_PROVIDERS = {
+  PASSWORD: "password",
+  GOOGLE: "google",
+  BOTH: "both"
 };
 
 
@@ -40,6 +50,14 @@ const AUTH_SCHEMA = {
     "fullname",
     "role",
     "workspace_id",
+
+    // auth fields
+    "auth_provider",
+    "google_sub",
+    "google_email",
+    "last_login_at",
+
+    // common status / audit
     "status",
     "created_at",
     "updated_at"
@@ -123,7 +141,6 @@ const AUTH_TABLES = {
     schema: AUTH_SCHEMA.USERS,
     mode: "WRITE_ON_INIT"
   }
-  
 };
 
 
