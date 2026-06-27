@@ -32,16 +32,26 @@
 
     const now = new Date();
 
+    // Live time
     timeEl.textContent = now.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
     });
 
-    const weekday = now.toLocaleDateString(undefined, { weekday: "long" });
-    const monthDay = now.toLocaleDateString(undefined, {
+    // Selected attendance date
+    const displayDate = APP.dashboard.viewingDate
+      ? new Date(`${APP.dashboard.viewingDate}T00:00:00`)
+      : now;
+
+    const weekday = displayDate.toLocaleDateString(undefined, {
+      weekday: "long",
+    });
+
+    const monthDay = displayDate.toLocaleDateString(undefined, {
       month: "long",
       day: "numeric",
+      year: "numeric",
     });
 
     dateEl.textContent = `${weekday}, ${monthDay}`;

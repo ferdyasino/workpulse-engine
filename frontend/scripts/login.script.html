@@ -84,6 +84,8 @@
     setCurrentUser(result);
 
     APP.workStatus = "NOT STARTED";
+    APP.dashboard = APP.dashboard || {};
+    APP.dashboard.viewingDate = formatDateKey(new Date());
 
     renderUserHeader();
     applyRoleUI?.();
@@ -151,6 +153,8 @@
     APP.attendanceState = null;
     APP.shiftSummary = null;
     APP.selectedUser = null;
+    APP.dashboard = APP.dashboard || {};
+    APP.dashboard.viewingDate = formatDateKey(new Date());
   }
 
   // =====================================================

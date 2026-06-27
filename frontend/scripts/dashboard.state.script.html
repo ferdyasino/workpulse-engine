@@ -8,6 +8,8 @@
       APP.currentPage = "login";
     }
 
+    APP.dashboard.viewingDate = formatDateKey(new Date());
+
     go(APP.currentPage);
   }
 
@@ -293,7 +295,8 @@
 
     const workspace_id = user.workspace_id;
     const email = user.email;
-    const shift_id = user.shift_id || "";
+    const shift_id = user.shift_id;
+    const work_date = APP.dashboard.viewingDate || formatDateKey(new Date());
 
     if (!workspace_id || !email) return;
 
@@ -307,11 +310,17 @@
           console.error("No attendance state returned.");
           return;
         }
-        console.log("state", state);
+
+        console.log("attendance state", state);
+
+        APP.dashboard.viewingDate = work_date;
 
         APP.attendanceState = state;
         APP.workStatus = state.status || "NOT_STARTED";
         APP.timeLogs = state.raw_logs || [];
+
+        // Refresh the displayed date immediately
+        updateDashboardClock?.();
 
         hydrateAttendanceUI?.(state);
         renderUserHeader?.();
@@ -322,7 +331,7 @@
         console.error("syncAttendanceState:", err);
         showToast?.(err?.message || "Unable to load attendance state", "error");
       })
-      .getCurrentState(workspace_id, email, shift_id);
+      .getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date);
   }
 
   // =====================================================

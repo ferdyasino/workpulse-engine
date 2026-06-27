@@ -43,9 +43,9 @@ function getCurrentState(
       ? getShiftWorkDate(
           workspace_id,
           normalizedShiftId,
-          targetTime
+          new Date()
         )
-      : formatDateKey(targetTime),
+      : formatDateKey(new Date()),
     raw_logs: logs
   };
 }
@@ -203,5 +203,52 @@ function resolveShiftWorkDate(shift, timestamp) {
   }
 
   return formatDateKey(date);
+}
+
+function getAttendanceStateByWorkDate(
+  workspace_id,
+  email,
+  shift_id,
+  work_date
+) {
+  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
+  const normalizedEmail = normalize("email", email);
+  const normalizedShiftId = normalize("shift_id", shift_id);
+  const normalizedWorkDate = normalize("date", work_date);
+
+  if (!normalizedWorkspaceId) {
+    throw new Error("workspace_id is required");
+  }
+
+  if (!normalizedEmail) {
+    throw new Error("email is required");
+  }
+
+  if (!normalizedShiftId) {
+    throw new Error("shift_id is required");
+  }
+
+  if (!normalizedWorkDate) {
+    throw new Error("work_date is required");
+  }
+
+  const logs = getTimeLogsByEmail(
+    normalizedWorkspaceId,
+    normalizedEmail,
+    {
+      shift_id: normalizedShiftId,
+      date: normalizedWorkDate
+    }
+  );
+
+  const state = buildTimeLogState(logs);
+
+  return {
+    ...state,
+    scope: "shift",
+    shift_id: normalizedShiftId,
+    work_date: normalizedWorkDate,
+    raw_logs: logs
+  };
 }
 
