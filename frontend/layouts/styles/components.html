@@ -248,4 +248,144 @@
     opacity: 0.85;
     cursor: not-allowed;
   }
+
+  /* =====================================================
+   REPORTS PAGE IMPROVEMENT LAYER
+   (drop-in override only for reports page)
+===================================================== */
+
+  .page-container {
+    max-width: 1400px;
+    margin: auto;
+    padding: 24px;
+  }
+
+  /* =====================================================
+   HEADER
+===================================================== */
+  .page-container .glass-card h4 {
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: 0.3px;
+  }
+
+  .page-container .glass-card small {
+    color: var(--text-secondary);
+    opacity: 0.9;
+  }
+
+  /* =====================================================
+   KPI CARDS (IMPORTANT FIX)
+===================================================== */
+  .page-container .glass-card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .page-container .glass-card .text-muted {
+    color: var(--text-secondary) !important;
+    font-size: 0.82rem;
+    letter-spacing: 0.3px;
+  }
+
+  /* BIG NUMBERS */
+  .page-container .glass-card .fs-3,
+  .page-container .glass-card .fs-4 {
+    color: var(--text-main);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+
+  /* COLOR EMPHASIS FIX */
+  #repOTHours {
+    color: #fbbf24 !important; /* stronger amber */
+  }
+
+  #repPresent {
+    color: #22c55e !important;
+  }
+
+  #repAbsent {
+    color: #ef4444 !important;
+  }
+
+  /* =====================================================
+   KPI GRID VISUAL BALANCE
+===================================================== */
+  .page-container .row.g-3 > div > .glass-card {
+    height: 100%;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* =====================================================
+   SECOND ROW (LESS IMPORTANT METRICS)
+===================================================== */
+  #repLate,
+  #repWorkdays {
+    color: var(--text-main);
+    font-weight: 700;
+  }
+
+  /* =====================================================
+   REPORT TABLE FIX (CRITICAL)
+===================================================== */
+
+  .page-container .table {
+    color: var(--text-main);
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  /* HEADER */
+  .page-container .table thead th {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 12px 10px;
+    letter-spacing: 0.4px;
+  }
+
+  /* ROWS */
+  .page-container .table tbody td {
+    color: var(--text-main);
+    font-size: 0.9rem;
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* ROW HOVER */
+  .page-container .table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transition: 0.15s ease;
+  }
+
+  /* =====================================================
+   STATUS BADGES IN TABLE
+===================================================== */
+  .badge {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  /* =====================================================
+   SELECT FILTER
+===================================================== */
+  #reportRange {
+    min-width: 140px;
+    font-size: 0.9rem;
+    color: var(--text-main);
+  }
+
+  /* =====================================================
+   SECTION SEPARATION
+===================================================== */
+  .page-container .glass-card {
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+  }
 </style>

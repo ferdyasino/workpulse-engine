@@ -1,0 +1,83 @@
+<div class="page-container">
+  <!-- HEADER -->
+  <div class="glass glass-card mb-3">
+    <h4 class="mb-0">Reports</h4>
+    <small class="text-muted">Attendance & Payroll Summary</small>
+  </div>
+
+  <!-- KPI GRID -->
+  <div class="row g-3">
+    <div class="col-md-3">
+      <div class="glass glass-card">
+        <div class="text-muted">Running Hours</div>
+        <div class="fs-3 fw-bold" id="repRunningHours">0h 0m</div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="glass glass-card">
+        <div class="text-muted">Overtime</div>
+        <div class="fs-3 fw-bold text-warning" id="repOTHours">0h 0m</div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="glass glass-card">
+        <div class="text-muted">Present</div>
+        <div class="fs-3 fw-bold text-success" id="repPresent">0</div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="glass glass-card">
+        <div class="text-muted">Absent</div>
+        <div class="fs-3 fw-bold text-danger" id="repAbsent">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECOND ROW -->
+  <div class="row g-3 mt-1">
+    <div class="col-md-6">
+      <div class="glass glass-card">
+        <div class="text-muted">Late Count</div>
+        <div class="fs-4 fw-bold" id="repLate">0</div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="glass glass-card">
+        <div class="text-muted">Workdays</div>
+        <div class="fs-4 fw-bold" id="repWorkdays">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL TABLE -->
+  <div class="glass glass-card mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Employee Breakdown</h5>
+
+      <select class="form-select w-auto" id="reportRange">
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Hours</th>
+            <th>OT</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="reportTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
