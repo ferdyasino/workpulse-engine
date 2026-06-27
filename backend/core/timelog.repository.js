@@ -110,6 +110,9 @@ function assertTimeLogHeaders(headers) {
 /* =========================
    INSERT SINGLE
 ========================= */
+/* =========================
+   INSERT SINGLE
+========================= */
 function insertTimeLog(workspace_id, payload) {
   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
 
@@ -128,6 +131,16 @@ function insertTimeLog(workspace_id, payload) {
   assertTimeLogHeaders(headers);
 
   const log = normalizeTimeLog(payload, normalizedWorkspaceId);
+
+  // =====================================================
+  // RESOLVE WORK DATE FROM SHIFT (BACKEND SOURCE OF TRUTH)
+  // =====================================================
+  log.date = getShiftWorkDate(
+    normalizedWorkspaceId,
+    log.shift_id,
+    log.timestamp
+  );
+
   assertInsertableTimeLog(log);
 
   const row = buildTimeLogRow(headers, log);
@@ -137,7 +150,8 @@ function insertTimeLog(workspace_id, payload) {
     success: true,
     message: buildActionMessage(log.action),
     log_id: log.log_id,
-    workspace_id: normalizedWorkspaceId
+    workspace_id: normalizedWorkspaceId,
+    work_date: log.date
   };
 }
 
@@ -163,7 +177,15 @@ function insertManyTimeLogs(workspace_id, logs) {
 
   const normalizedLogs = logs.map(function (log) {
     const normalized = normalizeTimeLog(log, normalizedWorkspaceId);
+
+    normalized.date = getShiftWorkDate(
+      normalizedWorkspaceId,
+      normalized.shift_id,
+      normalized.timestamp
+    );
+
     assertInsertableTimeLog(normalized);
+
     return normalized;
   });
 
