@@ -1,176 +1,180 @@
 <script>
-/**
- * =====================================================
- * USERS CONTROLLER
- * =====================================================
- */
+  /**
+   * =====================================================
+   * USERS CONTROLLER
+   * =====================================================
+   */
 
-function UserInit() {
-  init();
-}
+  function UserInit() {
+    init();
+  }
 
-let state = {
-  users: [],
-  departments: [],
-  positions: [],
-  shifts: [],
-  loading: false
-};
+  let state = {
+    users: [],
+    departments: [],
+    positions: [],
+    shifts: [],
+    loading: false,
+  };
 
-// =====================================================
-// INIT
-// =====================================================
+  // =====================================================
+  // INIT
+  // =====================================================
 
-function init() {
-  loadReferenceData();
-  loadUsers();
-}
+  function init() {
+    loadReferenceData();
+    loadUsers();
+  }
 
-function reloadAllReferences() {
-  return loadReferenceData();
-}
+  function reloadAllReferences() {
+    return loadReferenceData();
+  }
 
-// =====================================================
-// DROPDOWNS
-// =====================================================
+  // =====================================================
+  // DROPDOWNS
+  // =====================================================
 
-function hydrateDropdowns() {
-  const dept = document.getElementById("department_id");
-  const pos = document.getElementById("position_id");
-  const shift = document.getElementById("shift_id");
+  function hydrateDropdowns() {
+    const dept = document.getElementById("department_id");
+    const pos = document.getElementById("position_id");
+    const shift = document.getElementById("shift_id");
 
-  if (dept) {
-    dept.innerHTML = state.departments
-      .map(d => `
+    if (dept) {
+      dept.innerHTML = state.departments
+        .map(
+          (d) => `
         <option value="${escapeHtml(d.department_id || "")}">
           ${escapeHtml(DISPLAY.name(d.department_name || ""))}
         </option>
-      `)
-      .join("");
-  }
+      `,
+        )
+        .join("");
+    }
 
-  if (pos) {
-    pos.innerHTML = state.positions
-      .map(p => `
+    if (pos) {
+      pos.innerHTML = state.positions
+        .map(
+          (p) => `
         <option value="${escapeHtml(p.position_id || "")}">
           ${escapeHtml(DISPLAY.name(p.position_name || ""))}
         </option>
-      `)
-      .join("");
-  }
+      `,
+        )
+        .join("");
+    }
 
-  if (shift) {
-    shift.innerHTML = state.shifts
-      .map(s => `
+    if (shift) {
+      shift.innerHTML = state.shifts
+        .map(
+          (s) => `
         <option value="${escapeHtml(s.shift_id || "")}">
           ${escapeHtml(DISPLAY.name(s.shift_name || ""))}
         </option>
-      `)
-      .join("");
-  }
-}
-
-// =====================================================
-// LOAD USERS
-// =====================================================
-
-function loadUsers() {
-  console.log("Loading users...");
-  setLoading(true);
-
-  UsersAPI.getUsers(
-    (res) => {
-      console.log("Users loaded:", res);
-
-      state.users = Array.isArray(res) ? res : [];
-
-      renderTable();
-      updateStats();
-      setLoading(false);
-    },
-    (err) => {
-      console.error("Users load failed:", err);
-      showToast("Failed to load users", "error");
-      setLoading(false);
+      `,
+        )
+        .join("");
     }
-  );
-}
+  }
 
-function loadDepartments() {
-  return new Promise((resolve, reject) => {
-    UsersAPI.getDepartments(
+  // =====================================================
+  // LOAD USERS
+  // =====================================================
+
+  function loadUsers() {
+    console.log("Loading users...");
+    setLoading(true);
+
+    UsersAPI.getUsers(
       (res) => {
+        console.log("Users loaded:", res);
+
+        state.users = Array.isArray(res) ? res : [];
+
+        renderTable();
+        updateStats();
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Users load failed:", err);
+        showToast("Failed to load users", "error");
+        setLoading(false);
+      },
+    );
+  }
+
+  function loadDepartments() {
+    return new Promise((resolve, reject) => {
+      UsersAPI.getDepartments((res) => {
         state.departments = Array.isArray(res) ? res : [];
         resolve(state.departments);
-      },
-      reject
-    );
-  });
-}
+      }, reject);
+    });
+  }
 
-function loadPositions() {
-  return new Promise((resolve, reject) => {
-    UsersAPI.getPositions(
-      (res) => {
+  function loadPositions() {
+    return new Promise((resolve, reject) => {
+      UsersAPI.getPositions((res) => {
         state.positions = Array.isArray(res) ? res : [];
         resolve(state.positions);
-      },
-      reject
-    );
-  });
-}
+      }, reject);
+    });
+  }
 
-function loadShifts() {
-  return new Promise((resolve, reject) => {
-    UsersAPI.getShifts(
-      (res) => {
+  function loadShifts() {
+    return new Promise((resolve, reject) => {
+      UsersAPI.getShifts((res) => {
         console.log("RAW SHIFTS:", res);
         state.shifts = Array.isArray(res) ? res : [];
         resolve(state.shifts);
-      },
-      reject
-    );
-  });
-}
+      }, reject);
+    });
+  }
 
-// =====================================================
-// TABLE
-// =====================================================
+  // =====================================================
+  // TABLE
+  // =====================================================
 
-function renderTable() {
-  const tbody = document.getElementById("usersTableBody");
-  if (!tbody) return;
+  function renderTable() {
+    const tbody = document.getElementById("usersTableBody");
+    if (!tbody) return;
 
-  tbody.innerHTML = "";
+    tbody.innerHTML = "";
 
-  console.log("state.users:", state.users);
+    console.log("state.users:", state.users);
 
-  if (!Array.isArray(state.users) || state.users.length === 0) {
-    tbody.innerHTML = `
+    if (!Array.isArray(state.users) || state.users.length === 0) {
+      tbody.innerHTML = `
       <tr>
         <td colspan="8" class="text-center text-muted">
           No users found
         </td>
       </tr>
     `;
-    return;
-  }
+      return;
+    }
 
-  state.users.forEach(user => {
-    const row = document.createElement("tr");
+    state.users.forEach((user) => {
+      const row = document.createElement("tr");
 
-    const name = DISPLAY.name(user.fullname || user.name || "N/A");
-    const email = String(user.email || "").trim().toLowerCase();
-    const role = DISPLAY.label(user.role || "");
-    const departmentName = DISPLAY.name(getDepartmentName(user.department_id));
-    const positionName = DISPLAY.name(getPositionName(user.position_id));
-    const shiftName = DISPLAY.name(getShiftName(user.shift_id));
-    const status = DISPLAY.status(user.status || "UNKNOWN");
+      const name = DISPLAY.name(user.fullname || user.name || "N/A");
+      const email = String(user.email || "")
+        .trim()
+        .toLowerCase();
+      const role = DISPLAY.label(user.role || "");
+      const departmentName = DISPLAY.name(
+        getDepartmentName(user.department_id),
+      );
+      const positionName = DISPLAY.name(getPositionName(user.position_id));
+      const shiftName = DISPLAY.name(getShiftName(user.shift_id));
+      const status = DISPLAY.status(user.status || "UNKNOWN");
+      const isOwner =
+        String(user.role || "")
+          .trim()
+          .toUpperCase() === "OWNER";
 
-    row.innerHTML = `
+      row.innerHTML = `
       <td>${escapeHtml(name)}</td>
       <td>${escapeHtml(email)}</td>
-      <td>${escapeHtml(role)}</td>
       <td>${escapeHtml(departmentName)}</td>
       <td>${escapeHtml(positionName)}</td>
       <td>${escapeHtml(shiftName)}</td>
@@ -182,182 +186,182 @@ function renderTable() {
       <td class="text-nowrap">
         <button
           class="btn btn-sm btn-primary"
-          onclick="editUser('${escapeHtml(user.user_id || "")}')">
+          onclick="editUser('${escapeHtml(user.user_id || "")}')"
+          ${isOwner ? "disabled title='Owner account cannot be edited'" : ""}>
           Edit
         </button>
 
         <button
           class="btn btn-sm btn-danger"
-          onclick="deleteUser('${escapeHtml(user.user_id || "")}')">
+          onclick="deleteUser('${escapeHtml(user.user_id || "")}')"
+          ${isOwner ? "disabled title='Owner account cannot be deleted'" : ""}>
           Delete
         </button>
       </td>
     `;
 
-    tbody.appendChild(row);
-  });
-}
-
-// =====================================================
-// STATS
-// =====================================================
-
-function updateStats() {
-  const total = state.users.length;
-
-  const active = state.users.filter(
-    u => String(u.status || "").trim().toUpperCase() === "ACTIVE"
-  ).length;
-
-  setText("#totalUsers", total);
-  setText("#activeUsers", active);
-}
-
-// =====================================================
-// FORM SUBMIT
-// =====================================================
-
-function handleSubmit(e) {
-  e.preventDefault();
-
-  const payload = {
-    user_id: document.getElementById("employeeId")?.value || "",
-    fullname: document.getElementById("employeeName")?.value || "",
-    email: document.getElementById("employeeEmail")?.value || "",
-    role: document.getElementById("employeeRole")?.value || "",
-    status: document.getElementById("employeeStatus")?.value || "",
-
-    department_id: document.getElementById("employeeDepartment")?.value || "",
-    position_id: document.getElementById("employeePosition")?.value || "",
-    shift_id: document.getElementById("employeeShift")?.value || ""
-  };
-
-  const isEdit = !!payload.user_id;
-
-  setLoading(true);
-
-  const successHandler = () => {
-    showToast(isEdit ? "User updated" : "User created", "success");
-
-    UsersModal.closeFormModal?.();
-    loadUsers();
-  };
-
-  const failHandler = (err) => {
-    console.error(err);
-
-    showToast(err?.message || "Operation failed", "error");
-    setLoading(false);
-  };
-
-  if (isEdit) {
-    UsersAPI.updateUser(
-      payload.user_id,
-      payload,
-      successHandler,
-      failHandler
-    );
-  } else {
-    UsersAPI.createUser(
-      payload,
-      successHandler,
-      failHandler
-    );
-  }
-}
-
-// =====================================================
-// REFERENCE LOOKUPS
-// =====================================================
-
-function getDepartmentName(id) {
-  const found = state.departments.find(d => d.department_id === id);
-  return found?.department_name || "-";
-}
-
-function getPositionName(id) {
-  const found = state.positions.find(p => p.position_id === id);
-  return found?.position_name || "-";
-}
-
-function getShiftName(id) {
-  const found = state.shifts.find(s => s.shift_id === id);
-  return found?.shift_name || "-";
-}
-
-function loadReferenceData() {
-  return Promise.all([
-    loadDepartments(),
-    loadPositions(),
-    loadShifts()
-  ])
-    .then(([deps, pos, shift]) => {
-      state.departments = deps || [];
-      state.positions = pos || [];
-      state.shifts = shift || [];
-
-      hydrateDropdowns();
-    })
-    .catch(err => {
-      console.error("Reference load failed:", err);
-      throw err;
+      tbody.appendChild(row);
     });
-}
-
-// =====================================================
-// HELPERS
-// =====================================================
-
-function setLoading(isLoading) {
-  state.loading = isLoading;
-
-  const btn = document.querySelector("#btnAddUser");
-  if (!btn) return;
-
-  btn.disabled = isLoading;
-  btn.innerText = isLoading ? "Loading..." : "Add User";
-}
-
-function populateSelect(id, items, valueKey, labelKey) {
-  const el = document.getElementById(id);
-  if (!el) return;
-
-  el.innerHTML = `<option value="">Select</option>`;
-
-  (items || []).forEach(item => {
-    const opt = document.createElement("option");
-    opt.value = item[valueKey] || "";
-    opt.textContent = DISPLAY.name(item[labelKey] || "");
-    el.appendChild(opt);
-  });
-}
-
-function setText(selector, value) {
-  const el = document.querySelector(selector);
-  if (el) el.innerText = value;
-}
-
-function getStatusClass(status) {
-  switch (String(status || "").trim().toUpperCase()) {
-    case "ACTIVE":
-      return "badge-success";
-
-    case "PENDING":
-      return "badge-warning";
-
-    case "INACTIVE":
-      return "badge-danger";
-
-    default:
-      return "badge-secondary";
   }
-}
 
-function showToast(message, type) {
-  if (window.Toast) {
-    window.Toast.show(message, type);
-  } else {
-    console.log(`[${type}] ${message}`);
+  // =====================================================
+  // STATS
+  // =====================================================
+
+  function updateStats() {
+    const total = state.users.length;
+
+    const active = state.users.filter(
+      (u) =>
+        String(u.status || "")
+          .trim()
+          .toUpperCase() === "ACTIVE",
+    ).length;
+
+    setText("#totalUsers", total);
+    setText("#activeUsers", active);
   }
-}
+
+  // =====================================================
+  // FORM SUBMIT
+  // =====================================================
+
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    const payload = {
+      user_id: document.getElementById("employeeId")?.value || "",
+      fullname: document.getElementById("employeeName")?.value || "",
+      email: document.getElementById("employeeEmail")?.value || "",
+      status: document.getElementById("employeeStatus")?.value || "",
+
+      department_id: document.getElementById("employeeDepartment")?.value || "",
+      position_id: document.getElementById("employeePosition")?.value || "",
+      shift_id: document.getElementById("employeeShift")?.value || "",
+    };
+
+    const isEdit = !!payload.user_id;
+
+    setLoading(true);
+
+    const successHandler = () => {
+      showToast(isEdit ? "User updated" : "User created", "success");
+
+      UsersModal.closeFormModal?.();
+      loadUsers();
+    };
+
+    const failHandler = (err) => {
+      console.error(err);
+
+      showToast(err?.message || "Operation failed", "error");
+      setLoading(false);
+    };
+
+    if (isEdit) {
+      UsersAPI.updateUser(
+        payload.user_id,
+        payload,
+        successHandler,
+        failHandler,
+      );
+    } else {
+      UsersAPI.createUser(payload, successHandler, failHandler);
+    }
+  }
+
+  // =====================================================
+  // REFERENCE LOOKUPS
+  // =====================================================
+
+  function getDepartmentName(id) {
+    const found = state.departments.find((d) => d.department_id === id);
+    return found?.department_name || "-";
+  }
+
+  function getPositionName(id) {
+    const found = state.positions.find((p) => p.position_id === id);
+    return found?.position_name || "-";
+  }
+
+  function getShiftName(id) {
+    const found = state.shifts.find((s) => s.shift_id === id);
+    return found?.shift_name || "-";
+  }
+
+  function loadReferenceData() {
+    return Promise.all([loadDepartments(), loadPositions(), loadShifts()])
+      .then(([deps, pos, shift]) => {
+        state.departments = deps || [];
+        state.positions = pos || [];
+        state.shifts = shift || [];
+
+        hydrateDropdowns();
+      })
+      .catch((err) => {
+        console.error("Reference load failed:", err);
+        throw err;
+      });
+  }
+
+  // =====================================================
+  // HELPERS
+  // =====================================================
+
+  function setLoading(isLoading) {
+    state.loading = isLoading;
+
+    const btn = document.querySelector("#btnAddUser");
+    if (!btn) return;
+
+    btn.disabled = isLoading;
+    btn.innerText = isLoading ? "Loading..." : "Add User";
+  }
+
+  function populateSelect(id, items, valueKey, labelKey) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.innerHTML = `<option value="">Select</option>`;
+
+    (items || []).forEach((item) => {
+      const opt = document.createElement("option");
+      opt.value = item[valueKey] || "";
+      opt.textContent = DISPLAY.name(item[labelKey] || "");
+      el.appendChild(opt);
+    });
+  }
+
+  function setText(selector, value) {
+    const el = document.querySelector(selector);
+    if (el) el.innerText = value;
+  }
+
+  function getStatusClass(status) {
+    switch (
+      String(status || "")
+        .trim()
+        .toUpperCase()
+    ) {
+      case "ACTIVE":
+        return "badge-success";
+
+      case "PENDING":
+        return "badge-warning";
+
+      case "INACTIVE":
+        return "badge-danger";
+
+      default:
+        return "badge-secondary";
+    }
+  }
+
+  function showToast(message, type) {
+    if (window.Toast) {
+      window.Toast.show(message, type);
+    } else {
+      console.log(`[${type}] ${message}`);
+    }
+  }
 </script>
