@@ -81,10 +81,37 @@ const SCHEMA = {
     "department_id", "department_name", "description", "created_at"
   ],
 
-  SHIFTS: [
-    "shift_id", "shift_name", "start_time", "end_time",
-    "grace_minutes", "status", "created_at"
-  ],
+SHIFTS: [
+  "shift_id",
+  "shift_name",
+  "start_time",
+  "end_time",
+
+  // existing
+  "grace_minutes",
+  "status",
+  "created_at",
+
+  // =========================
+  // PAYROLL EXTENSIONS
+  // =========================
+
+  // BREAK / LUNCH RULES
+  "break_limit_minutes",
+  "lunch_duration_minutes",
+
+  // OT RULES
+  "overtime_threshold_minutes",
+  "overtime_multiplier",
+
+  // OPTIONAL ADVANCED PAYROLL
+  "night_diff_start",
+  "night_diff_end",
+  "night_diff_multiplier",
+
+  // ROUNDING RULES (important for payroll accuracy)
+  "rounding_rule"
+],
 
   POSITIONS: [
     "position_id",
@@ -100,14 +127,51 @@ const SCHEMA = {
     "created_at", "updated_at"
   ],
 
+  REPORT_INDEX: [
+  "report_id",
+  "workspace_id",
+  "user_id",
+  "email",
+  "date",
+  "shift_id",
+
+  "worked_minutes",
+  "late_minutes",
+  "overtime_minutes",
+  "break_minutes",
+
+  "status",
+  "created_at"
+],
+
   SETTINGS: ["key", "value"]
 };
 
 const EXTERNAL_SCHEMA = {
   TIME_LOGS: [
-    "log_id", "workspace_id", "user_id", "email", "action",
-    "timestamp", "date", "shift_id", "device_info", "location",
-    "source", "remarks", "created_at"
+    "log_id",
+    "workspace_id",
+    "user_id",
+    "email",
+    "action",
+    "timestamp",
+    "date",
+    "shift_id",
+
+    "device_info",
+    "location",
+    "source",
+    "remarks",
+    "created_at",
+
+    // =========================
+    // COMPUTED FIELDS (REPORT LAYER USE)
+    // =========================
+
+    "computed_worked_minutes",
+    "computed_late_minutes",
+    "computed_overtime_minutes",
+    "computed_break_minutes"
   ]
 };
 
@@ -184,7 +248,13 @@ const TABLES = {
     sheet: "Attendance Index",
     pk: "attendance_id",
     schema: SCHEMA.ATTENDANCE_INDEX
-  }
+  },
+
+  REPORT_INDEX: {
+  sheet: "Report Index",
+  pk: "report_id",
+  schema: SCHEMA.REPORT_INDEX
+}
 };
 
 

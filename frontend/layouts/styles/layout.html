@@ -1,12 +1,55 @@
 <style>
-  /* PAGE */
+  /* =====================================================
+     PAGE LAYOUT
+  ===================================================== */
+
   .page-container {
     max-width: 1400px;
     margin: auto;
     padding: 24px;
   }
 
-  /* TOPBAR */
+  /* =====================================================
+     GLOBAL TEXT VISIBILITY FIX
+  ===================================================== */
+
+  body {
+    color: var(--text-main);
+  }
+
+  .text-muted {
+    color: var(--text-secondary) !important;
+    opacity: 1 !important;
+  }
+
+  .text-secondary {
+    color: var(--text-secondary) !important;
+  }
+
+  .text-white-50 {
+    color: var(--text-secondary) !important;
+  }
+
+  small {
+    color: var(--text-secondary);
+  }
+
+  label {
+    color: var(--text-main);
+  }
+
+  p,
+  span,
+  div,
+  td,
+  th {
+    color: inherit;
+  }
+
+  /* =====================================================
+     TOPBAR
+  ===================================================== */
+
   .app-topbar {
     position: sticky;
     top: 0;
@@ -27,7 +70,10 @@
     justify-content: center;
   }
 
-  /* SIDEBAR */
+  /* =====================================================
+     SIDEBAR
+  ===================================================== */
+
   .app-sidebar {
     min-height: calc(100vh - 40px);
     padding: 1rem;
@@ -36,17 +82,22 @@
   .sidebar-link {
     display: block;
     padding: 12px;
-    color: var(--text-secondary);
     border-radius: 12px;
     text-decoration: none;
+    color: var(--text-secondary);
+    transition: 0.2s;
   }
 
-  .sidebar-link:hover {
+  .sidebar-link:hover,
+  .sidebar-link.active {
     color: var(--text-main);
     background: rgba(255, 255, 255, 0.08);
   }
 
-  /* MODAL */
+  /* =====================================================
+     MODAL
+  ===================================================== */
+
   .modal-content {
     background: rgba(15, 23, 42, 0.95);
     color: var(--text-main);
@@ -54,7 +105,22 @@
     border-radius: var(--radius-md);
   }
 
-  /* CLOCK */
+  .modal-title {
+    color: var(--text-main);
+  }
+
+  .modal-body {
+    color: var(--text-main);
+  }
+
+  .modal-footer {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  /* =====================================================
+     CLOCK
+  ===================================================== */
+
   .clock-card {
     width: 280px;
     padding: 20px;
@@ -65,15 +131,19 @@
   .dashboard-clock-time {
     font-size: 44px;
     font-weight: 900;
+    color: var(--text-main);
   }
 
   .dashboard-clock-date {
     font-size: 14px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     white-space: nowrap;
   }
 
-  /* CLOCK NAV BUTTONS */
+  /* =====================================================
+     CLOCK NAV BUTTONS
+  ===================================================== */
+
   .btn-glass-icon {
     width: 36px;
     height: 36px;
@@ -93,7 +163,8 @@
     -webkit-backdrop-filter: blur(10px);
 
     color: var(--text-main);
-    transition: all 0.2s ease;
+
+    transition: 0.2s ease;
   }
 
   .btn-glass-icon:hover {
@@ -108,10 +179,54 @@
   .btn-glass-icon i {
     font-size: 0.95rem;
     line-height: 1;
+    color: inherit;
   }
 
-  /* LOGGER */
+  /* =====================================================
+     LOGGER
+  ===================================================== */
+
   .logger-host {
     min-height: 174px;
+  }
+
+  .logger-host .text-muted,
+  .logger-host small {
+    color: var(--text-secondary) !important;
+  }
+
+  /* =====================================================
+     TABLE VISIBILITY
+  ===================================================== */
+
+  .table {
+    color: var(--text-main);
+  }
+
+  .table thead th {
+    color: var(--text-secondary);
+  }
+
+  .table tbody td {
+    color: var(--text-main);
+  }
+
+  /* =====================================================
+     CARDS
+  ===================================================== */
+
+  .card-title,
+  .glass-card h1,
+  .glass-card h2,
+  .glass-card h3,
+  .glass-card h4,
+  .glass-card h5,
+  .glass-card h6 {
+    color: var(--text-main);
+  }
+
+  .glass-card small,
+  .glass-card .text-muted {
+    color: var(--text-secondary) !important;
   }
 </style>

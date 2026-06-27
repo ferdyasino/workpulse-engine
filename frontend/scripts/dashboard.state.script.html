@@ -4,11 +4,20 @@
   // =====================================================
 
   function bootApp() {
-    if (!APP.currentPage) {
+    APP.dashboard.viewingDate = formatDateKey(new Date());
+
+    const user = getCurrentUser();
+
+    const isLoggedIn = user && user.user_id && user.workspace_id;
+
+    if (isLoggedIn) {
+      APP.currentPage =
+        localStorage.getItem(STORAGE_KEYS.LAST_PAGE) ||
+        APP.currentPage ||
+        "dashboard";
+    } else {
       APP.currentPage = "login";
     }
-
-    APP.dashboard.viewingDate = formatDateKey(new Date());
 
     go(APP.currentPage);
   }
@@ -102,6 +111,9 @@
     const adminMenu = document.getElementById("adminMenuItem");
     const adminSettings = document.getElementById("adminSettings");
     const dashDropId = document.getElementById("dashDropId");
+    document
+      .getElementById("adminReportControls")
+      ?.classList.toggle("d-none", !isAdmin);
 
     if (adminMenu) {
       adminMenu.classList.toggle("d-none", !isAdmin);
@@ -129,20 +141,26 @@
   // - Does NOT interfere with existing dashboard flow
   // =====================================================
 
+  // =====================================================
+  // PAGE DATA LOADER DISPATCH
+  // =====================================================
+
   function loadPageData(page) {
     try {
       switch (page) {
         case "dashboard":
-          // Dashboard hydration already happens inside applyUIState()
+          // Dashboard hydration already handled
+          break;
+
+        case "reports":
+          loadReportsPage?.();
           break;
 
         case "users":
-          // Future / current employee management page
           loadUsersAdminPage?.();
           break;
 
         case "admin":
-          // Optional admin home loader if you add one later
           loadAdminHomePage?.();
           break;
 
@@ -151,6 +169,8 @@
       }
     } catch (error) {
       console.error("loadPageData error:", error);
+
+      showToast?.(error.message || "Unable to load page", "error");
     }
   }
 

@@ -232,12 +232,23 @@ function isOvernightShift(shift) {
 }
 
 function timeToMinutes(time) {
-  const parts = String(time || "0:0").split(":");
+  if (time == null) return null;
 
-  return (
-    Number(parts[0]) * 60 +
-    Number(parts[1])
-  );
+  const str = String(time).trim();
+
+  if (!str.includes(":")) {
+    const h = Number(str);
+    return Number.isFinite(h) ? h * 60 : null;
+  }
+
+  const parts = str.split(":");
+
+  const h = Number(parts[0]);
+  const m = Number(parts[1] || 0);
+
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+
+  return h * 60 + m;
 }
 
 function getShiftWorkDate(

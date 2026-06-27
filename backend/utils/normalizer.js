@@ -200,8 +200,30 @@ function normalizeId(value) {
  * DOMAIN ENUM NORMALIZERS
  * ===================================================== */
 
-function normalizeRole(value) {
-  return normalizeUpperString(value || "EMPLOYEE", "EMPLOYEE");
+function normalizeRole(input) {
+  const raw = String(input || "").trim().toLowerCase();
+
+  switch (raw) {
+    case "superadmin":
+    case "super_admin":
+      return ROLES.SUPERADMIN;
+
+    case "owner":
+      return ROLES.ADMIN;
+
+    case "admin":
+      return ROLES.ADMIN;
+
+    case "hr":
+      return ROLES.HR;
+
+    case "employee":
+    case "user":
+      return ROLES.USER;
+
+    default:
+      return ROLES.USER;
+  }
 }
 
 function normalizeStatus(value) {

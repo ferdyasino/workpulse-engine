@@ -329,63 +329,68 @@
   }
 
   /* =====================================================
-   REPORT TABLE FIX (CRITICAL)
+   REPORT TABLE VISIBILITY FIX
+   (PLACE AT VERY BOTTOM OF CSS)
 ===================================================== */
 
-  .page-container .table {
-    color: var(--text-main);
-    border-collapse: separate;
-    border-spacing: 0;
+  .page-container .table,
+  .page-container .table * {
+    color: #f8fafc !important;
   }
 
-  /* HEADER */
+  /* Header */
   .page-container .table thead th {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
+    color: #cbd5e1 !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
     font-weight: 600;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-    padding: 12px 10px;
-    letter-spacing: 0.4px;
   }
 
-  /* ROWS */
+  /* Body */
   .page-container .table tbody td {
-    color: var(--text-main);
-    font-size: 0.9rem;
-    padding: 12px 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: #f8fafc !important;
+    background: transparent !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
   }
 
-  /* ROW HOVER */
-  .page-container .table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.05);
-    transition: 0.15s ease;
+  /* Alternate rows */
+  .page-container .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background: rgba(255, 255, 255, 0.02) !important;
+    color: #f8fafc !important;
   }
 
-  /* =====================================================
-   STATUS BADGES IN TABLE
-===================================================== */
-  .badge {
-    font-size: 0.75rem;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-weight: 600;
+  .page-container .table-striped > tbody > tr:nth-of-type(even) > * {
+    background: transparent !important;
+    color: #f8fafc !important;
   }
 
-  /* =====================================================
-   SELECT FILTER
-===================================================== */
-  #reportRange {
-    min-width: 140px;
-    font-size: 0.9rem;
-    color: var(--text-main);
+  /* Hover */
+  .page-container .table-hover > tbody > tr:hover > * {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
   }
 
-  /* =====================================================
-   SECTION SEPARATION
-===================================================== */
-  .page-container .glass-card {
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
+  /* Links */
+  .page-container .table a {
+    color: #7dd3fc !important;
+  }
+
+  /* Small text */
+  .page-container .table small,
+  .page-container .table .text-muted {
+    color: #cbd5e1 !important;
+  }
+
+  /* Bootstrap utility overrides */
+  .page-container .table .text-dark,
+  .page-container .table .text-black,
+  .page-container .table .text-body,
+  .page-container .table .text-secondary {
+    color: #f8fafc !important;
+  }
+
+  /* Status badge text */
+  .page-container .badge {
+    color: #fff !important;
   }
 </style>

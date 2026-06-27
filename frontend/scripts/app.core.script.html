@@ -25,6 +25,12 @@
       viewingDate: null,
     },
 
+    reports: {
+      rows: [],
+      kpis: null,
+      range: "today",
+    },
+
     // admin / misc
     selectedUser: null,
     currentLocation: null,
@@ -54,14 +60,14 @@
   // ROUTES
   // =====================================================
 
-  const ROUTES = Object.freeze({
+  const ROUTES = {
     home: "page-home",
     dashboard: "page-dashboard",
     admin: "page-admin-dashboard",
     reports: "page-report",
     login: "page-login",
     error: "page-error",
-  });
+  };
 
   // =====================================================
   // PAGE TITLES

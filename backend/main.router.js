@@ -1,4 +1,10 @@
-const ALLOWED_PAGES = ["home", "dashboard", "login"];
+const ALLOWED_PAGES = [
+  "home",
+  "dashboard",
+  "admin",
+  "reports",
+  "login"
+];
 
 /* =====================================================
    ROUTE NORMALIZATION
@@ -22,10 +28,12 @@ function getPagePath(page) {
   const map = {
     home: "frontend/pages/home",
     dashboard: "frontend/pages/dashboard",
+    admin: "frontend/pages/adminDashboard",
+    reports: "frontend/pages/reports",
     login: "frontend/pages/login"
   };
 
-  return map[page] || "frontend/pages/home";
+  return map[page] || map.home;
 }
 
 /* =====================================================

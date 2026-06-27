@@ -1,30 +1,53 @@
 /* =========================
    TIMELOG STATE ENGINE
-   DYNAMIC BREAK VERSION
+   COMPATIBLE VERSION
 ========================= */
 
 /**
- * Build state from ordered timelog records
+ * Build state from timelog records.
+ *
+ * Accepts:
+ * - Array of logs
+ * - Single log object
  */
 function buildTimeLogState(timeLogs) {
-  const logs = Array.isArray(timeLogs) ? timeLogs : [];
+
+  let logs = [];
+
+  if (Array.isArray(timeLogs)) {
+    logs = timeLogs.slice();
+  } else if (timeLogs && typeof timeLogs === "object") {
+    logs = [timeLogs];
+  }
 
   const state = {
     status: "NOT_STARTED",
+
     time_in: null,
     time_out: null,
+
     lunch: {
       in: null,
       out: null
     },
+
     breaks: []
   };
 
   logs.forEach(function (log) {
-    const action = String(log && log.action ? log.action : "").trim();
-    const timestamp = log && log.timestamp ? log.timestamp : null;
+
+    if (!log) {
+      return;
+    }
+
+    const action = String(
+      log.action || ""
+    ).trim();
+
+    const timestamp = log.timestamp || null;
 
     switch (action) {
+
       case "time_in":
         state.time_in = timestamp;
         state.status = "WORKING";
@@ -43,14 +66,17 @@ function buildTimeLogState(timeLogs) {
         state.status = "ON_BREAK";
         break;
 
-      case "break_end": {
-        const activeBreak = getLastOpenBreak(state.breaks);
+      case "break_end":
+
+        const activeBreak =
+          getLastOpenBreak(state.breaks);
+
         if (activeBreak) {
           activeBreak.out = timestamp;
         }
+
         state.status = "WORKING";
         break;
-      }
 
       case "lunch_start":
         state.lunch.in = timestamp;
@@ -61,38 +87,56 @@ function buildTimeLogState(timeLogs) {
         state.lunch.out = timestamp;
         state.status = "WORKING";
         break;
+
     }
+
   });
 
   return finalizeTimeLogState(state);
+
 }
 
 function getLastOpenBreak(breaks) {
-  const list = Array.isArray(breaks) ? breaks : [];
+
+  const list = Array.isArray(breaks)
+    ? breaks
+    : [];
 
   for (let i = list.length - 1; i >= 0; i--) {
+
     const item = list[i];
-    if (item && item.in && !item.out) {
+
+    if (
+      item &&
+      item.in &&
+      !item.out
+    ) {
       return item;
     }
+
   }
 
   return null;
+
 }
 
 function finalizeTimeLogState(state) {
+
   if (state.time_out) {
     state.status = "CLOCKED_OUT";
     return state;
   }
 
-  if (state.lunch && state.lunch.in && !state.lunch.out) {
+  if (
+    state.lunch &&
+    state.lunch.in &&
+    !state.lunch.out
+  ) {
     state.status = "AT_LUNCH";
     return state;
   }
 
-  const activeBreak = getLastOpenBreak(state.breaks);
-  if (activeBreak) {
+  if (getLastOpenBreak(state.breaks)) {
     state.status = "ON_BREAK";
     return state;
   }
@@ -103,5 +147,7 @@ function finalizeTimeLogState(state) {
   }
 
   state.status = "NOT_STARTED";
+
   return state;
+
 }

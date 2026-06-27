@@ -53,16 +53,25 @@
     </div>
   </div>
 
-  <!-- DETAIL TABLE -->
-  <div class="glass glass-card mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0">Employee Breakdown</h5>
 
-      <select class="form-select w-auto" id="reportRange">
-        <option value="today">Today</option>
-        <option value="week">This Week</option>
-        <option value="month">This Month</option>
-      </select>
+        <div>
+            <h5 class="mb-0">Attendance Details</h5>
+            <small class="text-muted">
+                Daily attendance and payroll metrics
+            </small>
+        </div>
+
+        <select
+            class="form-select w-auto"
+            id="reportRange">
+
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+
+        </select>
+
     </div>
 
     <div class="table-responsive">
@@ -70,14 +79,31 @@
         <thead>
           <tr>
             <th>Employee</th>
-            <th>Hours</th>
+            <th>Shift</th>
+            <th>Worked</th>
+            <th>Late</th>
             <th>OT</th>
             <th>Status</th>
             <th>Date</th>
           </tr>
         </thead>
-        <tbody id="reportTableBody"></tbody>
+        <tbody id="reportTableBody">
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              No reports found.
+            </td>
+          </tr>
+        </tbody>
       </table>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-success btn-sm" id="btnExportExcel">
+          Excel
+        </button>
+
+        <button class="btn btn-outline-danger btn-sm" id="btnExportPDF">
+          PDF
+        </button>
+      </div>
     </div>
 
     <!-- ADMIN CONTROLS (ONLY VISIBLE IF ADMIN) -->
@@ -89,7 +115,7 @@
         </select>
 
         <!-- Range -->
-        <select class="form-select w-auto" id="reportRange">
+        <select class="form-select w-auto" id="adminReportRange">
           <option value="today">Today</option>
           <option value="week">This Week</option>
           <option value="month">This Month</option>

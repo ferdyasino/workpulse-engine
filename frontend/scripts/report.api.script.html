@@ -1,0 +1,273 @@
+<script>
+  // =====================================================
+  // REPORT STATE
+  // =====================================================
+
+  APP.reports = APP.reports || {
+    range: "today",
+    rows: [],
+    filteredRows: [],
+    kpis: {},
+    initialized: false,
+  };
+
+  // =====================================================
+  // REPORT PAGE
+  // =====================================================
+
+  async function loadReportsPage() {
+    initReportPage();
+
+    if (!APP.reports.initialized) {
+      APP.reports.initialized = true;
+
+      document
+        .getElementById("reportRange")
+        ?.addEventListener("change", function () {
+          loadReports(this.value);
+        });
+
+      document
+        .getElementById("adminReportRange")
+        ?.addEventListener("change", function () {
+          loadReports(this.value);
+        });
+
+      document
+        .getElementById("employeeFilter")
+        ?.addEventListener("change", function () {
+          renderReportTable();
+        });
+    }
+
+    const user = getCurrentUser();
+
+    if (!user?.workspace_id || !user?.email) {
+      return;
+    }
+
+    loadReports(APP.reports.range);
+  }
+
+  // =====================================================
+  // LOAD REPORTS
+  // =====================================================
+
+  function loadReports(range = "today") {
+    APP.reports.range = range;
+
+    const user = getCurrentUser();
+
+    showLoader();
+
+    google.script.run
+      .withSuccessHandler(handleReportsSuccess)
+      .withFailureHandler(handleReportsFailure)
+      .api_getReports(user.workspace_id, user.email);
+  }
+
+  // =====================================================
+  // SUCCESS
+  // =====================================================
+
+  function handleReportsSuccess(res) {
+    hideLoader();
+
+    console.log("reports", res);
+
+    if (!res?.success) {
+      showToast(res?.message || "Unable to load reports", "error");
+
+      return;
+    }
+
+    APP.reports.rows = Array.isArray(res.data?.rows) ? res.data.rows : [];
+
+    APP.reports.kpis = res.data?.kpis || {};
+
+    populateEmployeeFilter();
+
+    renderReportKPIs(APP.reports.kpis);
+
+    renderReportTable();
+  }
+
+  // =====================================================
+  // FAILURE
+  // =====================================================
+
+  function handleReportsFailure(err) {
+    hideLoader();
+
+    console.error(err);
+
+    showToast(err?.message || "Failed to load reports", "error");
+  }
+
+  // =====================================================
+  // KPI
+  // =====================================================
+
+  function renderReportKPIs(kpi = {}) {
+    document.getElementById("repRunningHours").textContent = formatMinutes(
+      kpi.total_worked_minutes,
+    );
+
+    document.getElementById("repOTHours").textContent = formatMinutes(
+      kpi.total_overtime_minutes,
+    );
+
+    document.getElementById("repPresent").textContent = kpi.total_present || 0;
+
+    document.getElementById("repAbsent").textContent = kpi.total_absent || 0;
+
+    document.getElementById("repLate").textContent = kpi.total_late_count || 0;
+
+    document.getElementById("repWorkdays").textContent =
+      kpi.total_workdays || 0;
+  }
+
+  // =====================================================
+  // TABLE
+  // =====================================================
+
+  function renderReportTable() {
+    const tbody = document.getElementById("reportTableBody");
+
+    if (!tbody) {
+      return;
+    }
+
+    const currentUser = getCurrentUser();
+
+    let rows = [...APP.reports.rows];
+
+    // ---------------------------------------------
+    // Employee only sees own records
+    // ---------------------------------------------
+
+    if (currentUser.role === "USER") {
+      rows = rows.filter(function (row) {
+        return row.user_id === currentUser.user_id;
+      });
+    }
+
+    // ---------------------------------------------
+    // Admin / HR filter
+    // ---------------------------------------------
+
+    const employeeFilter = document.getElementById("employeeFilter");
+
+    if (
+      currentUser.role !== "USER" &&
+      employeeFilter &&
+      employeeFilter.value &&
+      employeeFilter.value !== "all"
+    ) {
+      rows = rows.filter(function (row) {
+        return row.user_id === employeeFilter.value;
+      });
+    }
+
+    APP.reports.filteredRows = rows;
+
+    if (!rows.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="20"
+              class="text-center text-muted py-4">
+            No report available.
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+    tbody.innerHTML = rows.map(buildReportRow).join("");
+  }
+
+  // =====================================================
+  // POPULATE EMPLOYEE FILTER
+  // =====================================================
+
+  function populateEmployeeFilter() {
+    const select = document.getElementById("employeeFilter");
+
+    if (!select) {
+      return;
+    }
+
+    const currentUser = getCurrentUser();
+
+    if (currentUser.role === "USER") {
+      select.innerHTML = `<option value="${currentUser.user_id}">
+            ${currentUser.fullname}
+         </option>`;
+
+      select.disabled = true;
+
+      return;
+    }
+
+    select.disabled = false;
+
+    const users = {};
+
+    APP.reports.rows.forEach(function (row) {
+      if (!users[row.user_id]) {
+        users[row.user_id] = {
+          id: row.user_id,
+          name: row.fullname || row.email || row.user_id,
+        };
+      }
+    });
+
+    const options = Object.values(users)
+      .sort(function (a, b) {
+        return a.name.localeCompare(b.name);
+      })
+      .map(function (user) {
+        return `
+          <option value="${user.id}">
+            ${user.name}
+          </option>
+        `;
+      })
+      .join("");
+
+    select.innerHTML = `<option value="all">All Employees</option>` + options;
+  }
+
+  // =====================================================
+  // HELPERS
+  // =====================================================
+
+  function formatMinutes(minutes) {
+    minutes = Number(minutes || 0);
+
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+
+    return `${h}h ${m}m`;
+  }
+
+  function statusBadgeClass(status) {
+    switch ((status || "").toUpperCase()) {
+      case "PRESENT":
+        return "bg-success";
+
+      case "LATE":
+        return "bg-warning text-dark";
+
+      case "OVERTIME":
+        return "bg-primary";
+
+      case "ABSENT":
+        return "bg-danger";
+
+      default:
+        return "bg-secondary";
+    }
+  }
+</script>
