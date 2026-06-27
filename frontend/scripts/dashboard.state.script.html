@@ -100,11 +100,13 @@
     const adminMenu = document.getElementById("adminMenuItem");
     const adminSettings = document.getElementById("adminSettings");
     const adminReports = document.getElementById("adminReports");
+    const dashboard = document.getElementById("dashboard");
 
     if (adminMenu) {
       adminMenu.classList.toggle("d-none", !isAdmin);
       adminSettings.classList.toggle("d-none", !isAdmin);
       adminReports.classList.toggle("d-none", !isAdmin);
+      dashboard.classList.toggle("d-none", !isAdmin);
     }
   }
 
