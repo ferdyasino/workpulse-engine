@@ -7,61 +7,172 @@
 
     const now = new Date();
 
-    const time = now.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-
-    const date = now.toLocaleDateString(undefined, {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-
-    timeEl.textContent = time;
-    dateEl.textContent = date;
-  }
-
-  function updateDashboardClock() {
-    const timeEl = document.getElementById("dashboardClockTime");
-    const dateEl = document.getElementById("dashboardClockDate");
-
-    if (!timeEl || !dateEl) return;
-
-    const now = new Date();
-
-    // Live time
     timeEl.textContent = now.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
     });
 
-    // Selected attendance date
+    dateEl.textContent = now.toLocaleDateString(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
+
+  function updateDashboardClock() {
+    const timeEl = document.getElementById("dashboardClockTime");
+    const currDate = document.getElementById("currDate");
+    const dateEl = document.getElementById("dashboardClockDate");
+
+    if (!timeEl || !dateEl) return;
+
+    const now = new Date();
+
+    // =====================================================
+    // LIVE CLOCK
+    // =====================================================
+    timeEl.textContent = now.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    // =====================================================
+    // TODAY (CURRENT DATE)
+    // =====================================================
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (currDate) {
+      currDate.innerHTML = `
+        <div style="
+          font-size:12px;
+          font-weight:700;
+          text-transform:uppercase;
+          letter-spacing:.08em;
+          color:#64748b;
+          margin-bottom:2px;
+        ">
+          Current Date
+        </div>
+        <div>
+          ${today.toLocaleDateString(undefined, {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </div>
+      `;
+    }
+
+    // =====================================================
+    // DISPLAYED ATTENDANCE DATE
+    // =====================================================
     const displayDate = APP.dashboard.viewingDate
       ? new Date(`${APP.dashboard.viewingDate}T00:00:00`)
       : now;
 
-    const weekday = displayDate.toLocaleDateString(undefined, {
-      weekday: "long",
-    });
+    const selected = new Date(displayDate);
+    selected.setHours(0, 0, 0, 0);
 
-    const monthDay = displayDate.toLocaleDateString(undefined, {
+    const diffDays = Math.round(
+      (selected.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    let prefix = "";
+
+    switch (diffDays) {
+      case 0:
+        prefix = "Today";
+        break;
+
+      case -1:
+        prefix = "Yesterday";
+        break;
+
+      case 1:
+        prefix = "Tomorrow";
+        break;
+
+      default:
+        prefix =
+          diffDays < 0 ? "Viewing Past Record" : "Viewing Future Schedule";
+    }
+
+    const formattedDate = displayDate.toLocaleDateString(undefined, {
+      weekday: "long",
       month: "long",
       day: "numeric",
       year: "numeric",
     });
 
-    dateEl.textContent = `${weekday}, ${monthDay}`;
+    // Hide the second date block when viewing today
+    if (diffDays === 0) {
+      if (currDate) {
+        currDate.innerHTML = `
+      <div style="
+        font-size:12px;
+        font-weight:700;
+        text-transform:uppercase;
+        letter-spacing:.08em;
+        color:#64748b;
+        margin-bottom:2px;
+      ">
+        Current Date
+      </div>
+      <div>${formattedDate}</div>
+    `;
+      }
+
+      dateEl.style.display = "none";
+    } else {
+      if (currDate) {
+        currDate.innerHTML = `
+      <div style="
+        font-size:12px;
+        font-weight:700;
+        text-transform:uppercase;
+        letter-spacing:.08em;
+        color:#64748b;
+        margin-bottom:2px;
+      ">
+        Current Date
+      </div>
+      <div>
+        ${today.toLocaleDateString(undefined, {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })}
+      </div>
+    `;
+      }
+
+      dateEl.style.display = "block";
+      dateEl.innerHTML = `
+    <div style="
+      font-size:12px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:#2563eb;
+      margin-bottom:2px;
+    ">
+      ${prefix}
+    </div>
+    <div>${formattedDate}</div>
+  `;
+    }
   }
 
   function updateTopbarClock() {
     const timeEl = document.getElementById("adminClockTime");
     const dateEl = document.getElementById("adminClockDate");
 
-    // FIX: check both, not just one
     if (!timeEl && !dateEl) return;
 
     const now = new Date();
@@ -89,7 +200,6 @@
     updateTopbarClock();
   }
 
-  // run safely once DOM is ready
   window.addEventListener("DOMContentLoaded", () => {
     tickAllClocks();
     setInterval(tickAllClocks, 1000);
