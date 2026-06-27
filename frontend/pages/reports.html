@@ -79,5 +79,22 @@
         <tbody id="reportTableBody"></tbody>
       </table>
     </div>
+
+    <!-- ADMIN CONTROLS (ONLY VISIBLE IF ADMIN) -->
+    <div id="adminReportControls" class="glass glass-card mb-3 d-none">
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <!-- Employee filter -->
+        <select class="form-select w-auto" id="employeeFilter">
+          <option value="all">All Employees</option>
+        </select>
+
+        <!-- Range -->
+        <select class="form-select w-auto" id="reportRange">
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+      </div>
+    </div>
   </div>
 </div>
