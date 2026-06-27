@@ -1,6 +1,15 @@
-function getCurrentState(workspace_id, email, shift_id) {
-  const normalizedEmail = String(email || "").trim().toLowerCase();
-  const normalizedShiftId = String(shift_id || "").trim();
+function getCurrentState(
+  workspace_id,
+  email,
+  shift_id,
+  timestamp
+) {
+  const normalizedEmail = String(email || "")
+    .trim()
+    .toLowerCase();
+
+  const normalizedShiftId = String(shift_id || "")
+    .trim();
 
   if (!workspace_id) {
     throw new Error("workspace_id is required");
@@ -10,11 +19,14 @@ function getCurrentState(workspace_id, email, shift_id) {
     throw new Error("email is required");
   }
 
+  const targetTime = timestamp || new Date();
+
   const logs = normalizedShiftId
     ? getShiftTimeLogsByEmail(
         workspace_id,
         normalizedEmail,
-        normalizedShiftId
+        normalizedShiftId,
+        targetTime
       )
     : getTodayTimeLogsByEmail(
         workspace_id,
@@ -27,6 +39,13 @@ function getCurrentState(workspace_id, email, shift_id) {
     ...state,
     scope: normalizedShiftId ? "shift" : "day",
     shift_id: normalizedShiftId,
+    work_date: normalizedShiftId
+      ? getShiftWorkDate(
+          workspace_id,
+          normalizedShiftId,
+          targetTime
+        )
+      : formatDateKey(targetTime),
     raw_logs: logs
   };
 }
@@ -102,21 +121,38 @@ function getTimeLogsByEmail(workspace_id, email, options) {
   return findTimeLogs(normalizedWorkspaceId, filters);
 }
 
-function getShiftTimeLogsByEmail(workspace_id, email, shift_id) {
+function getShiftTimeLogsByEmail(
+  workspace_id,
+  email,
+  shift_id,
+  timestamp
+) {
   return getTimeLogsByEmail(workspace_id, email, {
-    shift_id: shift_id,
-    date: formatDateKey(new Date())
+    shift_id,
+    date: getShiftWorkDate(
+      workspace_id,
+      shift_id,
+      timestamp
+    )
   });
 }
 
-function getLatestTodayTimeLogByEmail(workspace_id, email) {
-  const logs = getTodayTimeLogsByEmail(workspace_id, email);
-  return logs.length ? logs[logs.length - 1] : null;
-}
+function getLatestShiftTimeLogByEmail(
+  workspace_id,
+  email,
+  shift_id,
+  timestamp
+) {
+  const logs = getShiftTimeLogsByEmail(
+    workspace_id,
+    email,
+    shift_id,
+    timestamp
+  );
 
-function getLatestShiftTimeLogByEmail(workspace_id, email, shift_id) {
-  const logs = getShiftTimeLogsByEmail(workspace_id, email, shift_id);
-  return logs.length ? logs[logs.length - 1] : null;
+  return logs.length
+    ? logs[logs.length - 1]
+    : null;
 }
 
 function matchesTimeLogFilters(record, filters) {
@@ -134,5 +170,38 @@ function matchesTimeLogFilters(record, filters) {
 
     return String(record[key]) === String(filterValue);
   });
+}
+
+/* =========================
+   SHIFT SESSION DATE
+========================= */
+
+function resolveShiftWorkDate(shift, timestamp) {
+
+  if (!shift) {
+    throw new Error("Shift is required.");
+  }
+
+  const date =
+    timestamp instanceof Date
+      ? new Date(timestamp)
+      : new Date(timestamp || new Date());
+
+  if (!isOvernightShift(shift)) {
+    return formatDateKey(date);
+  }
+
+  const nowMinutes =
+    date.getHours() * 60 +
+    date.getMinutes();
+
+  const endMinutes =
+    timeToMinutes(shift.end_time);
+
+  if (nowMinutes < endMinutes) {
+    date.setDate(date.getDate() - 1);
+  }
+
+  return formatDateKey(date);
 }
 

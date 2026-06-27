@@ -307,6 +307,7 @@
           console.error("No attendance state returned.");
           return;
         }
+        console.log("state", state);
 
         APP.attendanceState = state;
         APP.workStatus = state.status || "NOT_STARTED";

@@ -1,7 +1,5 @@
 <script>
-
-function updateLoginClock() {
-
+  function updateLoginClock() {
     const timeEl = document.getElementById("loginClockTime");
     const dateEl = document.getElementById("loginClockDate");
 
@@ -10,24 +8,23 @@ function updateLoginClock() {
     const now = new Date();
 
     const time = now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
 
     const date = now.toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
 
     timeEl.textContent = time;
     dateEl.textContent = date;
-}
+  }
 
-function updateDashboardClock() {
-
+  function updateDashboardClock() {
     const timeEl = document.getElementById("dashboardClockTime");
     const dateEl = document.getElementById("dashboardClockDate");
 
@@ -35,25 +32,22 @@ function updateDashboardClock() {
 
     const now = new Date();
 
-    const time = now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
+    timeEl.textContent = now.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
 
-    const date = now.toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
+    const weekday = now.toLocaleDateString(undefined, { weekday: "long" });
+    const monthDay = now.toLocaleDateString(undefined, {
+      month: "long",
+      day: "numeric",
     });
 
-    timeEl.textContent = time;
-    dateEl.textContent = date;
-}
+    dateEl.textContent = `${weekday}, ${monthDay}`;
+  }
 
-function updateTopbarClock() {
-
+  function updateTopbarClock() {
     const timeEl = document.getElementById("adminClockTime");
     const dateEl = document.getElementById("adminClockDate");
 
@@ -63,32 +57,31 @@ function updateTopbarClock() {
     const now = new Date();
 
     const time = now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
 
     const date = now.toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
 
     if (timeEl) timeEl.textContent = time;
     if (dateEl) dateEl.textContent = date;
-}
+  }
 
-function tickAllClocks() {
+  function tickAllClocks() {
     updateLoginClock();
     updateDashboardClock();
     updateTopbarClock();
-}
+  }
 
-// run safely once DOM is ready
-window.addEventListener("DOMContentLoaded", () => {
+  // run safely once DOM is ready
+  window.addEventListener("DOMContentLoaded", () => {
     tickAllClocks();
     setInterval(tickAllClocks, 1000);
-});
-
+  });
 </script>

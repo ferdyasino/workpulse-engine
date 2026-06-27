@@ -54,33 +54,7 @@
     border-radius: var(--radius-md);
   }
 
-  .btn-glass-icon {
-    width: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: bold;
-
-    transition: 0.2s ease;
-  }
-
-  .btn-glass-icon:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
-  }
-
-  .btn-glass-icon:active {
-    transform: translateY(0px);
-  }
-
-  /* CLOCKS */
+  /* CLOCK */
   .clock-card {
     width: 280px;
     padding: 20px;
@@ -96,8 +70,47 @@
   .dashboard-clock-date {
     font-size: 14px;
     color: var(--text-muted);
+    white-space: nowrap;
   }
 
+  /* CLOCK NAV BUTTONS */
+  .btn-glass-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    color: var(--text-main);
+    transition: all 0.2s ease;
+  }
+
+  .btn-glass-icon:hover {
+    background: rgba(255, 255, 255, 0.14);
+    transform: translateY(-1px);
+  }
+
+  .btn-glass-icon:active {
+    transform: translateY(0);
+  }
+
+  .btn-glass-icon i {
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+
+  /* LOGGER */
   .logger-host {
     min-height: 174px;
   }

@@ -21,6 +21,10 @@
     dashboardData: null,
     shiftSummary: null,
 
+    dashboard: {
+      viewingDate: null,
+    },
+
     // admin / misc
     selectedUser: null,
     currentLocation: null,
@@ -127,6 +131,7 @@
     APP.attendanceState = null;
     APP.dashboardData = null;
     APP.shiftSummary = null;
+    APP.dashboard.viewingDate = null;
   }
 
   function resetSessionRuntimeState() {

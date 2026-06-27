@@ -220,3 +220,39 @@ function getWorkspaceSettings(workspace_id) {
 
   return settings;
 }
+
+
+function isOvernightShift(shift) {
+  if (!shift) return false;
+
+  return (
+    timeToMinutes(shift.end_time) <=
+    timeToMinutes(shift.start_time)
+  );
+}
+
+function timeToMinutes(time) {
+  const parts = String(time || "0:0").split(":");
+
+  return (
+    Number(parts[0]) * 60 +
+    Number(parts[1])
+  );
+}
+
+function getShiftWorkDate(
+  workspace_id,
+  shift_id,
+  timestamp
+) {
+  const shift = getShiftById(workspace_id, shift_id);
+
+  if (!shift) {
+    throw new Error("Shift not found.");
+  }
+
+  return resolveShiftWorkDate(
+    shift,
+    timestamp || new Date()
+  );
+}
