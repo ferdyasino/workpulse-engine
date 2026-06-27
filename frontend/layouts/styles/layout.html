@@ -1,102 +1,117 @@
 <style>
+  /* PAGE */
+  .page-container {
+    max-width: 1400px;
+    margin: auto;
+    padding: 24px;
+  }
 
-/* PAGE */
-.page-container {
-  max-width: 1400px;
-  margin: auto;
-  padding: 24px;
-}
+  /* TOPBAR */
+  .app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    margin: 12px;
+    padding: 14px 20px;
+  }
 
-/* TOPBAR */
-.app-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  margin: 12px;
-  padding: 14px 20px;
-}
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  .topbar-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
 
-.topbar-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
+  /* SIDEBAR */
+  .app-sidebar {
+    min-height: calc(100vh - 40px);
+    padding: 1rem;
+  }
 
-/* SIDEBAR */
-.app-sidebar {
-  min-height: calc(100vh - 40px);
-  padding: 1rem;
-}
+  .sidebar-link {
+    display: block;
+    padding: 12px;
+    color: var(--text-secondary);
+    border-radius: 12px;
+    text-decoration: none;
+  }
 
-.sidebar-link {
-  display: block;
-  padding: 12px;
-  color: var(--text-secondary);
-  border-radius: 12px;
-  text-decoration: none;
-}
+  .sidebar-link:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.08);
+  }
 
-.sidebar-link:hover {
-  color: var(--text-main);
-  background: rgba(255,255,255,.08);
-}
+  /* MODAL */
+  .modal-content {
+    background: rgba(15, 23, 42, 0.95);
+    color: var(--text-main);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+  }
 
-/* MODAL */
-.modal-content {
-  background: rgba(15,23,42,.95);
-  color: var(--text-main);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: var(--radius-md);
-}
+  /* CLOCK */
+  .clock-card {
+    width: 280px;
+    padding: 20px;
+    margin: auto;
+    text-align: center;
+  }
 
-.btn-glass-icon {
-  width: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  .dashboard-clock-time {
+    font-size: 44px;
+    font-weight: 900;
+  }
 
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  .dashboard-clock-date {
+    font-size: 14px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
 
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: bold;
+  /* CLOCK NAV BUTTONS */
+  .btn-glass-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
 
-  transition: 0.2s ease;
-}
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
-.btn-glass-icon:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
-}
+    flex-shrink: 0;
 
-.btn-glass-icon:active {
-  transform: translateY(0px);
-}
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.15);
 
-/* CLOCKS */
-.clock-card {
-  width: 280px;
-  padding: 20px;
-  margin: auto;
-  text-align: center;
-}
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 
-.dashboard-clock-time {
-  font-size: 44px;
-  font-weight: 900;
-}
+    color: var(--text-main);
+    transition: all 0.2s ease;
+  }
 
-.dashboard-clock-date {
-  font-size: 14px;
-  color: var(--text-muted);
-}
+  .btn-glass-icon:hover {
+    background: rgba(255, 255, 255, 0.14);
+    transform: translateY(-1px);
+  }
 
+  .btn-glass-icon:active {
+    transform: translateY(0);
+  }
+
+  .btn-glass-icon i {
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+
+  /* LOGGER */
+  .logger-host {
+    min-height: 174px;
+  }
 </style>

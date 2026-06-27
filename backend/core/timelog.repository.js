@@ -1,246 +1,263 @@
-/**
- * =====================================================
- * WORKPULSE TIMELOG ENGINE (PRODUCTION SAFE VERSION)
- * =====================================================
- * External DB (per-workspace spreadsheet)
- * Append-only + query layer
- * =====================================================
- */
+// /* =========================
+//    WORKSPACE RESOLVER
+// ========================= */
+// function getTimelogDb(workspace_id) {
+//   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
 
+//   if (!normalizedWorkspaceId) {
+//     throw new Error("workspace_id is required");
+//   }
 
-/* =========================
-   SAFE WORKSPACE RESOLVER
-========================= */
+//   const workspace = getWorkspace(normalizedWorkspaceId);
 
-function getTimelogDb(workspace_id) {
+//   if (!workspace || !workspace.timelog_spreadsheet_id) {
+//     throw new Error(`TimeLog DB missing for workspace: ${normalizedWorkspaceId}`);
+//   }
 
-  if (!workspace_id) {
+//   return SpreadsheetApp.openById(workspace.timelog_spreadsheet_id);
+// }
+
+function assertInsertableTimeLog(log) {
+  if (!log) {
+    throw new Error("Invalid timelog payload");
+  }
+
+  if (!log.workspace_id) {
     throw new Error("workspace_id is required");
   }
 
-  const workspace = getWorkspace(workspace_id);
-
-  if (!workspace || !workspace.timelog_spreadsheet_id) {
-    throw new Error(
-      `TimeLog DB missing for workspace: ${workspace_id}`
-    );
+  if (!log.email) {
+    throw new Error("email is required");
   }
 
-  return SpreadsheetApp.openById(workspace.timelog_spreadsheet_id);
+  if (!log.action) {
+    throw new Error("action is required");
+  }
+
+  if (!log.timestamp) {
+    throw new Error("timestamp is required");
+  }
+
+  if (!log.date) {
+    throw new Error("date is required");
+  }
+
+  return true;
 }
 
-
 /* =========================
-   SCHEMA SAFE LOADER
+   SHEET LOADER
 ========================= */
-
 function getTimeLogSheet(db) {
-
   if (!db) {
     throw new Error("Invalid spreadsheet instance");
   }
 
-  const sheet = db.getSheetByName("TIME_LOGS");
+  const sheet = db.getSheetByName(TIMELOG_SHEET_NAME);
 
   if (!sheet) {
-    throw new Error("TIME_LOGS sheet not found");
+    throw new Error(`${TIMELOG_SHEET_NAME} sheet not found`);
   }
 
-  const lastRow = sheet.getLastRow();
   const lastCol = sheet.getLastColumn();
 
-  // allow header-only sheet (FIXED)
-  if (lastCol === 0 || lastRow < 1) {
-    throw new Error("TIME_LOGS sheet is not initialized");
+  if (lastCol === 0) {
+    throw new Error(`${TIMELOG_SHEET_NAME} sheet is not initialized`);
   }
 
   return sheet;
 }
 
-
 /* =========================
    HEADER LOADER
 ========================= */
-
 function getTimeLogHeaders(sheet) {
+  if (!sheet) {
+    throw new Error("sheet is required");
+  }
+
+  const lastCol = sheet.getLastColumn();
+
+  if (lastCol < 1) {
+    throw new Error(`${TIMELOG_SHEET_NAME} sheet has no headers`);
+  }
+
   return sheet
-    .getRange(1, 1, 1, sheet.getLastColumn())
+    .getRange(1, 1, 1, lastCol)
     .getValues()[0]
-    .map(h => String(h).trim());
+    .map(function (header) {
+      return String(header || "").trim();
+    });
 }
 
+function assertTimeLogHeaders(headers) {
+  const list = Array.isArray(headers) ? headers : [];
+  const required = getRequiredTimeLogHeaders();
+
+  const missing = required.filter(function (key) {
+    return !list.includes(key);
+  });
+
+  if (missing.length) {
+    throw new Error(
+      `TIME_LOGS sheet missing required headers: ${missing.join(", ")}`
+    );
+  }
+
+  return true;
+}
 
 /* =========================
-   INSERT SINGLE TIME LOG
+   INSERT SINGLE
 ========================= */
-
+/* =========================
+   INSERT SINGLE
+========================= */
 function insertTimeLog(workspace_id, payload) {
+  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
 
-  const db = getTimelogDb(workspace_id);
+  if (!normalizedWorkspaceId) {
+    throw new Error("workspace_id is required");
+  }
+
+  if (!payload) {
+    throw new Error("payload is required");
+  }
+
+  const db = getTimelogDb(normalizedWorkspaceId);
   const sheet = getTimeLogSheet(db);
   const headers = getTimeLogHeaders(sheet);
 
-  const log = normalizeTimeLog(payload, workspace_id);
+  assertTimeLogHeaders(headers);
 
-  const row = headers.map(h => log[h] ?? "");
+  const log = normalizeTimeLog(payload, normalizedWorkspaceId);
 
+  // =====================================================
+  // RESOLVE WORK DATE FROM SHIFT (BACKEND SOURCE OF TRUTH)
+  // =====================================================
+  log.date = getShiftWorkDate(
+    normalizedWorkspaceId,
+    log.shift_id,
+    log.timestamp
+  );
+
+  assertInsertableTimeLog(log);
+
+  const row = buildTimeLogRow(headers, log);
   sheet.appendRow(row);
-
-  const action = payload.action;
 
   return {
     success: true,
-    message: buildActionMessage(action),
+    message: buildActionMessage(log.action),
     log_id: log.log_id,
-    workspace_id
+    workspace_id: normalizedWorkspaceId,
+    work_date: log.date
   };
 }
 
-
 /* =========================
-   NORMALIZATION LAYER (FIXED)
+   INSERT MANY
 ========================= */
-
-function normalizeTimeLog(data, workspace_id) {
-
-  const now = new Date();
-
-  return {
-    log_id: data.log_id || generateId("LOG"),
-    workspace_id: workspace_id || data.workspace_id,
-    user_id: data.user_id || "",
-    email: data.email || "",
-    action: data.action || "",
-
-    timestamp: data.timestamp || now.toISOString(),
-    date: data.date || formatDateKey(now),
-
-    shift_id: data.shift_id || "",
-    device_info: data.device_info || "",
-    location: data.location || "",
-    remarks: data.remarks || "",
-
-    created_at: now.toISOString()
-  };
-}
-
-
-/* =========================
-   QUERY ENGINE (FIXED + SAFE)
-========================= */
-
-function findTimeLogs(workspace_id, filters = {}) {
-
-  const db = getTimelogDb(workspace_id);
-  const sheet = getTimeLogSheet(db);
-
-  const values = sheet.getDataRange().getValues();
-
-  if (values.length < 2) return [];
-
-  const headers = values.shift().map(h => String(h).trim());
-
-  const results = values
-    .map(row => rowToObject(headers, row))
-    .map(record => {
-
-      // FIX: normalize date safely
-      if (record.date instanceof Date) {
-        record.date = Utilities.formatDate(
-          record.date,
-          Session.getScriptTimeZone(),
-          "yyyy-MM-dd"
-        );
-      }
-
-      return record;
-    })
-    .filter(record => {
-
-      return Object.entries(filters).every(([key, filterValue]) => {
-
-        if (filterValue === undefined || filterValue === null || filterValue === "") {
-          return true;
-        }
-
-        return String(record[key]) === String(filterValue);
-      });
-    });
-
-  return results;
-}
-
-
-/* =========================
-   SINGLE QUERY
-========================= */
-
-function findOneTimeLog(workspace_id, filters = {}) {
-  return findTimeLogs(workspace_id, filters)[0] || null;
-}
-
-
-/* =========================
-   BATCH INSERT (OPTIMIZED)
-========================= */
-
 function insertManyTimeLogs(workspace_id, logs) {
+  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
+
+  if (!normalizedWorkspaceId) {
+    throw new Error("workspace_id is required");
+  }
 
   if (!Array.isArray(logs) || logs.length === 0) {
     throw new Error("logs must be a non-empty array");
   }
 
-  const db = getTimelogDb(workspace_id);
+  const db = getTimelogDb(normalizedWorkspaceId);
   const sheet = getTimeLogSheet(db);
   const headers = getTimeLogHeaders(sheet);
 
-  const rows = logs.map(log => {
-    const normalized = normalizeTimeLog(log, workspace_id);
-    return headers.map(h => normalized[h] ?? "");
+  assertTimeLogHeaders(headers);
+
+  const normalizedLogs = logs.map(function (log) {
+    const normalized = normalizeTimeLog(log, normalizedWorkspaceId);
+
+    normalized.date = getShiftWorkDate(
+      normalizedWorkspaceId,
+      normalized.shift_id,
+      normalized.timestamp
+    );
+
+    assertInsertableTimeLog(normalized);
+
+    return normalized;
+  });
+
+  const rows = normalizedLogs.map(function (log) {
+    return buildTimeLogRow(headers, log);
   });
 
   const startRow = sheet.getLastRow() + 1;
-
   sheet.getRange(startRow, 1, rows.length, headers.length).setValues(rows);
 
   return {
     success: true,
     message: "Batch insert completed",
     inserted: rows.length,
-    workspace_id
+    workspace_id: normalizedWorkspaceId
   };
 }
 
-
 /* =========================
-   TODAY HELPERS
+   INSERT HELPERS
 ========================= */
-
-function getLatestTodayTimeLogByEmail(workspace_id, email) {
-
-  const logs = getTodayTimeLogsByEmail(workspace_id, email);
-
-  if (!logs.length) return null;
-
-  logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-  return logs[0];
-}
-
-
-/* =========================
-   TODAY QUERY
-========================= */
-
-function getTodayTimeLogsByEmail(workspace_id, email) {
-
-  if (!workspace_id) throw new Error("workspace_id is required");
-  if (!email) throw new Error("email is required");
-
-  const today = formatDateKey(new Date());
-
-  return findTimeLogs(workspace_id, {
-    email,
-    date: today
+function buildTimeLogRow(headers, log) {
+  return headers.map(function (header) {
+    return log[header] !== undefined && log[header] !== null
+      ? log[header]
+      : "";
   });
 }
+
+/* =========================
+   BASE FINDER
+========================= */
+function findTimeLogs(workspace_id, filters) {
+  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
+
+  if (!normalizedWorkspaceId) {
+    throw new Error("workspace_id is required");
+  }
+
+  const db = getTimelogDb(normalizedWorkspaceId);
+  const sheet = getTimeLogSheet(db);
+  const values = sheet.getDataRange().getValues();
+
+  if (values.length < 2) {
+    return [];
+  }
+
+  const headers = values.shift().map(function (header) {
+    return String(header || "").trim();
+  });
+
+  assertTimeLogHeaders(headers);
+
+  const normalizedFilters = normalizeTimeLogFilters(filters || {});
+
+  return values
+    .map(function (row) {
+      return rowToObject(headers, row);
+    })
+    .map(normalizeTimeLogRecord)
+    .filter(function (record) {
+      return matchesTimeLogFilters(record, normalizedFilters);
+    })
+    .sort(function (a, b) {
+      return new Date(a.timestamp) - new Date(b.timestamp);
+    });
+}
+
+/* =========================
+   FIND ONE
+========================= */
+function findOneTimeLog(workspace_id, filters) {
+  return findTimeLogs(workspace_id, filters || {})[0] || null;
+}
+

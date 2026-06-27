@@ -13,52 +13,135 @@ function getUsers(workspace_id) {
 
 /**
  * =====================================================
+ * MASTER AUTH USER HELPERS
+ * =====================================================
+ */
+
+function getMasterUsers() {
+  return find(getMasterDatabase(), AUTH_TABLES.USERS);
+}
+
+function findAuthUserByEmail(email) {
+  const normalizedEmail = normalize("email", email);
+  if (!normalizedEmail) return null;
+
+  return findOne(getMasterDatabase(), AUTH_TABLES.USERS, {
+    email: normalizedEmail
+  });
+}
+
+function findAuthUserByGoogleSub(googleSub) {
+  if (!googleSub) return null;
+
+  return findOne(getMasterDatabase(), AUTH_TABLES.USERS, {
+    google_sub: String(googleSub).trim()
+  });
+}
+
+/**
+ * Link verified Google identity to an existing AUTH user.
+ * This does NOT create a new user. It only binds Google identity
+ * to an already existing auth user record.
+ */
+function linkGoogleAccountToAuthUser(userId, googleProfile = {}) {
+  if (!userId) throw new Error("userId is required");
+
+  const authUser = findOne(getMasterDatabase(), AUTH_TABLES.USERS, {
+    user_id: userId
+  });
+
+  if (!authUser) {
+    throw new Error("Auth user not found");
+  }
+
+  const googleSub = String(googleProfile.sub || "").trim();
+  const googleEmail = normalize("email", googleProfile.email || "");
+
+  if (!googleSub) {
+    throw new Error("googleProfile.sub is required");
+  }
+
+  // Prevent linking one Google account to multiple users
+  const existingByGoogleSub = findAuthUserByGoogleSub(googleSub);
+  if (existingByGoogleSub && existingByGoogleSub.user_id !== userId) {
+    throw new Error("This Google account is already linked to another user");
+  }
+
+  let authProvider = authUser.auth_provider || AUTH_PROVIDERS.PASSWORD;
+
+  if (authProvider === AUTH_PROVIDERS.PASSWORD) {
+    authProvider = AUTH_PROVIDERS.BOTH;
+  } else if (authProvider === AUTH_PROVIDERS.GOOGLE) {
+    authProvider = AUTH_PROVIDERS.GOOGLE;
+  } else {
+    authProvider = AUTH_PROVIDERS.BOTH;
+  }
+
+  update(getMasterDatabase(), AUTH_TABLES.USERS, userId, {
+    google_sub: googleSub,
+    google_email: googleEmail || authUser.google_email || "",
+    auth_provider: authProvider,
+    updated_at: new Date().toISOString()
+  });
+
+  return {
+    success: true,
+    user_id: userId,
+    google_sub: googleSub,
+    google_email: googleEmail
+  };
+}
+
+/**
+ * Update last login timestamp for AUTH user.
+ * Call this after successful login completion.
+ */
+function touchAuthUserLastLogin(userId) {
+  if (!userId) throw new Error("userId is required");
+
+  return update(getMasterDatabase(), AUTH_TABLES.USERS, userId, {
+    last_login_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  });
+}
+
+/**
+ * =====================================================
  * GENERAL USER CREATION
  * =====================================================
  */
 function createUser(workspace_id, payload, options = {}) {
-
   const { skipIfExists = false } = options;
 
   // =========================
   // VALIDATION
   // =========================
-
   const email = normalize("email", payload.email);
-
   if (!email) {
     throw new Error("Email is required");
   }
 
   const role = normalize("role", payload.role);
+  const fullname = resolveFullname(payload);
 
   // =========================
   // ROLE RULES
   // =========================
-
   const requiresFullProfile =
     role === "EMPLOYEE" ||
     role === "ADMIN";
 
-  if (requiresFullProfile) {
-    if (
-      !payload.first_name &&
-      !payload.last_name &&
-      !payload.fullname
-    ) {
-      throw new Error(`Full name is required for role: ${role}`);
-    }
+  if (requiresFullProfile && !fullname) {
+    throw new Error(`Full name is required for role: ${role}`);
   }
 
-  if (role === "OWNER") {
-    payload.first_name = payload.first_name || "Owner";
-    payload.last_name = payload.last_name || "";
+  if (role === "OWNER" && !fullname) {
+    throw new Error("Full name is required for role: OWNER");
   }
 
   // =========================
   // VALIDATE RELATIONS (SAFE GUARDS)
   // =========================
-
   if (payload.department_id) {
     const dept = findOne(workspace_id, TABLES.DEPARTMENTS, {
       department_id: payload.department_id
@@ -86,7 +169,6 @@ function createUser(workspace_id, payload, options = {}) {
   // =========================
   // DUPLICATE CHECK
   // =========================
-
   const existing = find(workspace_id, USER_TABLE)
     .filter(user =>
       normalize("email", user.email) === email
@@ -94,57 +176,33 @@ function createUser(workspace_id, payload, options = {}) {
 
   if (existing.length > 0) {
     if (skipIfExists) return existing[0];
-
     throw new Error("User already exists with this email");
   }
 
   // =========================
-  // FULLNAME BUILD
-  // =========================
-
-  let fullname = payload.fullname || "";
-
-  if (!fullname) {
-    fullname =
-      `${payload.first_name || ""} ${payload.last_name || ""}`.trim();
-  }
-
-  fullname = normalize("fullname", fullname);
-
-  // =========================
   // DOMAIN USER OBJECT
   // =========================
-
   const user = {
-    user_id: generateId("USR"),
+    user_id: payload.user_id || generateId("USR"),
     employee_no: payload.employee_no || generateEmployeeNo(),
-
     email,
     fullname,
-
-    first_name: payload.first_name || "",
-    last_name: payload.last_name || "",
-
     department_id: payload.department_id || "",
     position_id: payload.position_id || "",
     shift_id: payload.shift_id || "",
-
     role,
     status: normalize("status", payload.status),
-
-    created_at: new Date().toISOString()
+    created_at: payload.created_at || new Date().toISOString()
   };
 
   // =========================
   // SAVE WORKSPACE USER
   // =========================
-
   const result = insert(workspace_id, USER_TABLE, user);
 
   // =========================
   // MASTER SYNC
   // =========================
-
   try {
     const masterDb = getMasterDatabase();
 
@@ -154,6 +212,12 @@ function createUser(workspace_id, payload, options = {}) {
       fullname: user.fullname,
       role: user.role,
       workspace_id,
+
+      auth_provider: payload.auth_provider || AUTH_PROVIDERS.PASSWORD,
+      google_sub: payload.google_sub || "",
+      google_email: payload.google_email || "",
+      last_login_at: "",
+
       status: user.status,
       created_at: user.created_at,
       updated_at: new Date().toISOString()
@@ -167,7 +231,6 @@ function createUser(workspace_id, payload, options = {}) {
 }
 
 function updateUser(workspace_id, userId, updates = {}) {
-
   if (!userId) throw new Error("userId is required");
 
   const existing = findOne(workspace_id, USER_TABLE, {
@@ -182,11 +245,10 @@ function updateUser(workspace_id, userId, updates = {}) {
   if (updates.email) {
     const email = normalize("email", updates.email);
 
-    const duplicate = find(workspace_id, USER_TABLE)
-      .find(u =>
-        u.user_id !== userId &&
-        normalize("email", u.email) === email
-      );
+    const duplicate = find(workspace_id, USER_TABLE).find(u =>
+      u.user_id !== userId &&
+      normalize("email", u.email) === email
+    );
 
     if (duplicate) {
       throw new Error("User already exists with this email");
@@ -196,56 +258,56 @@ function updateUser(workspace_id, userId, updates = {}) {
   }
 
   // =========================
-  // RELATION VALIDATION (SAFE EXTENSION)
+  // RELATION VALIDATION
   // =========================
-
-  if (updates.department_id !== undefined) {
-    if (updates.department_id) {
-      const dept = findOne(workspace_id, TABLES.DEPARTMENTS, {
-        department_id: updates.department_id
-      });
-      if (!dept) throw new Error("Invalid department_id");
-    }
+  if (updates.department_id !== undefined && updates.department_id) {
+    const dept = findOne(workspace_id, TABLES.DEPARTMENTS, {
+      department_id: updates.department_id
+    });
+    if (!dept) throw new Error("Invalid department_id");
   }
 
-  if (updates.position_id !== undefined) {
-    if (updates.position_id) {
-      const pos = findOne(workspace_id, TABLES.POSITIONS, {
-        position_id: updates.position_id
-      });
-      if (!pos) throw new Error("Invalid position_id");
-    }
+  if (updates.position_id !== undefined && updates.position_id) {
+    const pos = findOne(workspace_id, TABLES.POSITIONS, {
+      position_id: updates.position_id
+    });
+    if (!pos) throw new Error("Invalid position_id");
   }
 
-  if (updates.shift_id !== undefined) {
-    if (updates.shift_id) {
-      const shift = findOne(workspace_id, TABLES.SHIFTS, {
-        shift_id: updates.shift_id
-      });
-      if (!shift) throw new Error("Invalid shift_id");
-    }
+  if (updates.shift_id !== undefined && updates.shift_id) {
+    const shift = findOne(workspace_id, TABLES.SHIFTS, {
+      shift_id: updates.shift_id
+    });
+    if (!shift) throw new Error("Invalid shift_id");
   }
 
   // =========================
-  // FULLNAME REBUILD
+  // FULLNAME NORMALIZATION
+  // Supports either:
+  // - updates.fullname
+  // - updates.first_name + updates.last_name
   // =========================
+  const hasSplitNameInput =
+    updates.first_name !== undefined ||
+    updates.last_name !== undefined;
 
-  if (updates.first_name !== undefined || updates.last_name !== undefined) {
-    const firstName = updates.first_name ?? existing.first_name ?? "";
-    const lastName = updates.last_name ?? existing.last_name ?? "";
-
-    updates.fullname = normalize(
-      "fullname",
-      `${firstName} ${lastName}`.trim()
-    );
+  if (hasSplitNameInput && updates.fullname === undefined) {
+    updates.fullname = resolveFullname(updates);
   }
 
-  if (updates.fullname) {
+  if (updates.fullname !== undefined) {
     updates.fullname = normalize("fullname", updates.fullname);
   }
 
   if (updates.role) updates.role = normalize("role", updates.role);
   if (updates.status) updates.status = normalize("status", updates.status);
+
+  // =========================
+  // INPUT-ONLY FIELDS
+  // Never persist split-name convenience fields
+  // =========================
+  delete updates.first_name;
+  delete updates.last_name;
 
   const success = update(workspace_id, USER_TABLE, userId, updates);
 
@@ -254,7 +316,6 @@ function updateUser(workspace_id, userId, updates = {}) {
   // =========================
   // MASTER SYNC
   // =========================
-
   try {
     update(getMasterDatabase(), AUTH_TABLES.USERS, userId, {
       email: updates.email ?? existing.email,
@@ -446,20 +507,32 @@ function deleteUser(workspace_id, userId) {
 }
 
 function createOwnerUser(workspace_id, ownerMeta = {}) {
-  if (!workspace_id) throw new Error("workspace_id is required");
-  if (!ownerMeta.email) throw new Error("owner email is required");
+  if (!workspace_id) {
+    throw new Error("workspace_id is required");
+  }
+
+  if (!ownerMeta.email) {
+    throw new Error("owner email is required");
+  }
 
   const masterDb = getMasterDatabase();
 
   const email = normalize("email", ownerMeta.email);
-  const fullname = normalize("fullname", ownerMeta.fullname || "");
-
+  const fullname = resolveFullname(ownerMeta);
   const now = new Date().toISOString();
 
+  if (!email) {
+    throw new Error("owner email is required");
+  }
+
+  if (!fullname) {
+    throw new Error("Owner full name is required");
+  }
+
   // =====================================================
-  // 1. CHECK IF OWNER ALREADY EXISTS (IDEMPOTENT)
+  // 1. CHECK IF OWNER ALREADY EXISTS IN MASTER OWNERS
   // =====================================================
-  let existingOwner = findOne(
+  const existingOwner = findOne(
     masterDb,
     AUTH_TABLES.OWNERS,
     { email }
@@ -473,18 +546,28 @@ function createOwnerUser(workspace_id, ownerMeta = {}) {
   const workspaceDb = SpreadsheetApp.openById(workspace_id);
 
   // =====================================================
-  // 3. CREATE DEFAULT RELATIONS (SAFE FALLBACKS)
+  // 3. RESOLVE DEFAULT RELATIONS (SAFE FALLBACKS)
   // =====================================================
-  const defaultDept = findOne(workspaceDb, TABLES.DEPARTMENTS, {})?.department_id || "";
-  const defaultShift = findOne(workspaceDb, TABLES.SHIFTS, {})?.shift_id || "";
-  const defaultPosition = findOne(workspaceDb, TABLES.POSITIONS, {})?.position_id || "";
+  const defaultDept =
+    findOne(workspaceDb, TABLES.DEPARTMENTS, {})?.department_id || "";
+
+  const defaultShift =
+    findOne(workspaceDb, TABLES.SHIFTS, {})?.shift_id || "";
+
+  const defaultPosition =
+    findOne(workspaceDb, TABLES.POSITIONS, {})?.position_id || "";
 
   // =====================================================
-  // 4. CREATE WORKSPACE USER (SOURCE OF TRUTH)
+  // 4. ENSURE WORKSPACE USER EXISTS
+  // SOURCE OF TRUTH FOR APP USER RECORD
   // =====================================================
-  const userPayload = {
-    user_id: owner_id,              // SLUG = OWNER ID
-    employee_no: owner_id,          // same identity
+  const existingWorkspaceUser = findOne(workspaceDb, TABLES.USERS, {
+    email
+  });
+
+  const workspaceUserPayload = {
+    user_id: owner_id,
+    employee_no: owner_id,
     email,
     fullname,
     role: "OWNER",
@@ -492,14 +575,21 @@ function createOwnerUser(workspace_id, ownerMeta = {}) {
     shift_id: defaultShift,
     position_id: defaultPosition,
     status: "ACTIVE",
-    created_at: now
+    created_at: existingWorkspaceUser?.created_at || now
   };
 
-  // ensure no duplicate workspace user
-  const existingWorkspaceUser = findOne(workspaceDb, TABLES.USERS, { email });
-
   if (!existingWorkspaceUser) {
-    insert(workspaceDb, TABLES.USERS, userPayload);
+    insert(workspaceDb, TABLES.USERS, workspaceUserPayload);
+  } else {
+    update(workspaceDb, TABLES.USERS, existingWorkspaceUser.user_id, {
+      email,
+      fullname,
+      role: "OWNER",
+      department_id: existingWorkspaceUser.department_id || defaultDept,
+      shift_id: existingWorkspaceUser.shift_id || defaultShift,
+      position_id: existingWorkspaceUser.position_id || defaultPosition,
+      status: "ACTIVE"
+    });
   }
 
   // =====================================================
@@ -510,8 +600,7 @@ function createOwnerUser(workspace_id, ownerMeta = {}) {
     email,
     fullname,
     workspace_id,
-    workspace_spreadsheet_id: workspace_id,
-    workspace_url: SpreadsheetApp.openById(workspace_id).getUrl(),
+    workspace_url: workspaceDb.getUrl(),
     timelog_spreadsheet_id: ownerMeta.timelogId || "",
     timelog_url: ownerMeta.timelogUrl || "",
     status: "ACTIVE",
@@ -526,28 +615,48 @@ function createOwnerUser(workspace_id, ownerMeta = {}) {
   }
 
   // =====================================================
-  // 6. ENSURE AUTH USERS TABLE SYNC (OPTIONAL CONSISTENCY)
+  // 6. UPSERT MASTER AUTH USER RECORD
+  // Keep auth user in sync with owner identity
   // =====================================================
-  const existingAuthUser = findOne(masterDb, AUTH_TABLES.USERS, { email });
+  const existingAuthUser = findOne(masterDb, AUTH_TABLES.USERS, {
+    email
+  });
 
-  if (!existingAuthUser) {
-    insert(masterDb, AUTH_TABLES.USERS, {
-      user_id: owner_id,
-      email,
-      fullname,
-      role: "OWNER",
-      workspace_id,
-      status: "ACTIVE",
-      created_at: now,
-      updated_at: now
-    });
+  const authUserRecord = {
+    user_id: owner_id,
+    email,
+    fullname,
+    role: "OWNER",
+    workspace_id,
+
+    auth_provider:
+      existingAuthUser?.auth_provider || AUTH_PROVIDERS.PASSWORD,
+    google_sub:
+      existingAuthUser?.google_sub || ownerMeta.google_sub || "",
+    google_email:
+      existingAuthUser?.google_email || ownerMeta.google_email || "",
+    last_login_at:
+      existingAuthUser?.last_login_at || "",
+
+    status: "ACTIVE",
+    created_at: existingAuthUser?.created_at || now,
+    updated_at: now
+  };
+
+  if (existingAuthUser) {
+    update(masterDb, AUTH_TABLES.USERS, existingAuthUser.user_id, authUserRecord);
+  } else {
+    insert(masterDb, AUTH_TABLES.USERS, authUserRecord);
   }
 
   return {
+    success: true,
     owner_id,
-    // workspace_id,
+    user_id: owner_id,
+    workspace_id,
     email,
     fullname,
+    role: "OWNER",
     status: "ACTIVE"
   };
 }

@@ -6,3 +6,13 @@ function generateId(prefix) {
 
   return `${prefix}-${rand}`;
 }
+
+function resolveFullname(payload = {}) {
+  let fullname = payload.fullname || "";
+
+  if (!fullname) {
+    fullname = `${payload.first_name || ""} ${payload.last_name || ""}`.trim();
+  }
+
+  return normalize("fullname", fullname);
+}

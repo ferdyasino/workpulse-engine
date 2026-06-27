@@ -172,3 +172,87 @@ function getOwnerById(ownerId) {
     { owner_id: ownerId }
   );
 }
+
+function sanitizeTimeLogActionSuccessMessage(action, message) {
+  const clean = String(message || "").replace(/^Error:\s*/i, "").trim();
+
+  if (clean) {
+    return clean;
+  }
+
+  switch (String(action || "").trim()) {
+    case "time_in":
+      return "Time in logged successfully.";
+
+    case "time_out":
+      return "Time out logged successfully.";
+
+    case "break_start":
+      return "Break started successfully.";
+
+    case "break_end":
+      return "Break ended successfully.";
+
+    case "lunch_start":
+      return "Lunch started successfully.";
+
+    case "lunch_end":
+      return "Lunch ended successfully.";
+
+    default:
+      return "Timelog action saved successfully.";
+  }
+}
+
+function getWorkspaceSettings(workspace_id) {
+  const db = getWorkspaceDb(workspace_id);
+  const sheet = db.getSheetByName("Settings");
+
+  if (!sheet) throw new Error("Settings sheet not found");
+
+  const rows = sheet.getDataRange().getValues();
+
+  const settings = {};
+
+  rows.forEach(([key, value]) => {
+    if (key) settings[key] = value;
+  });
+
+  return settings;
+}
+
+
+function isOvernightShift(shift) {
+  if (!shift) return false;
+
+  return (
+    timeToMinutes(shift.end_time) <=
+    timeToMinutes(shift.start_time)
+  );
+}
+
+function timeToMinutes(time) {
+  const parts = String(time || "0:0").split(":");
+
+  return (
+    Number(parts[0]) * 60 +
+    Number(parts[1])
+  );
+}
+
+function getShiftWorkDate(
+  workspace_id,
+  shift_id,
+  timestamp
+) {
+  const shift = getShiftById(workspace_id, shift_id);
+
+  if (!shift) {
+    throw new Error("Shift not found.");
+  }
+
+  return resolveShiftWorkDate(
+    shift,
+    timestamp || new Date()
+  );
+}

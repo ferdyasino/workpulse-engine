@@ -55,16 +55,16 @@ function createShift(workspace_id, payload) {
     };
   }
 
-  const hasOverlap = existingShifts.some(s =>
-    isTimeOverlap(startTime, endTime, s.start_time, s.end_time)
-  );
+  // const hasOverlap = existingShifts.some(s =>
+  //   isTimeOverlap(startTime, endTime, s.start_time, s.end_time)
+  // );
 
-  if (hasOverlap) {
-    return {
-      success: false,
-      message: "Shift overlaps with an existing shift"
-    };
-  }
+  // if (hasOverlap) {
+  //   return {
+  //     success: false,
+  //     message: "Shift overlaps with an existing shift"
+  //   };
+  // }
 
   const shift = {
     shift_id: generateId("SHIFT"),
@@ -186,16 +186,16 @@ function updateShift(workspace_id, shiftId, updates) {
     .map(mapShift)
     .filter(s => s.shift_id !== shiftId);
 
-  const hasOverlap = otherShifts.some(s =>
-    isTimeOverlap(start, end, s.start_time, s.end_time)
-  );
+  // const hasOverlap = otherShifts.some(s =>
+  //   isTimeOverlap(start, end, s.start_time, s.end_time)
+  // );
 
-  if (hasOverlap) {
-    return {
-      success: false,
-      message: "Shift overlaps with an existing shift"
-    };
-  }
+  // if (hasOverlap) {
+  //   return {
+  //     success: false,
+  //     message: "Shift overlaps with an existing shift"
+  //   };
+  // }
 
   if (safeUpdates.start_time !== undefined) {
     safeUpdates.start_time = start;

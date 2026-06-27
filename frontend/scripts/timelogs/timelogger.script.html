@@ -1,0 +1,430 @@
+<script>
+  /**
+   * =====================================================
+   * TIME LOGGER UI MODULE
+   * - HEADER: B1 / B2 / B3 indicators only
+   * - LOGGER: actual action buttons only
+   * - BACKEND IS SOURCE OF TRUTH FOR VALIDATION
+   * - BREAK ACTIONS USE:
+   *   break_start / break_end
+   * =====================================================
+   */
+
+  /* =====================================================
+     DASHBOARD ATTENDANCE SHELL INIT
+     - render logger immediately
+     - paint empty/default placeholders
+     - safe to call repeatedly
+  ===================================================== */
+  window.initDashboardAttendanceUI = function () {
+    renderTimeLogger();
+    renderGlobalState({});
+    renderTimeSummary({});
+    renderBreakActivity({});
+  };
+
+  /* =====================================================
+     GLOBAL STATE ENTRYPOINT
+  ===================================================== */
+  window.renderGlobalState = function (state = {}) {
+    const statusText = document.getElementById("globalStatusText");
+    const dot = document.getElementById("statusDot");
+
+    const status = String(state.status || "NOT STARTED").toUpperCase();
+
+    if (statusText) {
+      statusText.textContent = DISPLAY.status(state.status || "NOT STARTED");
+    }
+
+    if (dot) {
+      dot.className = "status-dot";
+
+      const map = {
+        WORKING: "bg-success",
+        "ON BREAK": "bg-warning",
+        "AT LUNCH": "bg-info",
+        "CLOCKED OUT": "bg-danger",
+      };
+
+      dot.classList.add(map[status] || "bg-secondary");
+    }
+
+    renderBreakIndicators(state);
+  };
+
+  /* =====================================================
+     BREAK STATE HELPERS
+  ===================================================== */
+  function getBreakState(breakItem) {
+    if (!breakItem) return "AVAILABLE";
+    if (breakItem.in && breakItem.out) return "ENDED";
+    if (breakItem.in && !breakItem.out) return "ACTIVE";
+    return "AVAILABLE";
+  }
+
+  function getBreakIndicatorLimit() {
+    return Number(
+      APP?.settings?.attendance?.max_breaks ??
+        APP?.attendancePolicy?.max_breaks ??
+        3,
+    );
+  }
+
+  function renderBreakIndicators(state = {}) {
+    const container = document.getElementById("breakButtonContainer");
+    if (!container) return;
+
+    const rawBreaks = Array.isArray(state.breaks) ? state.breaks : [];
+
+    // only count real used breaks
+    const breaks = rawBreaks.filter((b) => b && (b.in || b.out));
+
+    container.innerHTML = "";
+
+    // no break used yet = no indicators shown
+    if (!breaks.length) return;
+
+    const limit = Math.max(0, getBreakIndicatorLimit());
+
+    // if limit is 0, show none
+    if (!limit) return;
+
+    const visibleBreaks = breaks.slice(0, limit);
+
+    visibleBreaks.forEach((breakItem, i) => {
+      const index = i + 1;
+      const breakState = getBreakState(breakItem);
+
+      const badge = document.createElement("button");
+      badge.type = "button";
+      badge.className = "btn btn-sm";
+      badge.textContent = `B${index}`;
+      badge.disabled = true;
+
+      if (breakState === "ACTIVE") {
+        badge.classList.add("btn-success");
+      } else if (breakState === "ENDED") {
+        badge.classList.add("btn-break-ended");
+      } else {
+        badge.classList.add("btn-outline-warning");
+      }
+
+      container.appendChild(badge);
+    });
+  }
+
+  /* =====================================================
+     LOGGER BUTTON BINDING
+     IMPORTANT:
+     - DO NOT disable buttons for now
+     - backend validation is the source of truth
+  ===================================================== */
+  function syncLoggerButtons() {
+    const timeInBtn = document.getElementById("loggerTimeInBtn");
+    const timeOutBtn = document.getElementById("loggerTimeOutBtn");
+    const breakStartBtn = document.getElementById("loggerBreakStartBtn");
+    const breakEndBtn = document.getElementById("loggerBreakEndBtn");
+    const lunchStartBtn = document.getElementById("loggerLunchStartBtn");
+    const lunchEndBtn = document.getElementById("loggerLunchEndBtn");
+
+    if (timeInBtn) {
+      timeInBtn.disabled = false;
+      timeInBtn.onclick = () => logTime("time_in");
+    }
+
+    if (timeOutBtn) {
+      timeOutBtn.disabled = false;
+      timeOutBtn.onclick = () => logTime("time_out");
+    }
+
+    if (breakStartBtn) {
+      breakStartBtn.disabled = false;
+      breakStartBtn.onclick = () => logTime("break_start");
+    }
+
+    if (breakEndBtn) {
+      breakEndBtn.disabled = false;
+      breakEndBtn.onclick = () => logTime("break_end");
+    }
+
+    if (lunchStartBtn) {
+      lunchStartBtn.disabled = false;
+      lunchStartBtn.onclick = () => logTime("lunch_start");
+    }
+
+    if (lunchEndBtn) {
+      lunchEndBtn.disabled = false;
+      lunchEndBtn.onclick = () => logTime("lunch_end");
+    }
+  }
+
+  /* =====================================================
+     TIME LOGGER UI
+     - persistent shell
+     - render once, then only rebind buttons
+     - do NOT rebuild on every state hydration
+  ===================================================== */
+  function renderTimeLogger() {
+    const container = document.getElementById("dashboardTimelogsList");
+    if (!container) return;
+
+    const existing = document.getElementById("timeLogger");
+
+    if (existing) {
+      syncLoggerButtons();
+      return;
+    }
+
+    container.innerHTML = `
+      <div id="timeLogger" class="glass-card mb-4">
+        <div class="row g-3">
+
+          <!-- TIME -->
+          <div class="col-6">
+            <button
+              id="loggerTimeInBtn"
+              class="btn btn-success w-100"
+              type="button"
+            >
+              Time In
+            </button>
+          </div>
+
+          <div class="col-6">
+            <button
+              id="loggerTimeOutBtn"
+              class="btn btn-danger w-100"
+              type="button"
+            >
+              Time Out
+            </button>
+          </div>
+
+          <!-- BREAK -->
+          <div class="col-6">
+            <button
+              id="loggerBreakStartBtn"
+              class="btn btn-warning w-100"
+              type="button"
+            >
+              Break Start
+            </button>
+          </div>
+
+          <div class="col-6">
+            <button
+              id="loggerBreakEndBtn"
+              class="btn btn-outline-warning w-100"
+              type="button"
+            >
+              Break End
+            </button>
+          </div>
+
+          <!-- LUNCH -->
+          <div class="col-6">
+            <button
+              id="loggerLunchStartBtn"
+              class="btn btn-dark w-100"
+              type="button"
+            >
+              Lunch Start
+            </button>
+          </div>
+
+          <div class="col-6">
+            <button
+              id="loggerLunchEndBtn"
+              class="btn btn-info w-100"
+              type="button"
+            >
+              Lunch End
+            </button>
+          </div>
+
+        </div>
+      </div>
+    `;
+
+    syncLoggerButtons();
+  }
+
+  /* =====================================================
+     LOG TIME
+     - uses submitTimeLogAction()
+     - validation + insert in one backend call
+     - if backend returns fresh state, hydrate immediately
+     - otherwise fallback to primary dashboard sync pipeline
+  ===================================================== */
+  async function logTime(action) {
+    const user = getCurrentUser() || {};
+
+    const email = user.email;
+    const workspace_id =
+      user.workspace_id || document.getElementById("sid")?.value;
+    const shiftId = user.shift_id;
+    const userId = user.user_id;
+
+    if (!email || !workspace_id || !userId) {
+      showToast?.("Session expired. Please login again.", "error");
+      return;
+    }
+
+    showLoader?.();
+
+    let geo = {
+      success: false,
+      location: null,
+      status: "UNAVAILABLE",
+      message: "Geolocation unavailable",
+    };
+
+    try {
+      geo = await getCurrentLocation();
+      if (!geo.success) {
+        console.warn("Geolocation failed:", geo.status, geo.message);
+      }
+    } catch (err) {
+      console.warn("Geolocation error:", err);
+    }
+
+    const payload = {
+      user_id: userId,
+      email,
+      action,
+      shift_id: shiftId,
+      device_info: navigator.userAgent,
+      location: geo.location || null,
+      location_status: geo.status || "UNAVAILABLE",
+      location_message: geo.message || "",
+      timestamp: new Date().toISOString(),
+    };
+
+    google.script.run
+      .withSuccessHandler((res) => {
+        hideLoader?.();
+
+        if (!res?.success) {
+          showToast?.(res.message || "Action failed", "error");
+          return;
+        }
+
+        showToast?.(res.message || "Logged successfully", "success");
+
+        // Preferred path: backend returns fresh state
+        if (res.state) {
+          APP.attendanceState = res.state;
+          APP.workStatus = res.state.status || "NOT STARTED";
+          hydrateAttendanceUI(res.state);
+          renderUserHeader?.();
+          return;
+        }
+
+        // Fallback: use the single dashboard sync pipeline
+        syncAttendanceState?.();
+      })
+      .withFailureHandler((err) => {
+        hideLoader?.();
+        showToast?.(err?.message || "Server error", "error");
+      })
+      .submitTimeLogAction(workspace_id, payload);
+  }
+
+  /* =====================================================
+     FETCH LOGS
+     - compatibility wrapper only
+     - delegates to single dashboard sync pipeline
+  ===================================================== */
+  function getLogs(options = {}) {
+    syncAttendanceState?.(options);
+  }
+
+  /* =====================================================
+     SUMMARY UI
+  ===================================================== */
+  function renderTimeSummary(state = {}) {
+    const inEl = document.getElementById("summaryTimeIn");
+    const outEl = document.getElementById("summaryTimeOut");
+
+    if (inEl) {
+      inEl.textContent = state.time_in ? formatTime(state.time_in) : "--";
+    }
+
+    if (outEl) {
+      outEl.textContent = state.time_out ? formatTime(state.time_out) : "--";
+    }
+  }
+
+  /* =====================================================
+     BREAK ACTIVITY UI
+  ===================================================== */
+  function renderBreakActivity(state = {}) {
+    const container = document.getElementById("leftTimelogsList");
+    if (!container) return;
+
+    const rows = [];
+    const breaks = Array.isArray(state.breaks) ? state.breaks : [];
+    const lunch = state.lunch || {};
+
+    breaks.forEach((b, i) => {
+      if (b?.in) {
+        rows.push({
+          label: `Break ${i + 1} Start`,
+          time: b.in,
+        });
+      }
+
+      if (b?.out) {
+        rows.push({
+          label: `Break ${i + 1} End`,
+          time: b.out,
+        });
+      }
+    });
+
+    if (lunch.in) {
+      rows.push({
+        label: "Lunch Start",
+        time: lunch.in,
+      });
+    }
+
+    if (lunch.out) {
+      rows.push({
+        label: "Lunch End",
+        time: lunch.out,
+      });
+    }
+
+    if (!rows.length) {
+      container.innerHTML = `
+        <div class="text-muted-custom">No break activity yet</div>
+      `;
+      return;
+    }
+
+    container.innerHTML = rows
+      .map(
+        (row) => `
+          <div class="d-flex justify-content-between py-1">
+            <span>${escapeHtml(row.label)}</span>
+            <strong>${escapeHtml(formatTime(row.time))}</strong>
+          </div>
+        `,
+      )
+      .join("");
+  }
+
+  /* =====================================================
+     SINGLE HYDRATION ENTRY POINT
+     IMPORTANT:
+     - update state-driven UI only
+     - do NOT recreate logger DOM here
+  ===================================================== */
+  function hydrateAttendanceUI(state = {}) {
+    renderGlobalState(state);
+    renderTimeSummary(state);
+    renderBreakActivity(state);
+    syncLoggerButtons();
+  }
+</script>

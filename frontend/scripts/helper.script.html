@@ -1,297 +1,602 @@
 <script>
-// =====================================================
-// GLOBAL DISPLAY / FORMAT HELPERS
-// FRONTEND ONLY - SAFE DROP-IN VERSION
-// =====================================================
-
-(function () {
-  // prevent double registration if helper gets included twice
-  if (window.__APP_HELPERS_READY__) return;
-  window.__APP_HELPERS_READY__ = true;
-
   // =====================================================
-  // ACRONYM / FORCED UPPERCASE WORDS
-  // Add more here anytime
+  // GLOBAL DISPLAY / FORMAT HELPERS
+  // FRONTEND ONLY - SAFE DROP-IN VERSION
   // =====================================================
 
-  const DISPLAY_ACRONYMS = new Set([
-    "it",
-    "hr",
-    "qa",
-    "ui",
-    "ux",
-    "uiux",
-    "bpo",
-    "seo",
-    "cto",
-    "ceo",
-    "coo",
-    "cfo",
-    "vp",
-    "avp",
-    "ops",
-    "mis",
-    "tl",
-    "csr",
-    "dev",
-    "api",
-    "ui/ux"
-  ]);
+  (function () {
+    // prevent double registration if helper gets included twice
+    if (window.__APP_HELPERS_READY__) return;
+    window.__APP_HELPERS_READY__ = true;
 
-  // =====================================================
-  // INTERNAL TITLE/NAME FORMATTER
-  // =====================================================
+    // =====================================================
+    // ACRONYM / FORCED UPPERCASE WORDS
+    // Add more here anytime
+    // =====================================================
 
-  function formatDisplayWords(value = "") {
-    const cleaned = String(value ?? "")
-      .trim()
-      .replace(/[_-]+/g, " ")
-      .replace(/\s+/g, " ");
+    const DISPLAY_ACRONYMS = new Set([
+      "it",
+      "hr",
+      "qa",
+      "ui",
+      "ux",
+      "uiux",
+      "bpo",
+      "seo",
+      "cto",
+      "ceo",
+      "coo",
+      "cfo",
+      "vp",
+      "avp",
+      "ops",
+      "mis",
+      "tl",
+      "csr",
+      "dev",
+      "api",
+      "ui/ux",
+    ]);
 
-    if (!cleaned) return "";
+    // =====================================================
+    // INTERNAL TITLE/NAME FORMATTER
+    // =====================================================
 
-    return cleaned
-      .split(" ")
-      .map(word => {
-        const raw = String(word || "").trim();
-        if (!raw) return "";
-
-        const lower = raw.toLowerCase();
-
-        // forced acronym uppercase
-        if (DISPLAY_ACRONYMS.has(lower)) {
-          return raw.toUpperCase();
-        }
-
-        // handles slash-based tokens like ui/ux
-        if (raw.includes("/")) {
-          return raw
-            .split("/")
-            .map(part => {
-              const p = String(part || "").trim();
-              if (!p) return "";
-
-              const pLower = p.toLowerCase();
-              if (DISPLAY_ACRONYMS.has(pLower)) return p.toUpperCase();
-
-              return pLower.charAt(0).toUpperCase() + pLower.slice(1);
-            })
-            .join("/");
-        }
-
-        // default title case
-        return lower.charAt(0).toUpperCase() + lower.slice(1);
-      })
-      .join(" ");
-  }
-
-  // =====================================================
-  // DISPLAY NORMALIZER
-  // Frontend only
-  // =====================================================
-
-  const DISPLAY = {
-    lower(value = "") {
-      return String(value ?? "").trim().toLowerCase();
-    },
-
-    upper(value = "") {
-      return String(value ?? "").trim().toUpperCase();
-    },
-
-    clean(value = "") {
-      return String(value ?? "")
+    function formatDisplayWords(value = "") {
+      const cleaned = String(value ?? "")
         .trim()
         .replace(/[_-]+/g, " ")
         .replace(/\s+/g, " ");
-    },
 
-    title(value = "") {
-      return formatDisplayWords(value);
-    },
+      if (!cleaned) return "";
 
-    label(value = "") {
-      return formatDisplayWords(value);
-    },
+      return cleaned
+        .split(" ")
+        .map((word) => {
+          const raw = String(word || "").trim();
+          if (!raw) return "";
 
-    status(value = "") {
-      return formatDisplayWords(value);
-    },
+          const lower = raw.toLowerCase();
 
-    name(value = "") {
-      return formatDisplayWords(value);
-    },
-
-    email(value = "") {
-      return String(value ?? "").trim().toLowerCase();
-    },
-
-    role(value = "") {
-      return formatDisplayWords(value);
-    }
-  };
-
-  window.DISPLAY = DISPLAY;
-
-  // =====================================================
-  // SHIFT TIME DISPLAY
-  // Converts "6:00" => "6:00 AM"
-  // =====================================================
-
-  window.formatShift = function(value) {
-    if (!value) return "--";
-
-    const str = String(value).trim();
-    const match = str.match(/^(\d{1,2}):(\d{2})$/);
-
-    if (!match) return str;
-
-    let hours = Number(match[1]);
-    const minutes = match[2];
-
-    if (Number.isNaN(hours)) return str;
-
-    const suffix = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12;
-
-    return `${hours}:${minutes} ${suffix}`;
-  };
-
-  // =====================================================
-  // GLOBAL TIME FORMATTER
-  // SAFE for:
-  // - ISO timestamps
-  // - Date-compatible strings
-  // - plain HH:mm shift values
-  // =====================================================
-
-  window.formatTime = function(value) {
-    if (!value) return "--";
-
-    const str = String(value).trim();
-
-    // If plain shift time like "6:00" or "14:30"
-    if (/^\d{1,2}:\d{2}$/.test(str)) {
-      return window.formatShift(str);
-    }
-
-    const d = new Date(value);
-
-    if (isNaN(d.getTime())) return "--";
-
-    return d.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  };
-
-  // =====================================================
-  // OPTIONAL SHIFT LABEL HELPER
-  // Example:
-  // { shift_name:"MORNING", start_time:"6:00", end_time:"14:00" }
-  // => "Morning (6:00 AM - 2:00 PM)"
-  // =====================================================
-
-  window.formatShiftLabel = function(shift = {}) {
-    if (!shift || typeof shift !== "object") return "--";
-
-    const name = DISPLAY.label(shift.shift_name || "Unnamed Shift");
-    const start = window.formatShift(shift.start_time);
-    const end = window.formatShift(shift.end_time);
-
-    return `${name} (${start} - ${end})`;
-  };
-
-  // =====================================================
-  // COMMON LOOKUP / SAFE DISPLAY HELPERS
-  // =====================================================
-
-  window.escapeHtml = function(str = "") {
-    return String(str ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
-  };
-
-  window.getStatusClass = function(status) {
-    switch (String(status || "").trim().toUpperCase()) {
-      case "ACTIVE":
-        return "badge-success";
-      case "PENDING":
-        return "badge-warning";
-      case "INACTIVE":
-        return "badge-danger";
-      default:
-        return "badge-secondary";
-    }
-  };
-
-  // =====================================================
-  // LOCATION
-  // =====================================================
-
-  window.getCurrentLocation = function() {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        resolve({
-          success: false,
-          status: "NOT_SUPPORTED",
-          message: "Geolocation is not supported by this browser.",
-          location: null
-        });
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            success: true,
-            status: "OK",
-            message: "Location captured successfully.",
-            location: {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-              source: "browser_geolocation",
-              captured_at: new Date().toISOString()
-            }
-          });
-        },
-        (error) => {
-          let status = "ERROR";
-          let message = "Unable to retrieve location.";
-
-          switch (error.code) {
-            case 1:
-              status = "DENIED";
-              message = "Location permission denied by user.";
-              break;
-            case 2:
-              status = "UNAVAILABLE";
-              message = "Location information is unavailable.";
-              break;
-            case 3:
-              status = "TIMEOUT";
-              message = "Location request timed out.";
-              break;
+          if (DISPLAY_ACRONYMS.has(lower)) {
+            return raw.toUpperCase();
           }
 
+          if (raw.includes("/")) {
+            return raw
+              .split("/")
+              .map((part) => {
+                const p = String(part || "").trim();
+                if (!p) return "";
+
+                const pLower = p.toLowerCase();
+                if (DISPLAY_ACRONYMS.has(pLower)) return p.toUpperCase();
+
+                return pLower.charAt(0).toUpperCase() + pLower.slice(1);
+              })
+              .join("/");
+          }
+
+          return lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join(" ");
+    }
+
+    // =====================================================
+    // DISPLAY NORMALIZER
+    // =====================================================
+
+    const DISPLAY = {
+      lower(value = "") {
+        return String(value ?? "")
+          .trim()
+          .toLowerCase();
+      },
+
+      upper(value = "") {
+        return String(value ?? "")
+          .trim()
+          .toUpperCase();
+      },
+
+      clean(value = "") {
+        return String(value ?? "")
+          .trim()
+          .replace(/[_-]+/g, " ")
+          .replace(/\s+/g, " ");
+      },
+
+      title(value = "") {
+        return formatDisplayWords(value);
+      },
+
+      label(value = "") {
+        return formatDisplayWords(value);
+      },
+
+      status(value = "") {
+        return formatDisplayWords(value);
+      },
+
+      name(value = "") {
+        return formatDisplayWords(value);
+      },
+
+      email(value = "") {
+        return String(value ?? "")
+          .trim()
+          .toLowerCase();
+      },
+
+      role(value = "") {
+        return formatDisplayWords(value);
+      },
+    };
+
+    window.DISPLAY = DISPLAY;
+
+    // =====================================================
+    // SHIFT TIME DISPLAY
+    // Converts "6:00" => "6:00 AM"
+    // =====================================================
+
+    window.formatShift = function (value) {
+      if (!value) return "--";
+
+      const str = String(value).trim();
+      const match = str.match(/^(\d{1,2}):(\d{2})$/);
+
+      if (!match) return str;
+
+      let hours = Number(match[1]);
+      const minutes = match[2];
+
+      if (Number.isNaN(hours)) return str;
+
+      const suffix = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12 || 12;
+
+      return `${hours}:${minutes} ${suffix}`;
+    };
+
+    // =====================================================
+    // GLOBAL TIME FORMATTER
+    // SAFE for:
+    // - ISO timestamps
+    // - Date-compatible strings
+    // - plain HH:mm shift values
+    // =====================================================
+
+    window.formatTime = function (value) {
+      if (!value) return "--";
+
+      const str = String(value).trim();
+
+      if (/^\d{1,2}:\d{2}$/.test(str)) {
+        return window.formatShift(str);
+      }
+
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return "--";
+
+      return d.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
+
+    window.formatDateKey = function (value = new Date()) {
+      if (typeof value === "string") {
+        const str = value.trim();
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+          return str;
+        }
+      }
+
+      const d = value instanceof Date ? new Date(value) : new Date(value);
+
+      if (isNaN(d.getTime())) {
+        return "";
+      }
+
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    };
+
+    // =====================================================
+    // OPTIONAL SHIFT LABEL HELPER
+    // =====================================================
+
+    window.formatShiftLabel = function (shift = {}, options = {}) {
+      if (!shift || typeof shift !== "object") return "--";
+
+      const start = window.formatShift(shift.start_time);
+      const end = window.formatShift(shift.end_time);
+      const range = `${start} - ${end}`;
+
+      if (options.timeOnly) {
+        return range;
+      }
+
+      const name = DISPLAY.label(shift.shift_name || "Unnamed Shift");
+      return `${name} (${range})`;
+    };
+
+    // =====================================================
+    // SHIFT / ATTENDANCE TIME HELPERS
+    // PURE DISPLAY + EVALUATION HELPERS ONLY
+    // =====================================================
+
+    window.parseShiftTimeToDate = function (value, baseDate = new Date()) {
+      if (!value) return null;
+
+      const raw = String(value).trim();
+
+      const base = new Date(
+        baseDate.getFullYear(),
+        baseDate.getMonth(),
+        baseDate.getDate(),
+        0,
+        0,
+        0,
+        0,
+      );
+
+      let match = raw.match(/^(\d{1,2}):(\d{2})$/);
+      if (match) {
+        const hh = Number(match[1]);
+        const mm = Number(match[2]);
+
+        if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+
+        base.setHours(hh, mm, 0, 0);
+        return base;
+      }
+
+      match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (match) {
+        let hh = Number(match[1]);
+        const mm = Number(match[2]);
+        const suffix = match[3].toUpperCase();
+
+        if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+
+        if (suffix === "PM" && hh !== 12) hh += 12;
+        if (suffix === "AM" && hh === 12) hh = 0;
+
+        base.setHours(hh, mm, 0, 0);
+        return base;
+      }
+
+      return null;
+    };
+
+    window.addMinutes = function (date, minutes = 0) {
+      if (!(date instanceof Date) || isNaN(date.getTime())) return null;
+      return new Date(date.getTime() + Number(minutes || 0) * 60000);
+    };
+
+    window.diffMinutes = function (later, earlier) {
+      const d1 = later instanceof Date ? later : new Date(later);
+      const d2 = earlier instanceof Date ? earlier : new Date(earlier);
+
+      if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0;
+      return Math.floor((d1.getTime() - d2.getTime()) / 60000);
+    };
+
+    window.formatMinutesDuration = function (minutes = 0) {
+      const total = Math.abs(Number(minutes || 0));
+      const hrs = Math.floor(total / 60);
+      const mins = total % 60;
+
+      if (hrs > 0) return `${hrs}h ${mins}m`;
+      return `${mins}m`;
+    };
+
+    // =====================================================
+    // SHIFT WINDOW NORMALIZER
+    // =====================================================
+
+    window.normalizeShift = function (shift = {}) {
+      if (!shift || typeof shift !== "object") {
+        return {
+          shift_name: "",
+          start_time: "",
+          end_time: "",
+          grace_minutes: 0,
+        };
+      }
+
+      return {
+        shift_name: shift.shift_name || "",
+        start_time: shift.start_time || "",
+        end_time: shift.end_time || "",
+        grace_minutes: Number(shift.grace_minutes ?? shift.grace ?? 0),
+      };
+    };
+
+    // =====================================================
+    // SHIFT ATTENDANCE EVALUATOR
+    // =====================================================
+
+    window.evaluateShiftAttendance = function ({
+      shift = {},
+      time_in = null,
+      time_out = null,
+    } = {}) {
+      const normalizedShift = window.normalizeShift(shift);
+
+      const scheduledStart = window.parseShiftTimeToDate(
+        normalizedShift.start_time,
+      );
+      const scheduledEnd = window.parseShiftTimeToDate(
+        normalizedShift.end_time,
+      );
+      const graceEnd = scheduledStart
+        ? window.addMinutes(scheduledStart, normalizedShift.grace_minutes)
+        : null;
+
+      const actualTimeIn = time_in ? new Date(time_in) : null;
+      const actualTimeOut = time_out ? new Date(time_out) : null;
+
+      const validTimeIn =
+        actualTimeIn instanceof Date && !isNaN(actualTimeIn.getTime())
+          ? actualTimeIn
+          : null;
+
+      const validTimeOut =
+        actualTimeOut instanceof Date && !isNaN(actualTimeOut.getTime())
+          ? actualTimeOut
+          : null;
+
+      let timeInStatus = {
+        code: "NOT_TIMED_IN",
+        label: "Not Timed In",
+        minutes_late: 0,
+        minutes_early: 0,
+      };
+
+      if (validTimeIn && scheduledStart) {
+        if (validTimeIn <= scheduledStart) {
+          timeInStatus = {
+            code: "ON_TIME",
+            label: "On Time",
+            minutes_late: 0,
+            minutes_early: Math.max(
+              0,
+              window.diffMinutes(scheduledStart, validTimeIn),
+            ),
+          };
+        } else if (graceEnd && validTimeIn <= graceEnd) {
+          timeInStatus = {
+            code: "WITHIN_GRACE",
+            label: "Within Grace Period",
+            minutes_late: Math.max(
+              0,
+              window.diffMinutes(validTimeIn, scheduledStart),
+            ),
+            minutes_early: 0,
+          };
+        } else {
+          timeInStatus = {
+            code: "LATE",
+            label: "Late",
+            minutes_late: Math.max(
+              0,
+              window.diffMinutes(validTimeIn, scheduledStart),
+            ),
+            minutes_early: 0,
+          };
+        }
+      }
+
+      let timeOutStatus = {
+        code: "NOT_TIMED_OUT",
+        label: "Not Timed Out",
+        minutes_early_out: 0,
+        overtime_minutes: 0,
+      };
+
+      if (validTimeOut && scheduledEnd) {
+        const minutesDiff = window.diffMinutes(validTimeOut, scheduledEnd);
+
+        if (minutesDiff < 0) {
+          timeOutStatus = {
+            code: "EARLY_OUT",
+            label: "Early Out",
+            minutes_early_out: Math.abs(minutesDiff),
+            overtime_minutes: 0,
+          };
+        } else if (minutesDiff === 0) {
+          timeOutStatus = {
+            code: "ON_SCHEDULE",
+            label: "On Schedule",
+            minutes_early_out: 0,
+            overtime_minutes: 0,
+          };
+        } else {
+          timeOutStatus = {
+            code: "OVERTIME",
+            label: "Overtime",
+            minutes_early_out: 0,
+            overtime_minutes: minutesDiff,
+          };
+        }
+      }
+
+      return {
+        shift: normalizedShift,
+        scheduled_start: scheduledStart,
+        scheduled_end: scheduledEnd,
+        grace_end: graceEnd,
+        actual_time_in: validTimeIn,
+        actual_time_out: validTimeOut,
+        time_in_status: timeInStatus,
+        time_out_status: timeOutStatus,
+      };
+    };
+
+    // =====================================================
+    // ATTENDANCE DISPLAY TEXT HELPERS
+    // =====================================================
+
+    window.getTimeInDisplayText = function (evaluation = {}) {
+      const status = evaluation.time_in_status || {};
+      const actual = evaluation.actual_time_in;
+
+      if (!actual) return "No time-in yet";
+
+      switch (status.code) {
+        case "ON_TIME":
+          return status.minutes_early > 0
+            ? `On Time (${window.formatMinutesDuration(status.minutes_early)} early)`
+            : "On Time";
+
+        case "WITHIN_GRACE":
+          return `Within Grace Period (${window.formatMinutesDuration(status.minutes_late)} late)`;
+
+        case "LATE":
+          return `Late (${window.formatMinutesDuration(status.minutes_late)})`;
+
+        default:
+          return status.label || "No time-in yet";
+      }
+    };
+
+    window.getTimeOutDisplayText = function (evaluation = {}) {
+      const status = evaluation.time_out_status || {};
+      const actual = evaluation.actual_time_out;
+
+      if (!actual) return "No time-out yet";
+
+      switch (status.code) {
+        case "EARLY_OUT":
+          return `Early Out (${window.formatMinutesDuration(status.minutes_early_out)} early)`;
+
+        case "ON_SCHEDULE":
+          return "On Schedule";
+
+        case "OVERTIME":
+          return `Overtime (+${window.formatMinutesDuration(status.overtime_minutes)})`;
+
+        default:
+          return status.label || "No time-out yet";
+      }
+    };
+
+    // =====================================================
+    // COMMON LOOKUP / SAFE DISPLAY HELPERS
+    // =====================================================
+
+    window.escapeHtml = function (str = "") {
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    };
+
+    window.getStatusClass = function (status) {
+      switch (
+        String(status || "")
+          .trim()
+          .toUpperCase()
+      ) {
+        case "ACTIVE":
+          return "badge-success";
+        case "PENDING":
+          return "badge-warning";
+        case "INACTIVE":
+          return "badge-danger";
+        default:
+          return "badge-secondary";
+      }
+    };
+
+    // =====================================================
+    // TIME LOG HELPERS
+    // =====================================================
+
+    window.dedupeTimeLogs = function (logs = []) {
+      return Array.from(
+        new Map(
+          (Array.isArray(logs) ? logs : []).map((log) => [
+            `${log?.action || ""}_${log?.timestamp || ""}`,
+            log,
+          ]),
+        ).values(),
+      );
+    };
+
+    // =====================================================
+    // LOCATION
+    // =====================================================
+
+    window.getCurrentLocation = function () {
+      return new Promise((resolve) => {
+        if (!navigator.geolocation) {
           resolve({
             success: false,
-            status,
-            message,
-            location: null
+            status: "NOT_SUPPORTED",
+            message: "Geolocation is not supported by this browser.",
+            location: null,
           });
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+          return;
         }
-      );
-    });
-  };
-})();
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              success: true,
+              status: "OK",
+              message: "Location captured successfully.",
+              location: {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                source: "browser_geolocation",
+                captured_at: new Date().toISOString(),
+              },
+            });
+          },
+          (error) => {
+            let status = "ERROR";
+            let message = "Unable to retrieve location.";
+
+            switch (error.code) {
+              case 1:
+                status = "DENIED";
+                message = "Location permission denied by user.";
+                break;
+              case 2:
+                status = "UNAVAILABLE";
+                message = "Location information is unavailable.";
+                break;
+              case 3:
+                status = "TIMEOUT";
+                message = "Location request timed out.";
+                break;
+            }
+
+            resolve({
+              success: false,
+              status,
+              message,
+              location: null,
+            });
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          },
+        );
+      });
+    };
+  })();
 </script>

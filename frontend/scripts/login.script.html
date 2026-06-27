@@ -1,312 +1,348 @@
 <script>
-// =====================================================
-// SERVER DATA HELPERS
-// =====================================================
+  // =====================================================
+  // SERVER DATA HELPERS
+  // =====================================================
 
-function getServerData() {
-  try {
-    return window.SERVER_DATA
-      ? JSON.parse(window.SERVER_DATA)
-      : {};
-  } catch (err) {
-    console.error("Invalid SERVER_DATA:", err);
-    return {};
-  }
-}
-
-function parseServerData() {
-  const data = getServerData();
-
-  const workspaceSlug = data.workspaceSlug || data.w || "";
-  const email = data.email || "";
-
-  APP.workspaceSlug = workspaceSlug;
-  APP.serverEmail = email;
-
-  if (workspaceSlug) {
-    localStorage.setItem(STORAGE_KEYS.WORKSPACE_SLUG, workspaceSlug);
+  function getServerData() {
+    try {
+      return window.SERVER_DATA ? JSON.parse(window.SERVER_DATA) : {};
+    } catch (err) {
+      console.error("Invalid SERVER_DATA:", err);
+      return {};
+    }
   }
 
-  const emailInput = document.getElementById("email");
-  if (emailInput && email) {
-    emailInput.value = email;
+  function parseServerData() {
+    const data = getServerData();
+
+    const workspaceSlug = data.workspaceSlug || data.w || "";
+    const email = data.email || "";
+
+    APP.workspaceSlug = workspaceSlug;
+    APP.serverEmail = email;
+
+    if (workspaceSlug) {
+      localStorage.setItem(STORAGE_KEYS.WORKSPACE_SLUG, workspaceSlug);
+    }
+
+    const emailInput = document.getElementById("email");
+    if (emailInput && email) {
+      emailInput.value = DISPLAY.email(email);
+    }
+
+    return data;
   }
 
-  return data;
-}
-
-function embedServerData() {
-  return parseServerData();
-}
-
-// =====================================================
-// LOGIN HANDLER
-// =====================================================
-
-document.getElementById("loginForm")?.addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  const email =
-    document.getElementById("email")?.value?.trim() ||
-    APP.serverEmail ||
-    "";
-
-  const workspaceSlug =
-    APP.workspaceSlug ||
-    localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) ||
-    "";
-
-  if (!email) {
-    showToast?.("Email is required", "warning");
-    return;
+  function embedServerData() {
+    return parseServerData();
   }
 
-  showLoader?.();
+  // =====================================================
+  // LOGIN HANDLER
+  // =====================================================
 
-  google.script.run
-    .withSuccessHandler(handleLoginSuccess)
-    .withFailureHandler(handleLoginError)
-    .loginResolver(workspaceSlug, email);
-});
+  document.getElementById("loginForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
 
-// =====================================================
-// LOGIN SUCCESS
-// =====================================================
+    const email =
+      DISPLAY.email(document.getElementById("email")?.value || "") ||
+      DISPLAY.email(APP.serverEmail || "");
 
-function handleLoginSuccess(result) {
-  console.log("res",result.sched.start_time);
-  hideLoader?.();
+    const workspaceSlug =
+      APP.workspaceSlug ||
+      localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) ||
+      "";
 
-  if (!result) {
-    showToast?.("Invalid login response", "error");
-    return;
+    if (!email) {
+      showToast?.("Email is required", "warning");
+      return;
+    }
+
+    showLoader?.();
+
+    google.script.run
+      .withSuccessHandler(handleLoginSuccess)
+      .withFailureHandler(handleLoginError)
+      .loginResolver(workspaceSlug, email);
+  });
+
+  // =====================================================
+  // LOGIN SUCCESS
+  // =====================================================
+
+  function handleLoginSuccess(result) {
+    hideLoader?.();
+
+    if (!result) {
+      showToast?.("Invalid login response", "error");
+      return;
+    }
+
+    resetAppSessionState();
+    clearDashboardUI?.();
+
+    setCurrentUser(result);
+
+    APP.workStatus = "NOT STARTED";
+    APP.dashboard = APP.dashboard || {};
+    APP.dashboard.viewingDate = formatDateKey(new Date());
+
+    renderUserHeader();
+    applyRoleUI?.();
+
+    const isAdmin = APP.role === "admin" || APP.role === "owner";
+    if (isAdmin) {
+      UserInit?.();
+    }
+
+    go("dashboard");
   }
 
-  // clear previous user session completely before applying new user
-  resetAppSessionState();
-  clearDashboardUI?.();
+  // =====================================================
+  // LOGIN ERROR
+  // =====================================================
 
-  setCurrentUser(result);
+  function handleLoginError(err) {
+    hideLoader?.();
 
-  APP.workStatus = "NOT STARTED";
+    console.error("LOGIN ERROR:", err);
 
-  renderUserHeader();
-  applyRoleUI?.();
+    showToast?.(err?.message || "Login failed. Please try again.", "error");
 
-  const isAdmin = APP.role === "admin" || APP.role === "owner";
-  if (isAdmin) {
-    UserInit?.();
+    go("login");
   }
 
-  go("dashboard");
-}
+  // =====================================================
+  // LOGOUT
+  // =====================================================
 
-// =====================================================
-// LOGIN ERROR
-// =====================================================
+  function logout() {
+    const workspaceSlug =
+      localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) ||
+      APP.workspaceSlug ||
+      "";
 
-function handleLoginError(err) {
-  hideLoader?.();
+    localStorage.clear();
 
-  console.error("LOGIN ERROR:", err);
+    if (workspaceSlug) {
+      localStorage.setItem(STORAGE_KEYS.WORKSPACE_SLUG, workspaceSlug);
+    }
 
-  showToast?.(
-    err?.message || "Login failed. Please try again.",
-    "error"
-  );
+    resetAppSessionState();
+    APP.workspaceSlug = workspaceSlug;
 
-  go("login");
-}
+    resetUIAfterLogout();
 
-// =====================================================
-// LOGOUT
-// =====================================================
-
-function logout() {
-  const workspaceSlug =
-    localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) ||
-    APP.workspaceSlug ||
-    "";
-
-  localStorage.clear();
-
-  if (workspaceSlug) {
-    localStorage.setItem(STORAGE_KEYS.WORKSPACE_SLUG, workspaceSlug);
+    showToast?.("Logged out successfully", "info");
+    go("login");
   }
 
-  resetAppSessionState();
-  APP.workspaceSlug = workspaceSlug;
+  // =====================================================
+  // SESSION RESET
+  // =====================================================
 
-  resetUIAfterLogout();
-
-  showToast?.("Logged out successfully", "info");
-  go("login");
-}
-
-// =====================================================
-// SESSION RESET
-// =====================================================
-
-function resetAppSessionState() {
-  APP.user = null;
-  APP.role = "guest";
-  APP.currentPage = "login";
-
-  APP.serverEmail = "";
-  APP.workStatus = "NOT STARTED";
-  APP.timeLogs = [];
-  APP.dashboardData = null;
-  APP.attendanceState = null;
-  APP.selectedUser = null;
-}
-
-// =====================================================
-// UI RESET
-// =====================================================
-
-function resetUIAfterLogout() {
-  const emailInput = document.getElementById("email");
-  if (emailInput) emailInput.value = "";
-
-  const usernameEl = document.getElementById("currUsername");
-  if (usernameEl) usernameEl.textContent = "User";
-
-  const initialsEl = document.getElementById("currInitials");
-  if (initialsEl) initialsEl.textContent = "--";
-
-  const statusEl = document.getElementById("currWorkStatus");
-  if (statusEl) statusEl.textContent = "NOT STARTED";
-
-  clearDashboardUI?.();
-}
-
-// =====================================================
-// USER STATE
-// =====================================================
-
-function setCurrentUser(result) {
-  if (!result) return null;
-
-  const user = {
-    user_id: result.user_id || "",
-    email: result.email || "",
-    name: result.fullname || result.name || "",
-    role: (result.role || "guest").toLowerCase(),
-    shift_id: result.shift_id || "",
-    shift_name: result.sched.shift_name || "",
-    workspace_id: result.workspace_id || "",
-    dept_name: result.dept_name || "",
-    start_time: formatShift(result.sched.start_time) || "",
-    end_time: formatShift(result.sched.end_time) || "",
-    grace: result.sched.grace_minutes || ""
-  };
-
-  APP.user = user;
-  APP.role = user.role;
-
-  localStorage.setItem(STORAGE_KEYS.USER_ID, user.user_id);
-  localStorage.setItem(STORAGE_KEYS.EMAIL, user.email);
-  localStorage.setItem(STORAGE_KEYS.NAME, user.name);
-  localStorage.setItem(STORAGE_KEYS.ROLE, user.role);
-  localStorage.setItem(STORAGE_KEYS.WORKSPACE_ID, user.workspace_id);
-  localStorage.setItem(STORAGE_KEYS.SHIFT_ID, user.shift_id);
-  localStorage.setItem(STORAGE_KEYS.SHIFT_NAME, user.shift_name);
-  localStorage.setItem(STORAGE_KEYS.DEPT_NAME, user.dept_name);
-  localStorage.setItem(STORAGE_KEYS.START_TIME, user.start_time);
-  localStorage.setItem(STORAGE_KEYS.END_TIME, user.end_time);
-  localStorage.setItem(STORAGE_KEYS.GRACE, user.grace);
-
-  return user;
-}
-
-function getCurrentUser() {
-  return APP.user || {
-    user_id: localStorage.getItem(STORAGE_KEYS.USER_ID) || "",
-    email: localStorage.getItem(STORAGE_KEYS.EMAIL) || "",
-    name: localStorage.getItem(STORAGE_KEYS.NAME) || "",
-    role: localStorage.getItem(STORAGE_KEYS.ROLE) || "guest",
-    shift_id: localStorage.getItem(STORAGE_KEYS.SHIFT_ID) || "",
-    shift_id: localStorage.getItem(STORAGE_KEYS.SHIFT_NAME) || "",
-    workspace_id: localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "",
-    dept_name: localStorage.getItem(STORAGE_KEYS.DEPT_NAME) || "",
-    start_time: localStorage.getItem(STORAGE_KEYS.START_TIME) || "",
-    end_time: localStorage.getItem(STORAGE_KEYS.END_TIME) || "",
-    grace: localStorage.getItem(STORAGE_KEYS.GRACE) || ""
-  };
-}
-
-// =====================================================
-// SESSION RESTORE
-// =====================================================
-
-function restoreSession() {
-  const user_id = localStorage.getItem(STORAGE_KEYS.USER_ID);
-  const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
-  const role = localStorage.getItem(STORAGE_KEYS.ROLE);
-  const workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID);
-
-  if (!user_id || !email || !role || !workspace_id) {
+  function resetAppSessionState() {
     APP.user = null;
     APP.role = "guest";
     APP.currentPage = "login";
-    return;
+
+    APP.serverEmail = "";
+    APP.workStatus = "NOT STARTED";
+    APP.timeLogs = [];
+    APP.dashboardData = null;
+    APP.attendanceState = null;
+    APP.shiftSummary = null;
+    APP.selectedUser = null;
+    APP.dashboard = APP.dashboard || {};
+    APP.dashboard.viewingDate = formatDateKey(new Date());
   }
 
-  const user = getCurrentUser();
+  // =====================================================
+  // UI RESET
+  // =====================================================
 
-  APP.user = user;
-  APP.role = (user.role || "guest").toLowerCase();
+  function resetUIAfterLogout() {
+    const emailInput = document.getElementById("email");
+    if (emailInput) emailInput.value = "";
 
-  renderUserHeader();
-  applyRoleUI?.();
+    const usernameEl = document.getElementById("currUsername");
+    if (usernameEl) usernameEl.textContent = "User";
 
-  const isAdmin = APP.role === "admin" || APP.role === "owner";
-  const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
+    const deptEl = document.getElementById("currDepartment");
+    if (deptEl) deptEl.textContent = "-- Department --";
 
-  if (isAdmin) {
-    UserInit?.();
-    APP.currentPage =
-      lastPage === "dashboard" || lastPage === "admin"
-        ? lastPage
-        : "admin";
-  } else {
-    APP.currentPage = "dashboard";
+    const shiftEl = document.getElementById("currShiftLabel");
+    if (shiftEl) shiftEl.textContent = "--:-- - --:--";
+
+    const initialsEl = document.getElementById("currInitials");
+    if (initialsEl) initialsEl.textContent = "--";
+
+    const statusEl = document.getElementById("globalStatusText");
+    if (statusEl) statusEl.textContent = "NOT STARTED";
+
+    clearDashboardUI?.();
   }
-}
 
-// =====================================================
-// HEADER
-// =====================================================
+  // =====================================================
+  // USER STATE
+  // IMPORTANT:
+  // - store RAW shift values in APP/localStorage
+  // - only format when rendering
+  // =====================================================
 
-function renderUserHeader() {
-  const user = getCurrentUser();
-  const name = user.name || "User";
-  const deptName = `${user.dept_name.toUpperCase()} Department`
-  const sched = `${user.start_time} - ${user.end_time}`;
+  function setCurrentUser(result) {
+    if (!result) return null;
 
-  const usernameEl = document.getElementById("currUsername");
-  if (usernameEl) usernameEl.textContent = name;  
+    const sched = result.sched || {};
 
-  const deptNameEl = document.getElementById("currDepartment");
-  if (deptNameEl) deptNameEl.textContent = deptName;
+    const user = {
+      user_id: String(result.user_id || "").trim(),
+      email: DISPLAY.email(result.email || ""),
+      name: DISPLAY.name(result.fullname || result.name || ""),
+      role: DISPLAY.lower(result.role || "guest"),
 
-  const shiftEl = document.getElementById("currShiftLabel");
-  if (shiftEl) shiftEl.textContent = sched;
+      workspace_id: String(result.workspace_id || "").trim(),
+      dept_name: DISPLAY.label(result.dept_name || ""),
 
+      shift_id: String(result.shift_id || "").trim(),
+      shift_name: DISPLAY.label(sched.shift_name || ""),
+      start_time: String(sched.start_time || "").trim(), // RAW
+      end_time: String(sched.end_time || "").trim(), // RAW
+      grace: Number(sched.grace_minutes || 0),
+    };
 
-  const initials = name
-    .split(" ")
-    .map(part => part?.[0] || "")
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
+    APP.user = user;
+    APP.role = user.role;
 
-  const initialsEl = document.getElementById("currInitials");
-  if (initialsEl) initialsEl.textContent = initials || "--";
+    localStorage.setItem(STORAGE_KEYS.USER_ID, user.user_id);
+    localStorage.setItem(STORAGE_KEYS.EMAIL, user.email);
+    localStorage.setItem(STORAGE_KEYS.NAME, user.name);
+    localStorage.setItem(STORAGE_KEYS.ROLE, user.role);
+    localStorage.setItem(STORAGE_KEYS.WORKSPACE_ID, user.workspace_id);
 
-  const statusEl = document.getElementById("currWorkStatus");
-  if (statusEl) {
-    statusEl.textContent = APP.workStatus || "NOT STARTED";
+    localStorage.setItem(STORAGE_KEYS.SHIFT_ID, user.shift_id);
+    localStorage.setItem(STORAGE_KEYS.SHIFT_NAME, user.shift_name);
+    localStorage.setItem(STORAGE_KEYS.DEPT_NAME, user.dept_name);
+    localStorage.setItem(STORAGE_KEYS.START_TIME, user.start_time);
+    localStorage.setItem(STORAGE_KEYS.END_TIME, user.end_time);
+    localStorage.setItem(STORAGE_KEYS.GRACE, String(user.grace));
+
+    return user;
   }
-}
+
+  function getCurrentUser() {
+    return (
+      APP.user || {
+        user_id: localStorage.getItem(STORAGE_KEYS.USER_ID) || "",
+        email: DISPLAY.email(localStorage.getItem(STORAGE_KEYS.EMAIL) || ""),
+        name: DISPLAY.name(localStorage.getItem(STORAGE_KEYS.NAME) || ""),
+        role: DISPLAY.lower(localStorage.getItem(STORAGE_KEYS.ROLE) || "guest"),
+
+        workspace_id: localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "",
+        dept_name: DISPLAY.label(
+          localStorage.getItem(STORAGE_KEYS.DEPT_NAME) || "",
+        ),
+
+        shift_id: localStorage.getItem(STORAGE_KEYS.SHIFT_ID) || "",
+        shift_name: DISPLAY.label(
+          localStorage.getItem(STORAGE_KEYS.SHIFT_NAME) || "",
+        ),
+        start_time: localStorage.getItem(STORAGE_KEYS.START_TIME) || "",
+        end_time: localStorage.getItem(STORAGE_KEYS.END_TIME) || "",
+        grace: Number(localStorage.getItem(STORAGE_KEYS.GRACE) || 0),
+      }
+    );
+  }
+
+  function getCurrentShift() {
+    const user = getCurrentUser();
+
+    return normalizeShift({
+      shift_id: user.shift_id || "",
+      shift_name: user.shift_name || "",
+      start_time: user.start_time || "",
+      end_time: user.end_time || "",
+      grace_minutes: Number(user.grace || 0),
+    });
+  }
+
+  // =====================================================
+  // SESSION RESTORE
+  // =====================================================
+
+  function restoreSession() {
+    const user_id = localStorage.getItem(STORAGE_KEYS.USER_ID);
+    const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
+    const role = localStorage.getItem(STORAGE_KEYS.ROLE);
+    const workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID);
+
+    if (!user_id || !email || !role || !workspace_id) {
+      APP.user = null;
+      APP.role = "guest";
+      APP.currentPage = "login";
+      return;
+    }
+
+    const user = getCurrentUser();
+
+    APP.user = user;
+    APP.role = DISPLAY.lower(user.role || "guest");
+
+    renderUserHeader();
+    applyRoleUI?.();
+
+    const isAdmin = APP.role === "admin" || APP.role === "owner";
+    const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
+
+    if (isAdmin) {
+      UserInit?.();
+      APP.currentPage =
+        lastPage === "dashboard" || lastPage === "admin" ? lastPage : "admin";
+    } else {
+      APP.currentPage = "dashboard";
+    }
+  }
+
+  // =====================================================
+  // HEADER
+  // =====================================================
+
+  function renderUserHeader() {
+    const user = getCurrentUser();
+
+    const name = DISPLAY.name(user.name || "User");
+    const deptName = user.dept_name
+      ? `${DISPLAY.label(user.dept_name)} Department`
+      : "-- Department --";
+
+    const shift = getCurrentShift();
+    const shiftLabel =
+      shift.start_time && shift.end_time
+        ? formatShiftLabel(shift, { timeOnly: true })
+        : "--:-- - --:--";
+
+    const usernameEl = document.getElementById("currUsername");
+    if (usernameEl) usernameEl.textContent = name;
+
+    const deptNameEl = document.getElementById("currDepartment");
+    if (deptNameEl) deptNameEl.textContent = deptName;
+
+    const shiftEl = document.getElementById("currShiftLabel");
+    if (shiftEl) shiftEl.textContent = shiftLabel;
+
+    const initials = name
+      .split(" ")
+      .map((part) => part?.[0] || "")
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+
+    const initialsEl = document.getElementById("currInitials");
+    if (initialsEl) initialsEl.textContent = initials || "--";
+
+    const statusEl = document.getElementById("globalStatusText");
+    if (statusEl) {
+      statusEl.textContent = DISPLAY.status(APP.workStatus || "NOT STARTED");
+    }
+  }
 </script>

@@ -9,6 +9,11 @@
 
   <title>Attendance System</title>
 
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+  >
+
   <?!= include("frontend/layouts/styles/theme"); ?>
   <?!= include("frontend/layouts/styles/components"); ?>
   <?!= include("frontend/layouts/styles/layout"); ?>
@@ -116,7 +121,8 @@ id="page-error"
   <?!= include("frontend/scripts/app.core.script"); ?>
   <?!= include("frontend/scripts/helper.script"); ?>
   <?!= include("frontend/scripts/login.script"); ?>
-  <?!= include("frontend/scripts/timelogs.script"); ?>
+  <?!= include("frontend/scripts/timelogs/timelog.picker.script"); ?>
+  <?!= include("frontend/scripts/timelogs/timelogger.script"); ?>
   <?!= include("frontend/scripts/dashboard.state.script"); ?>
   <?!= include("frontend/scripts/clock.script"); ?>
   
@@ -133,6 +139,7 @@ id="page-error"
   <?!= include("frontend/scripts/modals/dept.modal.script"); ?>
   <?!= include("frontend/scripts/modals/pos.modal.script"); ?>
   <?!= include("frontend/scripts/modals/shift.modal.script"); ?>
+  <?!= include("frontend/scripts/modals/settings.modal.script"); ?>
   <?!= include("frontend/scripts/toast.script"); ?>
 </body>
 
