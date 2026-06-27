@@ -342,42 +342,59 @@ function getTimeLogsByDate(workspace_id, email, dateKey) {
 }
 
 /* =========================
-   SHIFT QUERIES
+   TIMELOG QUERIES
 ========================= */
-function getShiftTimeLogsByEmail(workspace_id, email, shift_id) {
+
+function getTimeLogsByEmail(workspace_id, email, options) {
   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
   const normalizedEmail = normalize("email", email);
-  const normalizedShiftId = normalize("shift_id", shift_id);
 
-  if (!normalizedWorkspaceId) throw new Error("workspace_id is required");
-  if (!normalizedEmail) throw new Error("email is required");
-  if (!normalizedShiftId) throw new Error("shift_id is required");
+  if (!normalizedWorkspaceId) {
+    throw new Error("workspace_id is required");
+  }
 
-  return findTimeLogs(normalizedWorkspaceId, {
-    email: normalizedEmail,
-    shift_id: normalizedShiftId
+  if (!normalizedEmail) {
+    throw new Error("email is required");
+  }
+
+  const filters = {
+    email: normalizedEmail
+  };
+
+  options = options || {};
+
+  if (options.shift_id) {
+    filters.shift_id = normalize("shift_id", options.shift_id);
+  }
+
+  if (options.date) {
+    filters.date = normalize("date", options.date);
+  }
+
+  return findTimeLogs(normalizedWorkspaceId, filters);
+}
+
+function getTodayTimeLogsByEmail(workspace_id, email) {
+  return getTimeLogsByEmail(workspace_id, email, {
+    date: formatDateKey(new Date())
   });
+}
+
+function getShiftTimeLogsByEmail(workspace_id, email, shift_id) {
+  return getTimeLogsByEmail(workspace_id, email, {
+    shift_id: shift_id,
+    date: formatDateKey(new Date())
+  });
+}
+
+function getLatestTodayTimeLogByEmail(workspace_id, email) {
+  const logs = getTodayTimeLogsByEmail(workspace_id, email);
+  return logs.length ? logs[logs.length - 1] : null;
 }
 
 function getLatestShiftTimeLogByEmail(workspace_id, email, shift_id) {
   const logs = getShiftTimeLogsByEmail(workspace_id, email, shift_id);
   return logs.length ? logs[logs.length - 1] : null;
-}
-
-function getTodayShiftTimeLogsByEmail(workspace_id, email, shift_id) {
-  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
-  const normalizedEmail = normalize("email", email);
-  const normalizedShiftId = normalize("shift_id", shift_id);
-
-  if (!normalizedWorkspaceId) throw new Error("workspace_id is required");
-  if (!normalizedEmail) throw new Error("email is required");
-  if (!normalizedShiftId) throw new Error("shift_id is required");
-
-  return findTimeLogs(normalizedWorkspaceId, {
-    email: normalizedEmail,
-    shift_id: normalizedShiftId,
-    date: formatDateKey(new Date())
-  });
 }
 
 /* =========================

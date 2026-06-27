@@ -96,23 +96,23 @@ function getCurrentState(workspace_id, email, shift_id) {
     throw new Error("email is required");
   }
 
-  let logs = [];
-  let scope = "day";
-
-  if (normalizedShiftId) {
-    logs = getShiftTimeLogsByEmail(workspace_id, normalizedEmail, normalizedShiftId);
-    scope = "shift";
-  } else {
-    logs = getTodayTimeLogsByEmail(workspace_id, normalizedEmail);
-    scope = "day";
-  }
+  const logs = normalizedShiftId
+    ? getShiftTimeLogsByEmail(
+        workspace_id,
+        normalizedEmail,
+        normalizedShiftId
+      )
+    : getTodayTimeLogsByEmail(
+        workspace_id,
+        normalizedEmail
+      );
 
   const state = buildTimeLogState(logs);
 
   return {
     ...state,
-    scope,
-    shift_id: normalizedShiftId || "",
+    scope: normalizedShiftId ? "shift" : "day",
+    shift_id: normalizedShiftId,
     raw_logs: logs
   };
 }

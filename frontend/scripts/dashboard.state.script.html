@@ -284,32 +284,40 @@
 
   function syncAttendanceState({ silent = false } = {}) {
     const user = getCurrentUser();
-    const email = user?.email;
-    const workspace_id = user?.workspace_id;
 
-    if (!email || !workspace_id) return;
+    if (!user) return;
+
+    const workspace_id = user.workspace_id;
+    const email = user.email;
+    const shift_id = user.shift_id || "";
+
+    if (!workspace_id || !email) return;
 
     if (!silent) showLoader?.();
 
     google.script.run
-      .withSuccessHandler((logs) => {
+      .withSuccessHandler((state) => {
         if (!silent) hideLoader?.();
 
-        const safeLogs = dedupeTimeLogs(Array.isArray(logs) ? logs : []);
-        const state = buildTimeLogState(safeLogs);
+        if (!state) {
+          console.error("No attendance state returned.");
+          return;
+        }
 
-        APP.timeLogs = safeLogs;
         APP.attendanceState = state;
-        APP.workStatus = state.status || "NOT STARTED";
+        APP.workStatus = state.status || "NOT_STARTED";
+        APP.timeLogs = state.raw_logs || [];
 
         hydrateAttendanceUI?.(state);
         renderUserHeader?.();
       })
       .withFailureHandler((err) => {
         if (!silent) hideLoader?.();
-        console.error("syncAttendanceState error:", err);
+
+        console.error("syncAttendanceState:", err);
+        showToast?.(err?.message || "Unable to load attendance state", "error");
       })
-      .findTimeLogs(workspace_id, { email });
+      .getCurrentState(workspace_id, email, shift_id);
   }
 
   // =====================================================
