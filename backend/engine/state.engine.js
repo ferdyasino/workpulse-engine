@@ -67,59 +67,6 @@ function buildTimeLogState(timeLogs) {
   return finalizeTimeLogState(state);
 }
 
-/* =========================
-   STATE RESOLUTION
-========================= */
-
-/**
- * SHIFT-FIRST state resolver
- *
- * If shift_id exists:
- *   - resolve by that shift only
- *
- * If no shift_id:
- *   - fallback to today's logs
- *
- * This lets you support both:
- * - proper shift-based validation
- * - temporary non-shift fallback
- */
-function getCurrentState(workspace_id, email, shift_id) {
-  const normalizedEmail = String(email || "").trim().toLowerCase();
-  const normalizedShiftId = String(shift_id || "").trim();
-
-  if (!workspace_id) {
-    throw new Error("workspace_id is required");
-  }
-
-  if (!normalizedEmail) {
-    throw new Error("email is required");
-  }
-
-  const logs = normalizedShiftId
-    ? getShiftTimeLogsByEmail(
-        workspace_id,
-        normalizedEmail,
-        normalizedShiftId
-      )
-    : getTodayTimeLogsByEmail(
-        workspace_id,
-        normalizedEmail
-      );
-
-  const state = buildTimeLogState(logs);
-
-  return {
-    ...state,
-    scope: normalizedShiftId ? "shift" : "day",
-    shift_id: normalizedShiftId,
-    raw_logs: logs
-  };
-}
-
-/* =========================
-   INTERNAL HELPERS
-========================= */
 function getLastOpenBreak(breaks) {
   const list = Array.isArray(breaks) ? breaks : [];
 

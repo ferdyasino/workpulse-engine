@@ -1,13 +1,3 @@
-/* =========================
-   TIMELOG ACTION RULES
-   SINGLE SOURCE OF TRUTH
-   SHIFT-AWARE VALIDATOR
-========================= */
-
-/**
- * Public safe validation entry
- * Frontend can call this before actual insert
- */
 function recordTimeLogAction(workspace_id, payload) {
   try {
     const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
