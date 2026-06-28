@@ -67,6 +67,34 @@
   });
 
   // =====================================================
+  // REPORT RESET
+  // =====================================================
+
+  function resetReportsState() {
+    APP.reports = {
+      range: "today",
+      rows: [],
+      filteredRows: [],
+      kpis: {},
+      initialized: APP.reports?.initialized || false,
+    };
+
+    const tbody = document.getElementById("reportTableBody");
+
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="20" class="text-center text-muted py-4">
+            Loading reports...
+          </td>
+        </tr>
+      `;
+    }
+
+    renderReportKPIs({});
+  }
+
+  // =====================================================
   // LOGIN SUCCESS
   // =====================================================
 
@@ -79,6 +107,7 @@
     }
 
     resetAppSessionState();
+    resetReportsState();
     clearDashboardUI?.();
 
     setCurrentUser(result);
@@ -129,6 +158,7 @@
     }
 
     resetAppSessionState();
+    resetReportsState();
     APP.workspaceSlug = workspaceSlug;
 
     resetUIAfterLogout();
@@ -280,6 +310,7 @@
       APP.user = null;
       APP.role = "guest";
       APP.currentPage = "login";
+      resetReportsState();
       return;
     }
 
@@ -288,6 +319,7 @@
     APP.user = user;
     APP.role = DISPLAY.lower(user.role || "guest");
 
+    resetReportsState();
     renderUserHeader();
     applyRoleUI?.();
 

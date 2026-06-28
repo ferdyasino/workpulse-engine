@@ -51,7 +51,8 @@ function enrichReportRows(
 function api_getReports(
   workspace_id,
   email,
-  shift_id
+  shift_id,
+  role
 ) {
 
   const normalizedWorkspaceId = normalize(
@@ -77,6 +78,11 @@ function api_getReports(
     throw new Error("email is required");
   }
 
+  const normalizedRole = String(
+    role || ""
+  ).toUpperCase();
+
+
   // -------------------------------------------------
   // Validate authenticated user
   // -------------------------------------------------
@@ -90,10 +96,6 @@ function api_getReports(
       "Authentication user not found"
     );
   }
-
-  // -------------------------------------------------
-  // Validate shift (optional)
-  // -------------------------------------------------
 
   if (!normalizedShiftId) {
         throw new Error(
@@ -110,6 +112,12 @@ function api_getReports(
     throw new Error("Shift not found");
   }
 
+    const isAdmin =
+    normalizedRole === "ADMIN" ||
+    normalizedRole === "OWNER" ||
+    normalizedRole === "HR" ||
+    normalizedRole === "SUPERADMIN";
+
 
   // -------------------------------------------------
   // Build report
@@ -117,7 +125,7 @@ function api_getReports(
 
   let rows = buildEmployeeReport(
     normalizedWorkspaceId,
-    normalizedEmail
+    (isAdmin)?null:normalizedEmail
   );
 
   // -------------------------------------------------
@@ -126,7 +134,7 @@ function api_getReports(
 
   rows = enrichReportRows(
     normalizedWorkspaceId,
-    normalizedEmail,
+    (isAdmin)?null:normalizedEmail,
     rows
   );
 

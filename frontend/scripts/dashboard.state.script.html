@@ -118,7 +118,6 @@
     if (adminMenu) {
       adminMenu.classList.toggle("d-none", !isAdmin);
       adminSettings.classList.toggle("d-none", !isAdmin);
-      dashDropId.classList.toggle("d-none", !isAdmin);
     }
   }
 
@@ -241,34 +240,6 @@
     // Add admin landing-page hydration here later if needed
   }
 
-  // =====================================================
-  // DASHBOARD TOGGLE
-  // =====================================================
-
-  function toggleDashboard() {
-    const isAdmin = APP.role === "admin" || APP.role === "owner";
-
-    if (!isAdmin) {
-      showToast?.("Access denied", "error");
-      return;
-    }
-
-    if (APP.currentPage === "admin") {
-      showToast?.("Switching to dashboard", "info");
-      go("dashboard");
-    } else {
-      showToast?.("Switching to admin panel", "info");
-      go("admin");
-    }
-  }
-
-  // =====================================================
-  // CLEAN DASHBOARD RESET
-  // IMPORTANT:
-  // - DO NOT destroy the logger container here
-  // - logger is persistent shell rendered by initDashboardAttendanceUI()
-  // =====================================================
-
   function clearDashboardUI() {
     const leftTimelogsList = document.getElementById("leftTimelogsList");
     if (leftTimelogsList) {
@@ -300,13 +271,6 @@
     // dashboardTimelogsList is NOT cleared here anymore.
     // Logger shell must persist and be managed by renderTimeLogger().
   }
-
-  // =====================================================
-  // SINGLE SOURCE DASHBOARD SYNC (PRIMARY)
-  // - fetch logs once
-  // - build state once
-  // - hydrate through one pipeline
-  // =====================================================
 
   function syncAttendanceState({ silent = false } = {}) {
     const user = getCurrentUser();

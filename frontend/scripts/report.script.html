@@ -13,8 +13,14 @@
 
   let __reportPageInitialized = false;
 
+  // =====================================================
+  // INIT
+  // =====================================================
+
   function initReportPage() {
-    const role = String(APP.role || "").toLowerCase();
+    const currentUser = getCurrentUser();
+
+    const role = String(currentUser?.role || "").toLowerCase();
 
     const isAdmin =
       role === "admin" ||
@@ -24,11 +30,6 @@
 
     document
       .getElementById("adminReportControls")
-      ?.classList.toggle("d-none", !isAdmin);
-
-    document
-      .getElementById("employeeFilter")
-      ?.closest(".col")
       ?.classList.toggle("d-none", !isAdmin);
 
     if (__reportPageInitialized) {
@@ -95,12 +96,24 @@
       return;
     }
 
-    const role = String(APP.role || "").toLowerCase();
+    const currentUser = getCurrentUser();
 
-    if (role === "user") {
+    const role = String(currentUser?.role || "").toLowerCase();
+
+    const isAdmin =
+      role === "admin" ||
+      role === "owner" ||
+      role === "hr" ||
+      role === "superadmin";
+
+    // -------------------------------------------------
+    // Employee
+    // -------------------------------------------------
+
+    if (!isAdmin) {
       select.innerHTML = `
-        <option value="${APP.user_id}">
-          ${APP.fullname || "My Reports"}
+        <option value="${currentUser.user_id}">
+          ${currentUser.fullname || currentUser.email}
         </option>
       `;
 
@@ -109,9 +122,13 @@
       return;
     }
 
+    // -------------------------------------------------
+    // Admin
+    // -------------------------------------------------
+
     select.disabled = false;
 
-    const currentValue = select.value || "all";
+    const previousValue = select.value || "all";
 
     const users = new Map();
 
@@ -123,7 +140,9 @@
       }
     });
 
-    select.innerHTML = `<option value="all">All Employees</option>`;
+    select.innerHTML = `<option value="all">
+          All Employees
+       </option>`;
 
     Array.from(users.entries())
       .sort(function (a, b) {
@@ -140,8 +159,8 @@
         );
       });
 
-    if (users.has(currentValue)) {
-      select.value = currentValue;
+    if (previousValue !== "all" && users.has(previousValue)) {
+      select.value = previousValue;
     } else {
       select.value = "all";
     }
@@ -189,5 +208,32 @@
 
       </tr>
     `;
+  }
+  // =====================================================
+  // REPORT RESET
+  // =====================================================
+
+  function resetReportsState() {
+    APP.reports = {
+      range: "today",
+      rows: [],
+      filteredRows: [],
+      kpis: {},
+      initialized: APP.reports?.initialized || false,
+    };
+
+    const tbody = document.getElementById("reportTableBody");
+
+    if (tbody) {
+      tbody.innerHTML = `
+      <tr>
+        <td colspan="20" class="text-center text-muted py-4">
+          Loading reports...
+        </td>
+      </tr>
+    `;
+    }
+
+    renderReportKPIs({});
   }
 </script>

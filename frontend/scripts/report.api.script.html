@@ -42,12 +42,17 @@
 
     const user = getCurrentUser();
 
-    if (!user?.workspace_id || !user?.email) {
+    if (!user?.workspace_id) {
       return;
     }
 
+    resetReportsState();
     loadReports(APP.reports.range);
   }
+
+  // =====================================================
+  // LOAD REPORTS
+  // =====================================================
 
   // =====================================================
   // LOAD REPORTS
@@ -63,7 +68,7 @@
     google.script.run
       .withSuccessHandler(handleReportsSuccess)
       .withFailureHandler(handleReportsFailure)
-      .api_getReports(user.workspace_id, user.email, user.shift_id);
+      .api_getReports(user.workspace_id, user.email, user.shift_id, user.role);
   }
 
   // =====================================================
@@ -73,7 +78,7 @@
   function handleReportsSuccess(res) {
     hideLoader();
 
-    console.log("reports", res);
+    console.log("Reports:", res);
 
     if (!res?.success) {
       showToast(res?.message || "Unable to load reports", "error");
@@ -142,45 +147,46 @@
 
     let rows = [...APP.reports.rows];
 
-    // ---------------------------------------------
-    // Employee only sees own records
-    // ---------------------------------------------
+    const role = String(currentUser.role || "").toUpperCase();
 
-    if (currentUser.role === "USER") {
-      rows = rows.filter(function (row) {
-        return row.user_id === currentUser.user_id;
-      });
-    }
+    const isAdmin =
+      role === "ADMIN" ||
+      role === "OWNER" ||
+      role === "HR" ||
+      role === "SUPERADMIN";
 
-    // ---------------------------------------------
-    // Admin / HR filter
-    // ---------------------------------------------
+    // ----------------------------------------
+    // Backend already filters USER records.
+    // Only admins can filter employees.
+    // ----------------------------------------
 
-    const employeeFilter = document.getElementById("employeeFilter");
+    if (isAdmin) {
+      const employeeFilter = document.getElementById("employeeFilter");
 
-    if (
-      currentUser.role !== "USER" &&
-      employeeFilter &&
-      employeeFilter.value &&
-      employeeFilter.value !== "all"
-    ) {
-      rows = rows.filter(function (row) {
-        return row.user_id === employeeFilter.value;
-      });
+      if (
+        employeeFilter &&
+        employeeFilter.value &&
+        employeeFilter.value !== "all"
+      ) {
+        rows = rows.filter(function (row) {
+          return String(row.user_id) === String(employeeFilter.value);
+        });
+      }
     }
 
     APP.reports.filteredRows = rows;
 
+    renderReportKPIs(buildFilteredKPIs(rows));
+
     if (!rows.length) {
       tbody.innerHTML = `
-        <tr>
-          <td colspan="20"
-              class="text-center text-muted py-4">
-            No report available.
-          </td>
-        </tr>
-      `;
-
+    <tr>
+      <td colspan="20"
+          class="text-center text-muted py-4">
+        No report available.
+      </td>
+    </tr>
+  `;
       return;
     }
 
@@ -188,7 +194,7 @@
   }
 
   // =====================================================
-  // POPULATE EMPLOYEE FILTER
+  // EMPLOYEE FILTER
   // =====================================================
 
   function populateEmployeeFilter() {
@@ -200,10 +206,20 @@
 
     const currentUser = getCurrentUser();
 
-    if (currentUser.role === "USER") {
-      select.innerHTML = `<option value="${currentUser.user_id}">
-            ${currentUser.fullname}
-         </option>`;
+    const role = String(currentUser.role || "").toUpperCase();
+
+    const isAdmin =
+      role === "ADMIN" ||
+      role === "OWNER" ||
+      role === "HR" ||
+      role === "SUPERADMIN";
+
+    if (!isAdmin) {
+      select.innerHTML = `
+        <option value="${currentUser.user_id}">
+          ${currentUser.fullname || currentUser.email}
+        </option>
+      `;
 
       select.disabled = true;
 
@@ -229,10 +245,10 @@
       })
       .map(function (user) {
         return `
-          <option value="${user.id}">
-            ${user.name}
-          </option>
-        `;
+            <option value="${user.id}">
+              ${user.name}
+            </option>
+          `;
       })
       .join("");
 
@@ -247,13 +263,14 @@
     minutes = Number(minutes || 0);
 
     const h = Math.floor(minutes / 60);
+
     const m = minutes % 60;
 
     return `${h}h ${m}m`;
   }
 
   function statusBadgeClass(status) {
-    switch ((status || "").toUpperCase()) {
+    switch (String(status || "").toUpperCase()) {
       case "PRESENT":
         return "bg-success";
 
@@ -269,5 +286,48 @@
       default:
         return "bg-secondary";
     }
+  }
+
+  function buildFilteredKPIs(rows = []) {
+    const kpi = {
+      total_worked_minutes: 0,
+      total_overtime_minutes: 0,
+
+      total_present: 0,
+      total_absent: 0,
+
+      total_late_count: 0,
+      total_workdays: 0,
+    };
+
+    const present = new Set();
+    const workdays = new Set();
+
+    rows.forEach(function (row) {
+      kpi.total_worked_minutes += Number(row.worked_minutes || 0);
+
+      kpi.total_overtime_minutes += Number(row.overtime_minutes || 0);
+
+      if (Number(row.late_minutes || 0) > 0) {
+        kpi.total_late_count++;
+      }
+
+      const date = row.date || "";
+
+      if (date) {
+        workdays.add(date);
+      }
+
+      if (String(row.status || "").toUpperCase() === "ABSENT") {
+        kpi.total_absent++;
+      } else {
+        present.add(row.user_id + "|" + date);
+      }
+    });
+
+    kpi.total_present = present.size;
+    kpi.total_workdays = workdays.size;
+
+    return kpi;
   }
 </script>
