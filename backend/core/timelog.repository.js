@@ -135,11 +135,11 @@ function insertTimeLog(workspace_id, payload) {
   // =====================================================
   // RESOLVE WORK DATE FROM SHIFT (BACKEND SOURCE OF TRUTH)
   // =====================================================
-  log.date = getShiftWorkDate(
-    normalizedWorkspaceId,
-    log.shift_id,
-    log.timestamp
-  );
+  // log.date = getShiftWorkDate(
+  //   normalizedWorkspaceId,
+  //   log.shift_id,
+  //   log.timestamp
+  // );
 
   assertInsertableTimeLog(log);
 

@@ -1,20 +1,5 @@
 <script>
   /**
-   * =====================================================
-   * TIME LOGGER UI MODULE
-   * - HEADER: B1 / B2 / B3 indicators only
-   * - LOGGER: actual action buttons only
-   * - BACKEND IS SOURCE OF TRUTH FOR VALIDATION
-   * - BREAK ACTIONS USE:
-   *   break_start / break_end
-   * =====================================================
-   */
-
-  /* =====================================================
-     DASHBOARD ATTENDANCE SHELL INIT
-     - render logger immediately
-     - paint empty/default placeholders
-     - safe to call repeatedly
   ===================================================== */
   window.initDashboardAttendanceUI = function () {
     renderTimeLogger();
@@ -63,62 +48,55 @@
   }
 
   function getBreakIndicatorLimit() {
-    return Number(
+    const value =
       APP?.settings?.attendance?.max_breaks ??
-        APP?.attendancePolicy?.max_breaks ??
-        3,
-    );
+      APP?.attendancePolicy?.max_breaks;
+
+    const number = Number(value);
+
+    return Number.isFinite(number) ? number : Infinity;
   }
 
   function renderBreakIndicators(state = {}) {
     const container = document.getElementById("breakButtonContainer");
     if (!container) return;
 
-    const rawBreaks = Array.isArray(state.breaks) ? state.breaks : [];
-
-    // only count real used breaks
-    const breaks = rawBreaks.filter((b) => b && (b.in || b.out));
+    const breaks = (Array.isArray(state.breaks) ? state.breaks : []).filter(
+      (item) => item && (item.in || item.out),
+    );
 
     container.innerHTML = "";
 
-    // no break used yet = no indicators shown
-    if (!breaks.length) return;
+    if (!breaks.length) {
+      return;
+    }
 
-    const limit = Math.max(0, getBreakIndicatorLimit());
-
-    // if limit is 0, show none
-    if (!limit) return;
-
-    const visibleBreaks = breaks.slice(0, limit);
-
-    visibleBreaks.forEach((breakItem, i) => {
-      const index = i + 1;
-      const breakState = getBreakState(breakItem);
-
+    breaks.forEach((breakItem, index) => {
       const badge = document.createElement("button");
-      badge.type = "button";
-      badge.className = "btn btn-sm";
-      badge.textContent = `B${index}`;
-      badge.disabled = true;
 
-      if (breakState === "ACTIVE") {
-        badge.classList.add("btn-success");
-      } else if (breakState === "ENDED") {
-        badge.classList.add("btn-break-ended");
-      } else {
-        badge.classList.add("btn-outline-warning");
+      badge.type = "button";
+      badge.disabled = true;
+      badge.className = "btn btn-sm";
+      badge.textContent = `B${index + 1}`;
+
+      switch (getBreakState(breakItem)) {
+        case "ACTIVE":
+          badge.classList.add("btn-success");
+          break;
+
+        case "ENDED":
+          badge.classList.add("btn-break-ended");
+          break;
+
+        default:
+          badge.classList.add("btn-outline-warning");
+          break;
       }
 
       container.appendChild(badge);
     });
   }
 
-  /* =====================================================
-     LOGGER BUTTON BINDING
-     IMPORTANT:
-     - DO NOT disable buttons for now
-     - backend validation is the source of truth
-  ===================================================== */
   function syncLoggerButtons() {
     const timeInBtn = document.getElementById("loggerTimeInBtn");
     const timeOutBtn = document.getElementById("loggerTimeOutBtn");
@@ -158,12 +136,6 @@
     }
   }
 
-  /* =====================================================
-     TIME LOGGER UI
-     - persistent shell
-     - render once, then only rebind buttons
-     - do NOT rebuild on every state hydration
-  ===================================================== */
   function renderTimeLogger() {
     const container = document.getElementById("dashboardTimelogsList");
     if (!container) return;
@@ -249,13 +221,6 @@
     syncLoggerButtons();
   }
 
-  /* =====================================================
-     LOG TIME
-     - uses submitTimeLogAction()
-     - validation + insert in one backend call
-     - if backend returns fresh state, hydrate immediately
-     - otherwise fallback to primary dashboard sync pipeline
-  ===================================================== */
   async function logTime(action) {
     const user = getCurrentUser() || {};
 

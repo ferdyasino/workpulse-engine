@@ -296,7 +296,7 @@
     const workspace_id = user.workspace_id;
     const email = user.email;
     const shift_id = user.shift_id;
-    const work_date = APP.dashboard.viewingDate || formatDateKey(new Date());
+    const work_date = formatDateKey(new Date());
 
     if (!workspace_id || !email) return;
 

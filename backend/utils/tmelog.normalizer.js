@@ -87,8 +87,12 @@ function normalizeTimeLog(data, workspace_id) {
   const finalTimestamp = timestampDate.toISOString();
   const finalDate =
     normalize("date", payload.date) ||
-    normalize("date", finalTimestamp);
-
+    Utilities.formatDate(
+      timestampDate,
+      Session.getScriptTimeZone(),
+      "yyyy-MM-dd"
+    );
+    
   return {
     log_id: normalize("log_id", payload.log_id || generateId("LOG")),
     workspace_id: normalize("workspace_id", workspace_id || payload.workspace_id),

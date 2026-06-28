@@ -10,7 +10,7 @@ function recordTimeLogAction(workspace_id, payload) {
       return { success: false, message: "payload is required" };
     }
 
-    const normalized = normalizeTimeLogActionPayload(payload);
+    const normalized = normalizeTimeLog(payload, normalizedWorkspaceId);
 
     validateTimeLogAction(normalizedWorkspaceId, normalized);
 
@@ -45,7 +45,8 @@ function getAllowedTimeLogActions() {
 ========================= */
 function validateTimeLogAction(workspace_id, payload) {
   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
-  const normalized = normalizeTimeLogActionPayload(payload);
+  const normalized = normalizeTimeLog(payload, normalizedWorkspaceId);
+  // return normalized;
 
   const email = normalized.email;
   const action = normalized.action;

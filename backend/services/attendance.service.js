@@ -10,12 +10,11 @@ function submitTimeLogAction(workspace_id, payload) {
       throw new Error("payload is required");
     }
 
-    const normalized = normalizeTimeLogActionPayload(payload);
+    const normalized = normalizeTimeLog(payload, normalizedWorkspaceId);
+  
 
-    // 1) validate action against current shift/day state
     validateTimeLogAction(normalizedWorkspaceId, normalized);
 
-    // 2) insert actual timelog row
     const result = insertTimeLog(normalizedWorkspaceId, normalized);
 
     if (!result || result.success === false) {
@@ -26,14 +25,12 @@ function submitTimeLogAction(workspace_id, payload) {
       );
     }
 
-    // 3) rebuild fresh state after insert
     const state = getCurrentState(
       normalizedWorkspaceId,
       normalized.email,
       normalized.shift_id
     );
 
-    // 4) return frontend-safe response
     return {
       success: true,
       message: sanitizeTimeLogActionSuccessMessage(
