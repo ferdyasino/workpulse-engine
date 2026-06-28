@@ -39,6 +39,7 @@
 
   
   <?!= include("frontend/components/toast"); ?>
+  <?!= include("frontend/components/modals/confirm.global"); ?>
   <?!= include("frontend/components/modals/list.global"); ?>
   <?!= include("frontend/components/modals/form.global"); ?>
   <?!= include("frontend/components/modals/delete.global"); ?>
@@ -123,11 +124,13 @@ id="page-error"
   ====================================================== -->
   <script>
     window.SERVER_DATA =
-      '<?= JSON.stringify(SERVER_DATA) ?>';
-  </script>
+    '<?= JSON.stringify(SERVER_DATA) ?>';
+    </script>
   <?!= include("frontend/scripts/app.core.script"); ?>
   <?!= include("frontend/scripts/helper.script"); ?>
   <?!= include("frontend/scripts/login.script"); ?>
+  <?!= include("frontend/scripts/modals/global.modal.script"); ?>
+  <?!= include("frontend/scripts/timelogs/timelog.modal.script"); ?>
   <?!= include("frontend/scripts/report.api.script"); ?>
   <?!= include("frontend/scripts/report.script"); ?>
   <?!= include("frontend/scripts/timelogs/timelog.picker.script"); ?>
@@ -142,9 +145,8 @@ id="page-error"
   <?!= include("frontend/scripts/dept.script"); ?>
   <?!= include("frontend/scripts/pos.script"); ?>
   <?!= include("frontend/scripts/shift.script"); ?>
-
   
-  <?!= include("frontend/scripts/modals/global.modal.script"); ?>
+  
   <?!= include("frontend/scripts/modals/user.modal.script"); ?>
   <?!= include("frontend/scripts/modals/dept.modal.script"); ?>
   <?!= include("frontend/scripts/modals/pos.modal.script"); ?>

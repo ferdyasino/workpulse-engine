@@ -1,8 +1,8 @@
 <script>
+  APP.__dutyPromptShown = APP.__dutyPromptShown || false;
   // =====================================================
   // APP BOOT
   // =====================================================
-
   function bootApp() {
     APP.dashboard.viewingDate = formatDateKey(new Date());
 
@@ -303,11 +303,11 @@
         APP.workStatus = state.status || "NOT_STARTED";
         APP.timeLogs = state.raw_logs || [];
 
-        // Refresh the displayed date immediately
         updateDashboardClock?.();
 
         hydrateAttendanceUI?.(state);
         renderUserHeader?.();
+        maybePromptForDuty();
       })
       .withFailureHandler((err) => {
         if (!silent) hideLoader?.();

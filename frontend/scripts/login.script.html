@@ -112,7 +112,7 @@
 
     setCurrentUser(result);
 
-    APP.workStatus = "NOT STARTED";
+    APP.workStatus = "Not Started";
     APP.dashboard = APP.dashboard || {};
     APP.dashboard.viewingDate = formatDateKey(new Date());
 
@@ -123,6 +123,8 @@
     if (isAdmin) {
       UserInit?.();
     }
+
+    maybePromptForDuty();
 
     go("dashboard");
   }
@@ -185,6 +187,7 @@
     APP.selectedUser = null;
     APP.dashboard = APP.dashboard || {};
     APP.dashboard.viewingDate = formatDateKey(new Date());
+    APP.__dutyPromptShown = false;
   }
 
   // =====================================================

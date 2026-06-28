@@ -518,6 +518,26 @@
       }
     };
 
+    window.shouldPromptForDuty = function ({
+      workStatus,
+      startTime,
+      prompted = false,
+      minutesBefore = 15,
+      now = new Date(),
+    } = {}) {
+      if (prompted) return false;
+
+      if (String(workStatus || "").toUpperCase() !== "NOT_STARTED") {
+        return false;
+      }
+
+      const shiftStart = window.parseShiftTimeToDate(startTime, now);
+
+      if (!shiftStart) return false;
+
+      return window.diffMinutes(shiftStart, now) <= minutesBefore;
+    };
+
     // =====================================================
     // TIME LOG HELPERS
     // =====================================================
