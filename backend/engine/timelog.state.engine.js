@@ -1,28 +1,25 @@
 /* =========================
    TIMELOG STATE ENGINE
-   COMPATIBLE VERSION
+   MULTI-SESSION VERSION
 ========================= */
 
-/**
- * Build state from timelog records.
- *
- * Accepts:
- * - Array of logs
- * - Single log object
- */
 function buildTimeLogState(timeLogs) {
 
-  let logs = [];
+  const logs = Array.isArray(timeLogs)
+    ? timeLogs.slice()
+    : timeLogs
+      ? [timeLogs]
+      : [];
 
-  if (Array.isArray(timeLogs)) {
-    logs = timeLogs.slice();
-  } else if (timeLogs && typeof timeLogs === "object") {
-    logs = [timeLogs];
-  }
+  // ensure chronological order
+  logs.sort(function (a, b) {
+    return new Date(a.timestamp) - new Date(b.timestamp);
+  });
 
   const state = {
     status: "NOT_STARTED",
 
+    // backward compatibility
     time_in: null,
     time_out: null,
 
@@ -31,38 +28,57 @@ function buildTimeLogState(timeLogs) {
       out: null
     },
 
-    breaks: []
+    breaks: [],
+
+    // NEW
+    sessions: []
   };
 
   logs.forEach(function (log) {
 
-    if (!log) {
-      return;
-    }
+    if (!log) return;
 
-    const action = String(
-      log.action || ""
-    ).trim();
-
+    const action = String(log.action || "").trim();
     const timestamp = log.timestamp || null;
 
     switch (action) {
 
       case "time_in":
-        state.time_in = timestamp;
+
+        state.sessions.push({
+          time_in: timestamp,
+          time_out: null
+        });
+
+        // preserve legacy fields
+        if (!state.time_in) {
+          state.time_in = timestamp;
+        }
+
         state.status = "WORKING";
         break;
 
       case "time_out":
+
+        const openSession = getLastOpenSession(
+          state.sessions
+        );
+
+        if (openSession) {
+          openSession.time_out = timestamp;
+        }
+
         state.time_out = timestamp;
         state.status = "CLOCKED_OUT";
         break;
 
       case "break_start":
+
         state.breaks.push({
           in: timestamp,
           out: null
         });
+
         state.status = "ON_BREAK";
         break;
 
@@ -79,21 +95,45 @@ function buildTimeLogState(timeLogs) {
         break;
 
       case "lunch_start":
+
         state.lunch.in = timestamp;
         state.status = "AT_LUNCH";
         break;
 
       case "lunch_end":
+
         state.lunch.out = timestamp;
         state.status = "WORKING";
         break;
-
     }
 
   });
 
   return finalizeTimeLogState(state);
+}
 
+/* =========================
+   HELPERS
+========================= */
+
+function getLastOpenSession(sessions) {
+
+  const list = Array.isArray(sessions)
+    ? sessions
+    : [];
+
+  for (let i = list.length - 1; i >= 0; i--) {
+
+    if (
+      list[i].time_in &&
+      !list[i].time_out
+    ) {
+      return list[i];
+    }
+
+  }
+
+  return null;
 }
 
 function getLastOpenBreak(breaks) {
@@ -104,31 +144,21 @@ function getLastOpenBreak(breaks) {
 
   for (let i = list.length - 1; i >= 0; i--) {
 
-    const item = list[i];
-
     if (
-      item &&
-      item.in &&
-      !item.out
+      list[i].in &&
+      !list[i].out
     ) {
-      return item;
+      return list[i];
     }
 
   }
 
   return null;
-
 }
 
 function finalizeTimeLogState(state) {
 
-  if (state.time_out) {
-    state.status = "CLOCKED_OUT";
-    return state;
-  }
-
   if (
-    state.lunch &&
     state.lunch.in &&
     !state.lunch.out
   ) {
@@ -141,13 +171,20 @@ function finalizeTimeLogState(state) {
     return state;
   }
 
-  if (state.time_in) {
+  const openSession =
+    getLastOpenSession(state.sessions);
+
+  if (openSession) {
     state.status = "WORKING";
+    return state;
+  }
+
+  if (state.sessions.length) {
+    state.status = "CLOCKED_OUT";
     return state;
   }
 
   state.status = "NOT_STARTED";
 
   return state;
-
 }

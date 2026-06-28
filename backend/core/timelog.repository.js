@@ -107,12 +107,7 @@ function assertTimeLogHeaders(headers) {
   return true;
 }
 
-/* =========================
-   INSERT SINGLE
-========================= */
-/* =========================
-   INSERT SINGLE
-========================= */
+
 function insertTimeLog(workspace_id, payload) {
   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
 
@@ -241,17 +236,27 @@ function findTimeLogs(workspace_id, filters) {
 
   const normalizedFilters = normalizeTimeLogFilters(filters || {});
 
-  return values
-    .map(function (row) {
-      return rowToObject(headers, row);
-    })
-    .map(normalizeTimeLogRecord)
-    .filter(function (record) {
-      return matchesTimeLogFilters(record, normalizedFilters);
-    })
-    .sort(function (a, b) {
-      return new Date(a.timestamp) - new Date(b.timestamp);
-    });
+const records = values.map(function (row) {
+  return normalizeTimeLogRecord(
+    rowToObject(headers, row)
+  );
+  });
+
+  const filtered = records.filter(function (record) {
+  return matchesTimeLogFilters(
+    record,
+    normalizedFilters
+  );
+  });
+
+  filtered.sort(function (a, b) {
+  const aTime = new Date(a.timestamp).getTime();
+  const bTime = new Date(b.timestamp).getTime();
+
+  return aTime - bTime;
+  });
+
+  return filtered;
 }
 
 /* =========================
