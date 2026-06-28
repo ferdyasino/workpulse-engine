@@ -96,10 +96,18 @@
 </section>
 
 <section
-  id="page-report"
+  id="page-reports"
   class="app-page d-none">
   
   <?!= include("frontend/pages/reports"); ?>
+</section>
+
+<section
+  id="page-settings"
+  class="app-page d-none">
+
+  <?!= include("frontend/pages/settings"); ?>
+
 </section>
 
 <!-- ERROR -->
@@ -145,6 +153,9 @@ id="page-error"
   <?!= include("frontend/scripts/dept.script"); ?>
   <?!= include("frontend/scripts/pos.script"); ?>
   <?!= include("frontend/scripts/shift.script"); ?>
+
+  <?!= include("frontend/scripts/settings.script"); ?>
+  <?!= include("frontend/scripts/settings.api.script"); ?>
   
   
   <?!= include("frontend/scripts/modals/user.modal.script"); ?>

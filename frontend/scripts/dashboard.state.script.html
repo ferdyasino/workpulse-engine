@@ -1,8 +1,19 @@
 <script>
   APP.__dutyPromptShown = APP.__dutyPromptShown || false;
-  // =====================================================
-  // APP BOOT
-  // =====================================================
+
+  async function bootstrapSettings() {
+    try {
+      APP.settings = await SettingsAPI.getAll();
+      APP.settingsLoaded = true;
+
+      console.log("[SETTINGS] Loaded:", APP.settings);
+    } catch (err) {
+      console.error("[SETTINGS] Failed to load:", err);
+
+      APP.settings = {};
+      APP.settingsLoaded = false;
+    }
+  }
   function bootApp() {
     APP.dashboard.viewingDate = formatDateKey(new Date());
 
@@ -27,6 +38,10 @@
   // =====================================================
 
   function go(page) {
+    if (!APP.settingsLoaded) {
+      console.warn("Settings not ready yet");
+    }
+
     APP.currentPage = page;
 
     localStorage.setItem(STORAGE_KEYS.LAST_PAGE, page);
@@ -153,6 +168,10 @@
 
         case "reports":
           loadReportsPage?.();
+          break;
+
+        case "settings":
+          renderSettingsGroup?.();
           break;
 
         case "users":
@@ -318,14 +337,20 @@
       .getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date);
   }
 
-  // =====================================================
-  // INIT
-  // =====================================================
+  window.addEventListener("DOMContentLoaded", async () => {
+    try {
+      parseServerData();
+      restoreSession();
 
-  window.addEventListener("DOMContentLoaded", () => {
-    parseServerData();
-    restoreSession();
-    renderUserHeader?.();
-    bootApp();
+      await bootstrapSettings();
+
+      renderUserHeader?.();
+
+      bootApp();
+    } catch (err) {
+      console.error("App init failed:", err);
+
+      bootApp();
+    }
   });
 </script>
