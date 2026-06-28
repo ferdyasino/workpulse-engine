@@ -19,17 +19,6 @@ const AUTH_PROVIDERS = {
 };
 
 
-/**
- * =====================================================
- * SCHEMA SOURCE OF TRUTH
- * =====================================================
- * IMPORTANT:
- * - AUTH_SCHEMA = MASTER DB ONLY
- * - SCHEMA = WORKSPACE DB ONLY
- * - EXTERNAL_SCHEMA = TIMELINE / LOG DB ONLY
- * =====================================================
- */
-
 const AUTH_SCHEMA = {
   OWNERS: [
     "owner_id",
@@ -81,37 +70,23 @@ const SCHEMA = {
     "department_id", "department_name", "description", "created_at"
   ],
 
-SHIFTS: [
-  "shift_id",
-  "shift_name",
-  "start_time",
-  "end_time",
-
-  // existing
-  "grace_minutes",
-  "status",
-  "created_at",
-
-  // =========================
-  // PAYROLL EXTENSIONS
-  // =========================
-
-  // BREAK / LUNCH RULES
-  "break_limit_minutes",
-  "lunch_duration_minutes",
-
-  // OT RULES
-  "overtime_threshold_minutes",
-  "overtime_multiplier",
-
-  // OPTIONAL ADVANCED PAYROLL
-  "night_diff_start",
-  "night_diff_end",
-  "night_diff_multiplier",
-
-  // ROUNDING RULES (important for payroll accuracy)
-  "rounding_rule"
-],
+  SHIFTS: [
+    "shift_id",
+    "shift_name",
+    "start_time",
+    "end_time",
+    "grace_minutes",
+    "status",
+    "created_at",
+    "break_limit_minutes",
+    "lunch_duration_minutes",
+    "overtime_threshold_minutes",
+    "overtime_multiplier",
+    "night_diff_start",
+    "night_diff_end",
+    "night_diff_multiplier",
+    "rounding_rule"
+  ],
 
   POSITIONS: [
     "position_id",
@@ -134,7 +109,6 @@ SHIFTS: [
   "email",
   "date",
   "shift_id",
-
   "worked_minutes",
   "late_minutes",
   "overtime_minutes",
@@ -142,9 +116,16 @@ SHIFTS: [
 
   "status",
   "created_at"
-],
+  ],
 
-  SETTINGS: ["key", "value"]
+  SETTINGS: [
+    "workspace_id",
+    "key",
+    "value",
+    "type",
+    "group",
+    "updated_at"
+  ]
 };
 
 const EXTERNAL_SCHEMA = {
@@ -157,17 +138,11 @@ const EXTERNAL_SCHEMA = {
     "timestamp",
     "date",
     "shift_id",
-
     "device_info",
     "location",
     "source",
     "remarks",
     "created_at",
-
-    // =========================
-    // COMPUTED FIELDS (REPORT LAYER USE)
-    // =========================
-
     "computed_worked_minutes",
     "computed_late_minutes",
     "computed_overtime_minutes",
@@ -175,15 +150,6 @@ const EXTERNAL_SCHEMA = {
   ]
 };
 
-
-/**
- * =====================================================
- * TABLE REGISTRY (MASTER DB)
- * =====================================================
- * STRICT RULE:
- * - Always paired with AUTH_SCHEMA
- * =====================================================
- */
 const AUTH_TABLES = {
   AUTHORIZED_EMAILS: {
     sheet: "Authorized_Emails",

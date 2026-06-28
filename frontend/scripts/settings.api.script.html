@@ -1,0 +1,85 @@
+<script>
+  /**
+   * =====================================================
+   * SETTINGS API (GAS FRONTEND WRAPPER)
+   * =====================================================
+   * This is the ONLY layer that talks to google.script.run
+   * Everything else in frontend must use this.
+   * =====================================================
+   */
+
+  /* =====================================================
+   * CORE GAS PROMISE WRAPPER
+   * ===================================================== */
+
+  function gas(fn, ...args) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject)
+        [fn](...args);
+    });
+  }
+
+  /* =====================================================
+   * SETTINGS API
+   * ===================================================== */
+
+  const SettingsAPI = {
+    /**
+     * Get all settings for current workspace
+     */
+    async getAll() {
+      const workspace_id =
+        APP.user?.workspace_id || localStorage.getItem("workspace_id");
+
+      if (!workspace_id) {
+        showToast("Workspace not found", "error");
+        return;
+      }
+      return await gas("getWorkspaceSettings", workspace_id);
+    },
+
+    /**
+     * Get single setting
+     */
+    async get(key) {
+      return await gas("getWorkspaceSetting", key);
+    },
+
+    /**
+     * Save multiple settings (bulk update)
+     */
+    async saveAll(settings) {
+      return await gas("saveWorkspaceSettings", settings);
+    },
+
+    /**
+     * Save single setting
+     */
+    async save(key, value) {
+      return await gas("saveWorkspaceSetting", key, value);
+    },
+
+    /**
+     * Patch update (partial merge)
+     */
+    async patch(settings) {
+      return await gas("patchWorkspaceSettings", settings);
+    },
+
+    /**
+     * Reset to defaults
+     */
+    async reset() {
+      return await gas("resetWorkspaceSettings");
+    },
+
+    /**
+     * Validate without saving (useful for forms)
+     */
+    async validate(settings) {
+      return await gas("validateWorkspaceSettings", settings);
+    },
+  };
+</script>

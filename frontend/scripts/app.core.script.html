@@ -31,6 +31,9 @@
       range: "today",
     },
 
+    settings: {},
+    settingsLoaded: false,
+
     // admin / misc
     selectedUser: null,
     currentLocation: null,
@@ -64,7 +67,8 @@
     home: "page-home",
     dashboard: "page-dashboard",
     admin: "page-admin-dashboard",
-    reports: "page-report",
+    reports: "page-reports",
+    settings: "page-settings",
     login: "page-login",
     error: "page-error",
   };
@@ -78,33 +82,9 @@
     dashboard: "Employee Dashboard",
     home: "System Home",
     reports: "Reports",
+    settings: "Settings",
     login: "Login",
   });
-
-  const SETTINGS_KEYS = {
-    WORKSPACE_ID: "WORKSPACE_ID",
-    WORKSPACE_NAME: "WORKSPACE_NAME",
-    OWNER_EMAIL: "OWNER_EMAIL",
-    OWNER_NAME: "OWNER_NAME",
-    CREATED_AT: "CREATED_AT",
-    TIMEZONE: "TIMEZONE",
-
-    PERIOD_TYPE_DEFAULT: "PERIOD_TYPE_DEFAULT",
-    PERIOD_TYPE_DAILY: "PERIOD_TYPE_DAILY",
-    PERIOD_TYPE_WEEKLY: "PERIOD_TYPE_WEEKLY",
-    PERIOD_TYPE_BI_WEEKLY: "PERIOD_TYPE_BI_WEEKLY",
-    PERIOD_TYPE_MONTHLY: "PERIOD_TYPE_MONTHLY",
-
-    BREAK_POLICY_ENABLED: "BREAK_POLICY_ENABLED",
-    BREAK_MAX_PER_DAY: "BREAK_MAX_PER_DAY",
-    BREAK_MINUTES_PER_DAY: "BREAK_MINUTES_PER_DAY",
-    BREAK_ALLOW_MULTIPLE_BREAKS: "BREAK_ALLOW_MULTIPLE_BREAKS",
-    BREAK_AUTO_DEDUCT_ENABLED: "BREAK_AUTO_DEDUCT_ENABLED",
-    BREAK_AUTO_DEDUCT_MINUTES: "BREAK_AUTO_DEDUCT_MINUTES",
-
-    LATE_GRACE_MINUTES_DEFAULT: "LATE_GRACE_MINUTES_DEFAULT",
-    REQUIRE_TIME_OUT: "REQUIRE_TIME_OUT",
-  };
 
   function resetAttendanceRuntimeState() {
     APP.workStatus = "NOT STARTED";

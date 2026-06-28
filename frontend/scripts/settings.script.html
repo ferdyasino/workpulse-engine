@@ -1,0 +1,120 @@
+<script>
+  function renderSettingsGroup(group = "ALL", btn = null) {
+    setActiveSettingsButton(btn);
+
+    const container = document.getElementById("settingsContent");
+
+    const settings = APP.settings || {};
+
+    const entries = Object.entries(settings);
+
+    let filtered = entries;
+
+    // -------------------------------------------------
+    // GROUP FILTERING (SMART BUT SIMPLE)
+    // -------------------------------------------------
+
+    if (group === "PAYROLL") {
+      filtered = entries.filter(
+        ([k]) => k.includes("PAYROLL") || k.includes("PERIOD"),
+      );
+    }
+
+    if (group === "ATTENDANCE") {
+      filtered = entries.filter(
+        ([k]) =>
+          k.includes("LATE") ||
+          k.includes("BREAK") ||
+          k.includes("TIME") ||
+          k.includes("CLOCK") ||
+          k.includes("ATTENDANCE"),
+      );
+    }
+
+    if (group === "SYSTEM") {
+      filtered = entries.filter(
+        ([k]) =>
+          k.includes("WORKSPACE") ||
+          k.includes("TIMEZONE") ||
+          k.includes("OWNER") ||
+          k.includes("CREATED"),
+      );
+    }
+
+    // -------------------------------------------------
+    // RENDER TABLE
+    // -------------------------------------------------
+
+    let html = `
+    <div class="p-3">
+      <h5 class="mb-3">Settings (${group})</h5>
+
+      <table class="table table-sm table-bordered">
+        <thead>
+          <tr>
+            <th style="width:40%">Key</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+    if (!filtered.length) {
+      html += `
+      <tr>
+        <td colspan="2" class="text-center text-muted">
+          No settings found
+        </td>
+      </tr>
+    `;
+    }
+
+    for (const [key, value] of filtered) {
+      html += `
+      <tr>
+        <td><code>${key}</code></td>
+        <td>${formatSettingValue(value)}</td>
+      </tr>
+    `;
+    }
+
+    html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+    container.innerHTML = html;
+
+    document.getElementById("settingsLoading").style.display = "none";
+    document.getElementById("settingsContent").style.display = "block";
+  }
+
+  function formatSettingValue(value) {
+    if (value === null || value === undefined) {
+      return `<span class="text-muted">null</span>`;
+    }
+
+    if (typeof value === "boolean") {
+      return value
+        ? `<span class="badge bg-success">true</span>`
+        : `<span class="badge bg-danger">false</span>`;
+    }
+
+    if (typeof value === "object") {
+      return `<pre class="mb-0">${JSON.stringify(value, null, 2)}</pre>`;
+    }
+
+    return `<span>${value}</span>`;
+  }
+
+  function setActiveSettingsButton(btn) {
+    if (!btn) return;
+
+    document
+      .querySelectorAll(".list-group-item")
+      .forEach((el) => el.classList.remove("active"));
+
+    btn.classList.add("active");
+  }
+</script>

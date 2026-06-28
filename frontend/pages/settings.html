@@ -1,0 +1,56 @@
+<div class="page-container">
+  <div class="row">
+    <!-- LEFT NAV (STATIC BUT CLEAN) -->
+    <div class="col-lg-3">
+      <div class="glass glass-card">
+        <div class="list-group list-group-flush">
+          <button
+            class="list-group-item list-group-item-action active"
+            onclick="renderSettingsGroup('ALL', this)"
+          >
+            <i class="bi bi-grid me-2"></i>
+            All Settings
+          </button>
+
+          <button
+            class="list-group-item list-group-item-action"
+            onclick="renderSettingsGroup('PAYROLL', this)"
+          >
+            <i class="bi bi-cash-stack me-2"></i>
+            Payroll
+          </button>
+
+          <button
+            class="list-group-item list-group-item-action"
+            onclick="renderSettingsGroup('ATTENDANCE', this)"
+          >
+            <i class="bi bi-clock-history me-2"></i>
+            Attendance
+          </button>
+
+          <button
+            class="list-group-item list-group-item-action"
+            onclick="renderSettingsGroup('SYSTEM', this)"
+          >
+            <i class="bi bi-gear me-2"></i>
+            System
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT CONTENT -->
+    <div class="col-lg-9">
+      <div class="glass glass-card">
+        <!-- LOADING -->
+        <div id="settingsLoading" class="text-center p-4">
+          <div class="spinner-border text-primary"></div>
+          <div class="mt-2">Loading settings...</div>
+        </div>
+
+        <!-- CONTENT -->
+        <div id="settingsContent" style="display: none"></div>
+      </div>
+    </div>
+  </div>
+</div>
