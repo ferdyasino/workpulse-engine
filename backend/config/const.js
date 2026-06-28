@@ -1,5 +1,5 @@
-function specificPatch(){
-    patchWorkspace();
+function specificPatch(email){
+    patchWorkspace(email);
 }
 
 const ROLES = {

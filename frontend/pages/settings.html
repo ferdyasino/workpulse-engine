@@ -1,11 +1,21 @@
 <div class="page-container">
-  <div class="row">
-    <!-- LEFT NAV (STATIC BUT CLEAN) -->
-    <div class="col-lg-3">
-      <div class="glass glass-card">
-        <div class="list-group list-group-flush">
+  <div class="row g-4">
+    <!-- =====================================================
+         LEFT NAVIGATION
+    ===================================================== -->
+    <div class="col-12 col-lg-3">
+      <div class="glass glass-card p-3 sticky-top" style="top: 16px">
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-sliders me-2"></i>
+          <div>
+            <div class="fw-semibold">Settings</div>
+            <small class="text-muted">Navigation</small>
+          </div>
+        </div>
+
+        <div class="list-group list-group-flush gap-1">
           <button
-            class="list-group-item list-group-item-action active"
+            class="list-group-item list-group-item-action active d-flex align-items-center"
             onclick="renderSettingsGroup('ALL', this)"
           >
             <i class="bi bi-grid me-2"></i>
@@ -13,7 +23,7 @@
           </button>
 
           <button
-            class="list-group-item list-group-item-action"
+            class="list-group-item list-group-item-action d-flex align-items-center"
             onclick="renderSettingsGroup('PAYROLL', this)"
           >
             <i class="bi bi-cash-stack me-2"></i>
@@ -21,7 +31,7 @@
           </button>
 
           <button
-            class="list-group-item list-group-item-action"
+            class="list-group-item list-group-item-action d-flex align-items-center"
             onclick="renderSettingsGroup('ATTENDANCE', this)"
           >
             <i class="bi bi-clock-history me-2"></i>
@@ -29,7 +39,7 @@
           </button>
 
           <button
-            class="list-group-item list-group-item-action"
+            class="list-group-item list-group-item-action d-flex align-items-center"
             onclick="renderSettingsGroup('SYSTEM', this)"
           >
             <i class="bi bi-gear me-2"></i>
@@ -39,17 +49,32 @@
       </div>
     </div>
 
-    <!-- RIGHT CONTENT -->
-    <div class="col-lg-9">
+    <!-- =====================================================
+         RIGHT CONTENT PANEL
+    ===================================================== -->
+    <div class="col-12 col-lg-9">
       <div class="glass glass-card">
-        <!-- LOADING -->
-        <div id="settingsLoading" class="text-center p-4">
-          <div class="spinner-border text-primary"></div>
-          <div class="mt-2">Loading settings...</div>
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-start mb-4">
+          <div>
+            <h5 class="mb-1">Workspace Settings</h5>
+            <small class="text-muted">
+              Configure payroll, attendance, and system behavior
+            </small>
+          </div>
+
+          <!-- optional future actions slot -->
+          <div></div>
+        </div>
+
+        <!-- LOADING STATE -->
+        <div id="settingsLoading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <div class="mt-2 text-muted">Loading settings...</div>
         </div>
 
         <!-- CONTENT -->
-        <div id="settingsContent" style="display: none"></div>
+        <div id="settingsContent" class="d-none"></div>
       </div>
     </div>
   </div>

@@ -119,11 +119,13 @@ const SCHEMA = {
   ],
 
   SETTINGS: [
-    "workspace_id",
     "key",
     "value",
     "type",
     "group",
+    "options",
+    "label",
+    "description",
     "updated_at"
   ]
 };
