@@ -1,258 +1,141 @@
 <script>
-  const SETTINGS_SCHEMA = {
-    TIMEZONE: {
-      type: "select",
-      group: "SYSTEM",
-      options: "Asia/Manila|UTC|Asia/Tokyo",
-      label: "Timezone",
-      description: "Default workspace timezone",
-    },
-
-    PERIOD_TYPE_DEFAULT: {
-      type: "select",
-      group: "PAYROLL",
-      options: "DAILY|WEEKLY|BI_WEEKLY|MONTHLY",
-      label: "Default Payroll Period",
-      description: "Default payroll computation period",
-    },
-
-    BREAK_MAX_PER_DAY: {
-      type: "number",
-      group: "ATTENDANCE",
-      label: "Max Breaks Per Day",
-    },
-
-    ENABLE_OVERTIME: {
-      type: "boolean",
-      group: "PAYROLL",
-      label: "Enable Overtime",
-    },
-  };
-
   // =====================================================
-  // RENDER SETTINGS
+  // SETTINGS NORMALIZER
   // =====================================================
+
   function normalizeSettings(raw) {
-    const base = SETTINGS_SCHEMA || {};
+    const HIDDEN_KEYS = new Set([
+      "WORKSPACE_ID",
+      "OWNER_EMAIL",
+      "CREATED_AT",
+      "UPDATED_AT",
+      "VERSION",
+      "ID",
+    ]);
 
-    // CASE 1: backend returns object { KEY: value }
-    if (!Array.isArray(raw)) {
-      return Object.entries(raw || {}).map(([key, value]) => {
-        const schema = base[key] || {};
-
-        return {
+    const rows = Array.isArray(raw)
+      ? raw
+      : Object.entries(raw || {}).map(([key, value]) => ({
           key,
           value,
-          type: schema.type || "text",
-          group: schema.group || "SYSTEM",
-          options: schema.options || "",
-          label: schema.label || key,
-          description: schema.description || "",
-        };
+        }));
+
+    return rows
+      .filter(Boolean)
+      .map((row) => ({
+        key: String(row.key || "").trim(),
+        value: row.value,
+        type: String(row.type || "text")
+          .trim()
+          .toLowerCase(),
+        group: String(row.group || "SYSTEM")
+          .trim()
+          .toUpperCase(),
+        options: Array.isArray(row.options)
+          ? row.options
+          : String(row.options || "")
+              .split("|")
+              .map((v) => v.trim())
+              .filter(Boolean),
+        label:
+          row.label && String(row.label).trim()
+            ? String(row.label).trim()
+            : DISPLAY.label(row.key),
+        description: String(row.description || "").trim(),
+        readonly: Boolean(row.readonly),
+        visible: row.visible !== false,
+        updated_at: row.updated_at || "",
+      }))
+      .filter((row) => row.key)
+      .filter((row) => !HIDDEN_KEYS.has(row.key.toUpperCase()))
+      .filter((row) => row.visible)
+      .sort((a, b) => {
+        if (a.group !== b.group) {
+          return a.group.localeCompare(b.group);
+        }
+
+        return a.label.localeCompare(b.label);
       });
-    }
-
-    // CASE 2: already array format
-    return raw.map((s) => {
-      const schema = base[s.key] || {};
-      return {
-        ...s,
-        type: s.type || schema.type || "text",
-        group: s.group || schema.group || "SYSTEM",
-        options: s.options || schema.options || "",
-        label: s.label || schema.label || s.key,
-        description: s.description || schema.description || "",
-      };
-    });
-  }
-
-  function renderSettingsGroup(group = "ALL", btn = null) {
-    setActiveSettingsButton(btn);
-
-    const container = document.getElementById("settingsContent");
-
-    const raw = APP.settings;
-
-    const list = normalizeSettings(raw);
-
-    let filtered =
-      group === "ALL"
-        ? list
-        : list.filter((s) => (s.group || "").toUpperCase() === group);
-
-    let html = `
-      <div class="p-3">
-        <h5 class="mb-3">Settings (${group})</h5>
-
-        <table class="table table-sm table-bordered align-middle">
-          <thead>
-            <tr>
-              <th style="width:40%">Setting</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    if (!filtered.length) {
-      html += `
-        <tr>
-          <td colspan="2" class="text-center text-muted py-4">
-            No settings found
-          </td>
-        </tr>
-      `;
-    }
-
-    for (const s of filtered) {
-      html += `
-        <tr>
-          <td>
-            <div class="fw-semibold">${s.label}</div>
-            <small class="text-muted">${s.description || ""}</small>
-          </td>
-          <td>${renderSettingInput(s)}</td>
-        </tr>
-      `;
-    }
-
-    html += `
-          </tbody>
-        </table>
-
-        <div class="d-flex justify-content-end mt-3">
-          <button class="btn btn-primary" onclick="saveSettings()">
-            <i class="bi bi-save me-2"></i>
-            Save Changes
-          </button>
-        </div>
-      </div>
-    `;
-
-    container.innerHTML = html;
-
-    document.getElementById("settingsLoading").style.display = "none";
-    document.getElementById("settingsContent").classList.remove("d-none");
-  }
-
-  // =====================================================
-  // INPUT RENDERER
-  // =====================================================
-  function renderSettingInput(s) {
-    const key = s.key;
-    const value = s.value;
-    const type = s.type || "text";
-
-    switch (type) {
-      case "select": {
-        const options = (s.options || "")
-          .split("|")
-          .map((v) => v.trim())
-          .filter(Boolean);
-
-        return `
-          <select class="form-select form-select-sm setting-input"
-                  data-key="${key}">
-            ${options
-              .map(
-                (opt) => `
-                <option value="${opt}"
-                  ${String(opt) === String(value) ? "selected" : ""}>
-                  ${opt}
-                </option>
-              `,
-              )
-              .join("")}
-          </select>
-        `;
-      }
-
-      case "number":
-        return `
-          <input type="number"
-                 class="form-control form-control-sm setting-input"
-                 data-key="${key}"
-                 value="${value ?? ""}">
-        `;
-
-      case "boolean": {
-        const checked =
-          value === true || value === "true" || value === 1 || value === "1";
-
-        return `
-          <div class="form-check form-switch">
-            <input type="checkbox"
-                   class="form-check-input setting-input"
-                   data-key="${key}"
-                   ${checked ? "checked" : ""}>
-          </div>
-        `;
-      }
-
-      default:
-        return `
-          <input type="text"
-                 class="form-control form-control-sm setting-input"
-                 data-key="${key}"
-                 value="${value ?? ""}">
-        `;
-    }
   }
 
   // =====================================================
   // SAVE SETTINGS
   // =====================================================
+
   async function saveSettings() {
-    const list = Array.isArray(APP.settings) ? APP.settings : [];
-
-    const map = new Map(list.map((s) => [s.key, s]));
-
-    document.querySelectorAll(".setting-input").forEach((el) => {
-      const key = el.dataset.key;
-      const existing = map.get(key);
-
-      if (!existing) return;
-
-      let value;
-
-      if (existing.type === "boolean") {
-        value = el.checked;
-      } else if (existing.type === "number") {
-        value = Number(el.value);
-      } else {
-        value = el.value;
-      }
-
-      map.set(key, {
-        ...existing,
-        value,
-      });
-    });
-
-    const updated = Array.from(map.values());
-
     try {
-      const result = await SettingsAPI.saveAll(updated);
+      const settings = normalizeSettings(APP.settings);
 
-      APP.settings = result || updated;
+      const payload = settings.map((setting) => {
+        if (setting.readonly) {
+          return setting;
+        }
 
-      showToast("Settings updated.", "success");
+        const input = document.querySelector(
+          `.setting-input[data-key="${setting.key}"]`,
+        );
+
+        if (!input) {
+          return setting;
+        }
+
+        let value;
+
+        switch (setting.type) {
+          case "boolean":
+            value = input.checked;
+            break;
+
+          case "number":
+            value = input.value === "" ? "" : Number(input.value);
+            break;
+
+          case "select":
+            value = input.value;
+            break;
+
+          default:
+            value = input.value.trim();
+        }
+
+        return {
+          ...setting,
+          value,
+        };
+      });
+
+      APP.settings = await SettingsAPI.saveAll(payload);
+
+      renderSettingsGroup(window.currentSettingsGroup || "ALL");
+
+      showToast("Workspace settings updated.", "success");
     } catch (err) {
       console.error(err);
-      showToast(err.message || "Unable to save settings.", "error");
+
+      showToast(err.message || "Unable to save workspace settings.", "error");
     }
   }
 
   // =====================================================
-  // UI HELPERS
+  // ACTIVE SIDEBAR
   // =====================================================
-  function setActiveSettingsButton(btn) {
-    if (!btn) return;
 
-    document
-      .querySelectorAll(".list-group-item")
-      .forEach((el) => el.classList.remove("active"));
+  function setActiveSettingsButton(btn, group = "ALL") {
+    const buttons = document.querySelectorAll(".list-group-item-action");
 
-    btn.classList.add("active");
+    buttons.forEach((button) => button.classList.remove("active"));
+
+    if (btn) {
+      btn.classList.add("active");
+      return;
+    }
+
+    buttons.forEach((button) => {
+      const onclick = button.getAttribute("onclick") || "";
+
+      if (onclick.includes(`'${group}'`)) {
+        button.classList.add("active");
+      }
+    });
   }
 </script>

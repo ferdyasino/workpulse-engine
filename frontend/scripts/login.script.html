@@ -98,7 +98,7 @@
   // LOGIN SUCCESS
   // =====================================================
 
-  function handleLoginSuccess(result) {
+  async function handleLoginSuccess(result) {
     hideLoader?.();
 
     if (!result) {
@@ -112,6 +112,8 @@
 
     setCurrentUser(result);
 
+    await bootstrapSettings();
+
     APP.workStatus = "Not Started";
     APP.dashboard = APP.dashboard || {};
     APP.dashboard.viewingDate = formatDateKey(new Date());
@@ -119,10 +121,11 @@
     renderUserHeader();
     applyRoleUI?.();
 
-    const isAdmin = APP.role === "admin" || APP.role === "owner";
-    if (isAdmin) {
+    if (APP.role === "admin" || APP.role === "owner") {
       UserInit?.();
     }
+
+    await bootstrapSettings();
 
     maybePromptForDuty();
 
@@ -382,6 +385,31 @@
     const statusEl = document.getElementById("globalStatusText");
     if (statusEl) {
       statusEl.textContent = DISPLAY.status(APP.workStatus || "NOT STARTED");
+    }
+  }
+
+  async function bootstrapSettings(force = false) {
+    const workspace_id = getCurrentUser()?.workspace_id;
+
+    if (!workspace_id) {
+      APP.settings = {};
+      APP.settingsLoaded = false;
+      return;
+    }
+
+    if (APP.settingsLoaded && !force) {
+      return APP.settings;
+    }
+
+    try {
+      APP.settings = await SettingsAPI.getAll();
+      APP.settingsLoaded = true;
+
+      return APP.settings;
+    } catch (err) {
+      APP.settings = {};
+      APP.settingsLoaded = false;
+      throw err;
     }
   }
 </script>

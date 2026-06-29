@@ -200,9 +200,6 @@ const SETTINGS_KEYS = {
     "REQUIRE_PHOTO"
 };
 
-/* =====================================================
-   TIMELOG HEADERS
-===================================================== */
 
 function getRequiredTimeLogHeaders() {
   return [

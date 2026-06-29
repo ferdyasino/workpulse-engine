@@ -1,19 +1,6 @@
 <script>
   APP.__dutyPromptShown = APP.__dutyPromptShown || false;
 
-  async function bootstrapSettings() {
-    try {
-      APP.settings = await SettingsAPI.getAll();
-      APP.settingsLoaded = true;
-
-      console.log("[SETTINGS] Loaded:", APP.settings);
-    } catch (err) {
-      console.error("[SETTINGS] Failed to load:", err);
-
-      APP.settings = {};
-      APP.settingsLoaded = false;
-    }
-  }
   function bootApp() {
     APP.dashboard.viewingDate = formatDateKey(new Date());
 
@@ -313,9 +300,6 @@
           console.error("No attendance state returned.");
           return;
         }
-
-        console.log("attendance state", state);
-
         APP.dashboard.viewingDate = work_date;
 
         APP.attendanceState = state;
@@ -338,19 +322,15 @@
   }
 
   window.addEventListener("DOMContentLoaded", async () => {
-    try {
-      parseServerData();
-      restoreSession();
+    parseServerData();
 
+    restoreSession();
+
+    // Only load settings if a restored session exists
+    if (getCurrentUser()?.workspace_id) {
       await bootstrapSettings();
-
-      renderUserHeader?.();
-
-      bootApp();
-    } catch (err) {
-      console.error("App init failed:", err);
-
-      bootApp();
     }
+
+    bootApp();
   });
 </script>

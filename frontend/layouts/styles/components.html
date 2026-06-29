@@ -55,14 +55,11 @@
     box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.15);
   }
 
-  /* =====================================================
-   BUTTONS
-===================================================== */
-
   .btn {
     border-radius: var(--radius-sm);
   }
 
+  /* PRIMARY */
   .btn-primary {
     background: var(--primary);
     border-color: var(--primary);
@@ -73,28 +70,44 @@
     border-color: var(--primary-hover);
   }
 
+  /* GLASS BASE */
   .btn-glass {
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-main);
     border: 1px solid rgba(255, 255, 255, 0.12);
+
+    /* important for stable rendering */
+    transition:
+      transform 0.15s ease,
+      background 0.15s ease,
+      color 0.15s ease;
+    will-change: transform;
   }
 
+  /* GLASS HOVER */
   .btn-glass:hover {
     background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main); /* ensures text never fades */
+    transform: scale(1.05);
   }
 
+  /* DANGER GLASS */
   .btn-glass-danger {
     background: rgba(239, 68, 68, 0.12);
     color: #fca5a5;
     border: 1px solid rgba(239, 68, 68, 0.25);
+    transition:
+      transform 0.15s ease,
+      background 0.15s ease,
+      color 0.15s ease;
   }
 
+  /* DANGER HOVER */
   .btn-glass-danger:hover {
     background: rgba(239, 68, 68, 0.2);
-    color: #fff;
-    transform: translateY(-1px);
+    color: #ffffff;
+    transform: translateY(-1px) scale(1.03);
   }
-
   /* =====================================================
    TABLE
 ===================================================== */

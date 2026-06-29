@@ -133,3 +133,94 @@ function normalizeWorkspaceRecord(record = {}) {
     owner_id: record.owner_id
   });
 }
+
+/**
+ * =====================================================
+ * SETTINGS RECORD NORMALIZER
+ * =====================================================
+ */
+
+NORMALIZERS.key = function (value) {
+  return normalizeId(value);
+};
+
+NORMALIZERS.type = function (value) {
+  return normalizeLowerString(value, "text");
+};
+
+NORMALIZERS.group = function (value) {
+  return normalizeUpperString(value, "SYSTEM");
+};
+
+NORMALIZERS.label = function (value) {
+  return normalizeNullableString(value);
+};
+
+NORMALIZERS.description = function (value) {
+  return normalizeNullableString(value);
+};
+
+NORMALIZERS.options = function (value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(normalizeTrimmedString)
+      .filter(Boolean);
+  }
+
+  return normalizeNullableString(value)
+    .split("|")
+    .map(normalizeTrimmedString)
+    .filter(Boolean);
+};
+
+NORMALIZERS.value = function (value) {
+  return value;
+};
+
+/**
+ * Normalize a settings record.
+ *
+ * Supported types:
+ * - text
+ * - textarea
+ * - select
+ * - number
+ * - boolean
+ */
+function normalizeSettingRecord(record = {}) {
+
+  const normalized = normalizeRecord({
+    key: record.key,
+    value: record.value,
+    type: record.type,
+    group: record.group,
+    options: record.options,
+    label: record.label,
+    description: record.description,
+    updated_at: record.updated_at
+  });
+
+  switch (normalized.type) {
+
+    case "boolean":
+      normalized.value = normalizeBoolean(normalized.value);
+      break;
+
+    case "number":
+      normalized.value = normalizeFloat(normalized.value);
+      break;
+
+    case "select":
+    case "textarea":
+    case "text":
+    default:
+      normalized.value = normalizeNullableString(normalized.value);
+      break;
+  }
+
+  normalized.updated_at = normalizeIsoDateTime(
+    normalized.updated_at
+  );
+
+  return normalized;
+}

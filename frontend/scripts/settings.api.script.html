@@ -15,33 +15,80 @@
 
   /**
    * =====================================================
-   * SETTINGS API (SCHEMA-DRIVEN)
+   * SETTINGS API
+   * Backend already returns normalized objects.
    * =====================================================
    */
   const SettingsAPI = {
     /**
-     * Always resolve workspace dynamically
+     * -----------------------------------------------------
+     * Current Workspace
+     * -----------------------------------------------------
      */
     get workspaceId() {
-      return APP.user?.workspace_id || localStorage.getItem("workspace_id");
+      return (
+        APP.user?.workspace_id ||
+        localStorage.getItem(STORAGE_KEYS?.WORKSPACE_ID || "workspace_id") ||
+        ""
+      );
     },
 
     /**
-     * Get ALL settings (structured rows)
+     * -----------------------------------------------------
+     * Get all settings
+     * -----------------------------------------------------
      */
-    async getAll() {
+    async getAll(forceRefresh = false) {
       const workspace_id = this.workspaceId;
 
       if (!workspace_id) {
-        showToast("Workspace not found", "error");
+        console.warn("[SettingsAPI] Workspace not found.");
         return [];
       }
 
-      return await gas("getWorkspaceSettings", workspace_id);
+      if (!forceRefresh && Array.isArray(APP.settings) && APP.settings.length) {
+        return APP.settings;
+      }
+
+      const settings = await gas("workspaceSettings", workspace_id);
+      console.log("settings", settings);
+
+      APP.settings = Array.isArray(settings) ? settings : [];
+
+      APP.settingsLoaded = true;
+
+      return APP.settings;
     },
 
     /**
-     * Save full settings table (RECOMMENDED PATH)
+     * -----------------------------------------------------
+     * Get one setting
+     * -----------------------------------------------------
+     */
+    async get(key) {
+      if (!key) return null;
+
+      const list = await this.getAll();
+
+      return list.find((s) => s.key === key) || null;
+    },
+
+    /**
+     * -----------------------------------------------------
+     * Convenience getter
+     * Returns only the value
+     * -----------------------------------------------------
+     */
+    async value(key, defaultValue = null) {
+      const setting = await this.get(key);
+
+      return setting ? setting.value : defaultValue;
+    },
+
+    /**
+     * -----------------------------------------------------
+     * Save everything
+     * -----------------------------------------------------
      */
     async saveAll(settingsRows) {
       const workspace_id = this.workspaceId;
@@ -50,38 +97,98 @@
         throw new Error("Workspace not found");
       }
 
-      return await gas("saveWorkspaceSettings", workspace_id, settingsRows);
+      if (!Array.isArray(settingsRows)) {
+        throw new Error("settingsRows must be an array");
+      }
+
+      const saved = await gas(
+        "saveWorkspaceSettings",
+        workspace_id,
+        settingsRows,
+      );
+
+      APP.settings = Array.isArray(saved) ? saved : [];
+
+      APP.settingsLoaded = true;
+
+      return APP.settings;
     },
 
     /**
-     * Get single setting (resolved from row list)
-     */
-    async get(key) {
-      const all = await this.getAll();
-      return all.find((s) => s.key === key) || null;
-    },
-
-    /**
-     * Patch (future-ready: partial update support)
+     * -----------------------------------------------------
+     * Patch
+     * -----------------------------------------------------
      */
     async patch(settingsRows) {
       const workspace_id = this.workspaceId;
-      return await gas("patchWorkspaceSettings", workspace_id, settingsRows);
+
+      if (!workspace_id) {
+        throw new Error("Workspace not found");
+      }
+
+      const saved = await gas(
+        "patchWorkspaceSettings",
+        workspace_id,
+        settingsRows,
+      );
+
+      APP.settings = Array.isArray(saved) ? saved : APP.settings;
+
+      return APP.settings;
     },
 
     /**
-     * Reset settings
+     * -----------------------------------------------------
+     * Reset
+     * -----------------------------------------------------
      */
     async reset() {
       const workspace_id = this.workspaceId;
-      return await gas("resetWorkspaceSettings", workspace_id);
+
+      if (!workspace_id) {
+        throw new Error("Workspace not found");
+      }
+
+      const settings = await gas("resetWorkspaceSettings", workspace_id);
+
+      APP.settings = Array.isArray(settings) ? settings : [];
+
+      APP.settingsLoaded = true;
+
+      return APP.settings;
     },
 
     /**
-     * Validate before save
+     * -----------------------------------------------------
+     * Validate
+     * -----------------------------------------------------
      */
     async validate(settingsRows) {
-      return await gas("validateWorkspaceSettings", settingsRows);
+      return gas("validateWorkspaceSettings", settingsRows);
+    },
+
+    /**
+     * -----------------------------------------------------
+     * Convert array to map
+     * -----------------------------------------------------
+     */
+    async toObject() {
+      const list = await this.getAll();
+
+      return list.reduce((obj, item) => {
+        obj[item.key] = item.value;
+
+        return obj;
+      }, {});
+    },
+
+    /**
+     * -----------------------------------------------------
+     * Reload from server
+     * -----------------------------------------------------
+     */
+    async refresh() {
+      return this.getAll(true);
     },
   };
 </script>

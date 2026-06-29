@@ -1,13 +1,20 @@
 /**
  * =====================================================
- * SETTINGS SERVICE (SCHEMA-DRIVEN)
+ * SETTINGS SERVICE
  * =====================================================
  */
 
 /**
- * Read workspace settings (structured rows)
+ * Read workspace settings
  */
 function workspaceSettings(workspace_id) {
+
+  workspace_id = normalize("workspace_id", workspace_id);
+
+  if (!workspace_id) {
+    throw new Error("workspace_id is required");
+  }
+
   const db = getWorkspaceDb(workspace_id);
   const sheet = db.getSheetByName("Settings");
 
@@ -15,37 +22,41 @@ function workspaceSettings(workspace_id) {
     throw new Error("Settings sheet not found");
   }
 
-  const rows = sheet.getDataRange().getValues();
+  const values = sheet.getDataRange().getValues();
 
-  if (!rows || rows.length < 2) return [];
+  if (values.length <= 1) {
+    return [];
+  }
 
-  const headers = rows[0];
+  const headers = values.shift();
 
-  const dataRows = rows.slice(1);
-
-  return dataRows
-    .filter(row => row[0]) // key must exist
+  return values
+    .filter(row => normalizeId(row[0]))
     .map(row => {
-      const obj = {};
 
-      headers.forEach((h, i) => {
-        obj[h] = deserializeSettingValue(row[i]);
+      const record = {};
+
+      headers.forEach((header, index) => {
+        record[header] = deserializeSettingValue(row[index]);
       });
 
-      return obj;
+      return normalizeSettingRecord(record);
     });
 }
 
 /**
- * Write workspace settings (FULL REPLACE)
+ * Save workspace settings
  */
 function saveWorkspaceSettings(workspace_id, settingsRows) {
+
+  workspace_id = normalize("workspace_id", workspace_id);
+
   if (!workspace_id) {
     throw new Error("workspace_id is required");
   }
 
   if (!Array.isArray(settingsRows)) {
-    throw new Error("settings must be an array of rows");
+    throw new Error("settingsRows must be an array");
   }
 
   const db = getWorkspaceDb(workspace_id);
@@ -68,59 +79,92 @@ function saveWorkspaceSettings(workspace_id, settingsRows) {
 
   const now = new Date();
 
-  const values = settingsRows.map(row => {
-    return [
-      row.key,
-      serializeSettingValue(row.value),
-      row.type || "",
-      row.group || "",
-      row.options || "",
-      row.label || "",
-      row.description || "",
-      row.updated_at || now
-    ];
-  });
+  const values = settingsRows
+    .map(normalizeSettingRecord)
+    .map(setting => {
 
-  // overwrite entire sheet
+      let value;
+
+      switch (setting.type) {
+
+        case "boolean":
+          value = setting.value ? "ENABLED" : "DISABLED";
+          break;
+
+        case "number":
+          value = setting.value;
+          break;
+
+        default:
+          value = serializeSettingValue(setting.value);
+      }
+
+      return [
+        setting.key,
+        value,
+        setting.type,
+        setting.group,
+        setting.options.join("|"),
+        setting.label,
+        setting.description,
+        setting.updated_at || now
+      ];
+    });
+
   sheet.clearContents();
 
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet
+    .getRange(1, 1, 1, headers.length)
+    .setValues([headers]);
 
   if (values.length) {
-    sheet.getRange(2, 1, values.length, headers.length).setValues(values);
+    sheet
+      .getRange(2, 1, values.length, headers.length)
+      .setValues(values);
   }
 
   return workspaceSettings(workspace_id);
 }
 
 /**
- * Deserialize values (supports JSON + primitives)
+ * Deserialize sheet value
  */
 function deserializeSettingValue(value) {
-  if (value === null || value === undefined) return "";
 
-  if (typeof value !== "string") return value;
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
 
   const trimmed = value.trim();
 
-  if (!trimmed) return "";
+  if (!trimmed) {
+    return "";
+  }
 
   try {
     return JSON.parse(trimmed);
-  } catch (_) {
-    return value;
+  }
+  catch (_) {
+    return trimmed;
   }
 }
 
 /**
- * Serialize values for sheet storage
+ * Serialize sheet value
  */
 function serializeSettingValue(value) {
-  if (value === null || value === undefined) return "";
+
+  if (value === null || value === undefined) {
+    return "";
+  }
 
   if (typeof value === "object") {
     return JSON.stringify(value);
   }
 
-  return value;
+  return String(value);
 }
