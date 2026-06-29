@@ -1,0 +1,313 @@
+<script>
+  /**
+   * =====================================================
+   * REPORT EXPORT INITIALIZER
+   * =====================================================
+   */
+
+  let __reportExportInitialized = false;
+
+  function initReportExport() {
+    if (__reportExportInitialized) {
+      return;
+    }
+
+    __reportExportInitialized = true;
+
+    // ----------------------------------------
+    // Excel
+    // ----------------------------------------
+
+    document
+      .getElementById("btnExportExcel")
+      ?.addEventListener("click", function () {
+        exportReportExcel();
+      });
+
+    // ----------------------------------------
+    // PDF
+    // ----------------------------------------
+
+    document
+      .getElementById("btnExportPDF")
+      ?.addEventListener("click", function () {
+        exportReportPDF();
+      });
+  }
+
+  /**
+   * =====================================================
+   * GET REPORT EXPORT DATA
+   * =====================================================
+   */
+
+  function getReportExportData() {
+    const currentUser = getCurrentUser() || {};
+
+    const rows = APP.reports.filteredRows?.length
+      ? APP.reports.filteredRows
+      : APP.reports.rows || [];
+
+    const kpis = APP.reports.kpis || {};
+
+    const range =
+      document.getElementById("reportRange")?.value ||
+      document.getElementById("adminReportRange")?.value ||
+      "today";
+
+    const employee =
+      document.getElementById("employeeFilter")?.selectedOptions?.[0]?.text ||
+      currentUser.fullname ||
+      currentUser.email ||
+      "Current User";
+
+    return {
+      title: "Attendance Report",
+
+      generatedAt: new Date(),
+
+      generatedBy: currentUser.fullname || currentUser.email || "",
+
+      employee,
+
+      range,
+
+      totalRows: rows.length,
+
+      kpis,
+
+      rows,
+    };
+  }
+
+  /**
+   * =====================================================
+   * GET REPORT FILENAME
+   * =====================================================
+   */
+
+  function getReportFilename(extension) {
+    const report = getReportExportData();
+
+    const employee = String(report.employee || "Report")
+      .replace(/[^\w\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "_");
+
+    const date = new Date().toISOString().slice(0, 10);
+
+    const rangeMap = {
+      today: "Today",
+      week: "This_Week",
+      month: "This_Month",
+    };
+
+    const range =
+      rangeMap[report.range] ||
+      String(report.range || "Custom").replace(/\s+/g, "_");
+
+    return (
+      ["Attendance_Report", employee, range, date].join("_") + "." + extension
+    );
+  }
+
+  /**
+   * =====================================================
+   * EXPORT REPORT (EXCEL)
+   * =====================================================
+   */
+
+  function exportReportExcel() {
+    const report = getReportExportData();
+
+    // ----------------------------------------
+    // Validate
+    // ----------------------------------------
+
+    if (!report.rows.length) {
+      showToast?.(
+        "warning",
+        "Nothing to Export",
+        "There are no report records to export.",
+      );
+
+      return;
+    }
+
+    try {
+      downloadExcel(report);
+    } catch (error) {
+      console.error("Excel Export Error:", error);
+
+      showToast?.(
+        "danger",
+        "Export Failed",
+        "Unable to generate the Excel report.",
+      );
+    }
+  }
+  /**
+   * =====================================================
+   * DOWNLOAD EXCEL
+   * =====================================================
+   */
+
+  function downloadExcel(report) {
+    const workbook = XLSX.utils.book_new();
+
+    // =====================================================
+    // SUMMARY SHEET
+    // =====================================================
+
+    const summary = buildReportSummary(report);
+
+    const summarySheet = XLSX.utils.aoa_to_sheet(summary);
+
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
+    // =====================================================
+    // ATTENDANCE SHEET
+    // =====================================================
+
+    const rows = buildReportRows(report);
+
+    const attendanceSheet = XLSX.utils.aoa_to_sheet(rows);
+
+    XLSX.utils.book_append_sheet(workbook, attendanceSheet, "Attendance");
+
+    // =====================================================
+    // DOWNLOAD
+    // =====================================================
+
+    XLSX.writeFile(workbook, getReportFilename("xlsx"));
+  }
+
+  /**
+   * =====================================================
+   * BUILD REPORT SUMMARY
+   * =====================================================
+   */
+
+  function buildReportSummary(report) {
+    const kpis = report.kpis || {};
+
+    return [
+      // -------------------------------------------------
+      // HEADER
+      // -------------------------------------------------
+
+      ["Attendance Report"],
+      [],
+
+      ["Employee", report.employee],
+      ["Range", report.range],
+      ["Generated By", report.generatedBy],
+      ["Generated At", report.generatedAt.toLocaleString()],
+      ["Total Records", report.totalRows],
+
+      [],
+
+      // -------------------------------------------------
+      // ATTENDANCE
+      // -------------------------------------------------
+
+      ["Attendance Summary"],
+      ["Present", kpis.total_present || 0],
+      ["Absent", kpis.total_absent || 0],
+      ["Workdays", kpis.total_workdays || 0],
+      ["Late Count", kpis.total_late_count || 0],
+
+      [],
+
+      // -------------------------------------------------
+      // HOURS
+      // -------------------------------------------------
+
+      ["Hour Summary"],
+      ["Worked Hours", formatMinutesDuration(kpis.total_worked_minutes)],
+      ["Regular Hours", formatMinutesDuration(kpis.total_regular_minutes)],
+      ["Paid Hours", formatMinutesDuration(kpis.total_paid_minutes)],
+      ["Overtime", formatMinutesDuration(kpis.total_overtime_minutes)],
+      ["Undertime", formatMinutesDuration(kpis.total_undertime_minutes)],
+
+      [],
+      // -------------------------------------------------
+      // BREAKS
+      // -------------------------------------------------
+
+      ["Break Summary"],
+      ["Lunch", formatMinutesDuration(kpis.total_lunch_minutes)],
+      ["Break", formatMinutesDuration(kpis.total_break_minutes)],
+
+      [],
+
+      // -------------------------------------------------
+      // LATE
+      // -------------------------------------------------
+
+      ["Late Summary"],
+      ["Late Time", formatMinutesDuration(kpis.total_late_minutes)],
+    ];
+  }
+
+  /**
+   * =====================================================
+   * BUILD REPORT ROWS
+   * =====================================================
+   */
+
+  function buildReportRows(report) {
+    const sheet = [
+      [
+        "Employee",
+        "Employee No.",
+        "Role",
+        "Shift",
+        "Worked",
+        "Regular",
+        "Paid",
+        "Late",
+        "Overtime",
+        "Undertime",
+        "Lunch",
+        "Break",
+        "Status",
+        "Date",
+      ],
+    ];
+
+    (report.rows || []).forEach(function (row) {
+      sheet.push([
+        row.fullname || "",
+
+        row.employee_no || "",
+
+        row.role || "",
+
+        row.shift_name || row.shift || "",
+
+        formatMinutesDuration(row.worked_minutes),
+
+        formatMinutesDuration(row.regular_minutes),
+
+        formatMinutesDuration(row.paid_minutes),
+
+        formatMinutesDuration(row.late_minutes),
+
+        formatMinutesDuration(row.overtime_minutes),
+
+        formatMinutesDuration(row.undertime_minutes),
+
+        formatMinutesDuration(row.lunch_minutes),
+
+        formatMinutesDuration(row.break_minutes),
+
+        DISPLAY?.status ? DISPLAY.status(row.status) : row.status || "",
+
+        row.date || "",
+      ]);
+    });
+
+    return sheet;
+  }
+</script>
