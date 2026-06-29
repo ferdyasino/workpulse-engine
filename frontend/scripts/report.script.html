@@ -1,0 +1,215 @@
+<script>
+  // =====================================================
+  // REPORT PAGE UI
+  // =====================================================
+
+  APP.reports = APP.reports || {
+    initialized: false,
+    range: "today",
+    rows: [],
+    filteredRows: [],
+    kpis: {},
+  };
+
+  let __reportPageInitialized = false;
+
+  // =====================================================
+  // INIT
+  // =====================================================
+
+  function initReportPage() {
+    const currentUser = getCurrentUser();
+
+    const role = String(currentUser?.role || "").toLowerCase();
+
+    const isAdmin =
+      role === "admin" ||
+      role === "owner" ||
+      role === "hr" ||
+      role === "superadmin";
+
+    document
+      .getElementById("adminReportControls")
+      ?.classList.toggle("d-none", !isAdmin);
+
+    if (__reportPageInitialized) {
+      return;
+    }
+
+    __reportPageInitialized = true;
+
+    // -------------------------------------------------
+    // Employee Range
+    // -------------------------------------------------
+
+    document
+      .getElementById("reportRange")
+      ?.addEventListener("change", function () {
+        APP.reports.range = this.value;
+
+        const adminRange = document.getElementById("adminReportRange");
+
+        if (adminRange) {
+          adminRange.value = this.value;
+        }
+
+        loadReports(this.value);
+      });
+
+    // -------------------------------------------------
+    // Admin Range
+    // -------------------------------------------------
+
+    document
+      .getElementById("adminReportRange")
+      ?.addEventListener("change", function () {
+        APP.reports.range = this.value;
+
+        const employeeRange = document.getElementById("reportRange");
+
+        if (employeeRange) {
+          employeeRange.value = this.value;
+        }
+
+        loadReports(this.value);
+      });
+
+    // -------------------------------------------------
+    // Employee Filter
+    // -------------------------------------------------
+
+    document
+      .getElementById("employeeFilter")
+      ?.addEventListener("change", function () {
+        renderReportTable();
+      });
+  }
+
+  // =====================================================
+  // EMPLOYEE FILTER
+  // =====================================================
+
+  function populateEmployeeFilter() {
+    const select = document.getElementById("employeeFilter");
+
+    if (!select) {
+      return;
+    }
+
+    const currentUser = getCurrentUser();
+
+    const role = String(currentUser?.role || "").toLowerCase();
+
+    const isAdmin =
+      role === "admin" ||
+      role === "owner" ||
+      role === "hr" ||
+      role === "superadmin";
+
+    // -------------------------------------------------
+    // Employee
+    // -------------------------------------------------
+
+    if (!isAdmin) {
+      select.innerHTML = `
+        <option value="${currentUser.user_id}">
+          ${currentUser.fullname || currentUser.email}
+        </option>
+      `;
+
+      select.disabled = true;
+
+      return;
+    }
+
+    // -------------------------------------------------
+    // Admin
+    // -------------------------------------------------
+
+    select.disabled = false;
+
+    const previousValue = select.value || "all";
+
+    const users = new Map();
+
+    APP.reports.rows.forEach(function (row) {
+      if (!users.has(row.user_id)) {
+        users.set(row.user_id, {
+          fullname: row.fullname || row.email || row.user_id,
+        });
+      }
+    });
+
+    select.innerHTML = `<option value="all">
+          All Employees
+       </option>`;
+
+    Array.from(users.entries())
+      .sort(function (a, b) {
+        return a[1].fullname.localeCompare(b[1].fullname);
+      })
+      .forEach(function ([userId, user]) {
+        select.insertAdjacentHTML(
+          "beforeend",
+          `
+          <option value="${userId}">
+            ${user.fullname}
+          </option>
+          `,
+        );
+      });
+
+    if (previousValue !== "all" && users.has(previousValue)) {
+      select.value = previousValue;
+    } else {
+      select.value = "all";
+    }
+  }
+
+  // =====================================================
+  // TABLE ROW
+  // =====================================================
+
+  function buildReportRow(row) {
+    return `
+      <tr>
+
+        <td>
+          <div class="fw-semibold">
+            ${row.fullname || "-"}
+          </div>
+        </td>
+
+        <td>
+          ${row.shift_name || "-"}
+        </td>
+
+        <td>
+          ${formatMinutes(row.worked_minutes)}
+        </td>
+
+        <td class="text-danger">
+          ${formatMinutes(row.late_minutes)}
+        </td>
+
+        <td class="text-warning">
+          ${formatMinutes(row.overtime_minutes)}
+        </td>
+
+        <td>
+          <span class="badge ${statusBadgeClass(row.status)}">
+            ${DISPLAY.status(row.status)}
+          </span>
+        </td>
+
+        <td>
+          ${formatShift(row.date)}
+        </td>
+
+      </tr>
+    `;
+  }
+  // =====================================================
+  // REPORT RESET
+  // =====================================================
+</script>

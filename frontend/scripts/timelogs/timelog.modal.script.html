@@ -1,0 +1,105 @@
+<script>
+  function maybePromptForDuty() {
+    const shift = getCurrentShift();
+
+    if (
+      !shouldPromptForDuty({
+        workStatus: APP.workStatus,
+        startTime: shift?.start_time,
+        prompted: APP.__dutyPromptShown,
+      })
+    ) {
+      return;
+    }
+
+    const now = new Date();
+
+    const shiftStart = parseShiftTimeToDate(shift.start_time, now);
+    const shiftEnd = parseShiftTimeToDate(shift.end_time, now);
+
+    const minutesUntilStart = shiftStart ? diffMinutes(shiftStart, now) : 0;
+
+    const minutesUntilEnd = shiftEnd ? diffMinutes(shiftEnd, now) : 0;
+
+    let title = "Ready to Start Work?";
+    let message = "";
+
+    // -----------------------------------------------------
+    // BEFORE SHIFT
+    // -----------------------------------------------------
+    if (minutesUntilStart > 0) {
+      title = "Ready to Start Work?";
+
+      message = `
+        Your shift starts in
+        <strong>${formatMinutesDuration(minutesUntilStart)}</strong>
+        at <strong>${formatTime(shift.start_time)}</strong>.
+      `;
+    }
+
+    // -----------------------------------------------------
+    // SHIFT JUST STARTED / DURING SHIFT
+    // -----------------------------------------------------
+    else if (minutesUntilEnd >= 0) {
+      const minutesLate = Math.abs(minutesUntilStart);
+
+      if (minutesLate === 0) {
+        title = "Your Shift Starts Now";
+
+        message = `
+          Your scheduled shift has started at
+          <strong>${formatTime(shift.start_time)}</strong>.
+        `;
+      } else {
+        title = "Clock In Reminder";
+
+        message = `
+          Your shift started
+          <strong>${formatMinutesDuration(minutesLate)}</strong>
+          ago.
+          <br><br>
+          You have not clocked in today.
+        `;
+      }
+
+      message += `
+        <br><br>
+        Remaining shift:
+        <strong>${formatMinutesDuration(minutesUntilEnd)}</strong>.
+      `;
+    }
+
+    // -----------------------------------------------------
+    // SHIFT ENDED
+    // -----------------------------------------------------
+    else {
+      title = "Missed Shift?";
+
+      message = `
+        Your scheduled shift ended
+        <strong>${formatMinutesDuration(Math.abs(minutesUntilEnd))}</strong>
+        ago.
+        <br><br>
+        No clock-in was recorded for today.
+      `;
+    }
+
+    message += `
+      <br><br>
+      Would you like to clock in now?
+    `;
+
+    APP.__dutyPromptShown = true;
+
+    GlobalModal.openConfirm({
+      title,
+      message,
+      confirmText: "Clock In",
+      cancelText: "Not Working Today",
+
+      onConfirm() {
+        logTime("time_in");
+      },
+    });
+  }
+</script>

@@ -19,17 +19,6 @@ const AUTH_PROVIDERS = {
 };
 
 
-/**
- * =====================================================
- * SCHEMA SOURCE OF TRUTH
- * =====================================================
- * IMPORTANT:
- * - AUTH_SCHEMA = MASTER DB ONLY
- * - SCHEMA = WORKSPACE DB ONLY
- * - EXTERNAL_SCHEMA = TIMELINE / LOG DB ONLY
- * =====================================================
- */
-
 const AUTH_SCHEMA = {
   OWNERS: [
     "owner_id",
@@ -82,8 +71,21 @@ const SCHEMA = {
   ],
 
   SHIFTS: [
-    "shift_id", "shift_name", "start_time", "end_time",
-    "grace_minutes", "status", "created_at"
+    "shift_id",
+    "shift_name",
+    "start_time",
+    "end_time",
+    "grace_minutes",
+    "status",
+    "created_at",
+    "break_limit_minutes",
+    "lunch_duration_minutes",
+    "overtime_threshold_minutes",
+    "overtime_multiplier",
+    "night_diff_start",
+    "night_diff_end",
+    "night_diff_multiplier",
+    "rounding_rule"
   ],
 
   POSITIONS: [
@@ -100,26 +102,56 @@ const SCHEMA = {
     "created_at", "updated_at"
   ],
 
-  SETTINGS: ["key", "value"]
+  REPORT_INDEX: [
+  "report_id",
+  "workspace_id",
+  "user_id",
+  "email",
+  "date",
+  "shift_id",
+  "worked_minutes",
+  "late_minutes",
+  "overtime_minutes",
+  "break_minutes",
+
+  "status",
+  "created_at"
+  ],
+
+  SETTINGS: [
+    "key",
+    "value",
+    "type",
+    "group",
+    "options",
+    "label",
+    "description",
+    "updated_at"
+  ]
 };
 
 const EXTERNAL_SCHEMA = {
   TIME_LOGS: [
-    "log_id", "workspace_id", "user_id", "email", "action",
-    "timestamp", "date", "shift_id", "device_info", "location",
-    "source", "remarks", "created_at"
+    "log_id",
+    "workspace_id",
+    "user_id",
+    "email",
+    "action",
+    "timestamp",
+    "date",
+    "shift_id",
+    "device_info",
+    "location",
+    "source",
+    "remarks",
+    "created_at",
+    "computed_worked_minutes",
+    "computed_late_minutes",
+    "computed_overtime_minutes",
+    "computed_break_minutes"
   ]
 };
 
-
-/**
- * =====================================================
- * TABLE REGISTRY (MASTER DB)
- * =====================================================
- * STRICT RULE:
- * - Always paired with AUTH_SCHEMA
- * =====================================================
- */
 const AUTH_TABLES = {
   AUTHORIZED_EMAILS: {
     sheet: "Authorized_Emails",
@@ -184,7 +216,13 @@ const TABLES = {
     sheet: "Attendance Index",
     pk: "attendance_id",
     schema: SCHEMA.ATTENDANCE_INDEX
-  }
+  },
+
+  REPORT_INDEX: {
+  sheet: "Report Index",
+  pk: "report_id",
+  schema: SCHEMA.REPORT_INDEX
+}
 };
 
 

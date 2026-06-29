@@ -22,28 +22,29 @@
       </button>
 
       <ul class="dropdown-menu dropdown-menu-end">
-        <li id="dashDropId" class="d-none">
+        <li id="dashDropId">
           <button class="dropdown-item" onclick="go('dashboard')">
+            <i class="bi bi-menu-button-wide me-2"></i>
             Dashboard
           </button>
         </li>
 
         <li id="adminMenuItem" class="d-none">
           <button class="dropdown-item" onclick="go('admin')">
+            <i class="bi bi-menu-button-wide-fill me-2"></i>
             Admin Dashboard
           </button>
         </li>
 
         <li id="reportsId">
-          <button class="dropdown-item" onclick="go('reports')">Reports</button>
+          <button class="dropdown-item" onclick="go('reports')">
+            <i class="bi bi-file-earmark-bar-graph me-2"></i>
+            Reports
+          </button>
         </li>
         <li id="adminSettings" class="d-none">
-          <button
-            class="dropdown-item"
-            class="d-none"
-            onclick="openSettingsModal()"
-          >
-            Settings
+          <button class="dropdown-item" onclick="go('settings')">
+            <i class="bi bi-gear me-2"></i>Settings
           </button>
         </li>
 
@@ -51,6 +52,7 @@
 
         <li>
           <button class="dropdown-item text-danger" onclick="logout()">
+            <i class="bi bi-door-closed text-danger me-2"></i>
             Logout
           </button>
         </li>

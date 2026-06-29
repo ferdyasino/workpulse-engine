@@ -1,0 +1,141 @@
+<script>
+  // =====================================================
+  // SETTINGS NORMALIZER
+  // =====================================================
+
+  function normalizeSettings(raw) {
+    const HIDDEN_KEYS = new Set([
+      "WORKSPACE_ID",
+      "OWNER_EMAIL",
+      "CREATED_AT",
+      "UPDATED_AT",
+      "VERSION",
+      "ID",
+    ]);
+
+    const rows = Array.isArray(raw)
+      ? raw
+      : Object.entries(raw || {}).map(([key, value]) => ({
+          key,
+          value,
+        }));
+
+    return rows
+      .filter(Boolean)
+      .map((row) => ({
+        key: String(row.key || "").trim(),
+        value: row.value,
+        type: String(row.type || "text")
+          .trim()
+          .toLowerCase(),
+        group: String(row.group || "SYSTEM")
+          .trim()
+          .toUpperCase(),
+        options: Array.isArray(row.options)
+          ? row.options
+          : String(row.options || "")
+              .split("|")
+              .map((v) => v.trim())
+              .filter(Boolean),
+        label:
+          row.label && String(row.label).trim()
+            ? String(row.label).trim()
+            : DISPLAY.label(row.key),
+        description: String(row.description || "").trim(),
+        readonly: Boolean(row.readonly),
+        visible: row.visible !== false,
+        updated_at: row.updated_at || "",
+      }))
+      .filter((row) => row.key)
+      .filter((row) => !HIDDEN_KEYS.has(row.key.toUpperCase()))
+      .filter((row) => row.visible)
+      .sort((a, b) => {
+        if (a.group !== b.group) {
+          return a.group.localeCompare(b.group);
+        }
+
+        return a.label.localeCompare(b.label);
+      });
+  }
+
+  // =====================================================
+  // SAVE SETTINGS
+  // =====================================================
+
+  async function saveSettings() {
+    try {
+      const settings = normalizeSettings(APP.settings);
+
+      const payload = settings.map((setting) => {
+        if (setting.readonly) {
+          return setting;
+        }
+
+        const input = document.querySelector(
+          `.setting-input[data-key="${setting.key}"]`,
+        );
+
+        if (!input) {
+          return setting;
+        }
+
+        let value;
+
+        switch (setting.type) {
+          case "boolean":
+            value = input.checked;
+            break;
+
+          case "number":
+            value = input.value === "" ? "" : Number(input.value);
+            break;
+
+          case "select":
+            value = input.value;
+            break;
+
+          default:
+            value = input.value.trim();
+        }
+
+        return {
+          ...setting,
+          value,
+        };
+      });
+
+      APP.settings = await SettingsAPI.saveAll(payload);
+
+      renderSettingsGroup(window.currentSettingsGroup || "ALL");
+
+      showToast("Settings updated.", "success");
+    } catch (err) {
+      console.error(err);
+
+      showToast(err.message || "Unable to save settings.", "error");
+    }
+  }
+
+  // =====================================================
+  // ACTIVE SIDEBAR
+  // =====================================================
+
+  function setActiveSettingsButton(btn, group = "ALL") {
+    const buttons = document.querySelectorAll(".list-group-item-action");
+
+    buttons.forEach((button) => button.classList.remove("active"));
+
+    if (btn) {
+      btn.classList.add("active");
+      return;
+    }
+
+    buttons.forEach((button) => {
+      const onclick = button.getAttribute("onclick") || "";
+
+      if (onclick.includes(`'${group}'`)) {
+        button.classList.add("active");
+      }
+    });
+  }
+</script>

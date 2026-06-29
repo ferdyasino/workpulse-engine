@@ -30,6 +30,44 @@ function findAuthUserByEmail(email) {
   });
 }
 
+function getUserByEmail(workspace_id, email, options = {}) {
+  const normalizedEmail = normalize("email", email);
+  if (!normalizedEmail) return null;
+
+  const { source = "workspace" } = options;
+
+  // =========================
+  // WORKSPACE SOURCE (DEFAULT)
+  // =========================
+  if (source === "workspace") {
+    const users = find(workspace_id, TABLES.USERS);
+
+    return users.find(u =>
+      normalize("email", u.email) === normalizedEmail
+    ) || null;
+  }
+
+  // =========================
+  // MASTER AUTH SOURCE
+  // =========================
+  if (source === "auth") {
+    return findAuthUserByEmail(normalizedEmail);
+  }
+
+  // =========================
+  // FALLBACK: workspace → auth
+  // =========================
+  return (
+    getUserByEmail(workspace_id, normalizedEmail, { source: "workspace" }) ||
+    findAuthUserByEmail(normalizedEmail)
+  );
+}
+
+function getUserById(workspace_id, user_id) {
+  const users = find(workspace_id, TABLES.USERS);
+  return users.find(u => u.user_id === user_id) || null;
+}
+
 function findAuthUserByGoogleSub(googleSub) {
   if (!googleSub) return null;
 

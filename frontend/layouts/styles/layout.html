@@ -1,12 +1,56 @@
 <style>
-  /* PAGE */
+  /* =====================================================
+     PAGE LAYOUT
+  ===================================================== */
+
   .page-container {
     max-width: 1400px;
     margin: auto;
     padding: 24px;
   }
 
-  /* TOPBAR */
+  /* =====================================================
+     GLOBAL TEXT VISIBILITY FIX
+  ===================================================== */
+
+  body {
+    color: var(--text-main);
+  }
+
+  .text-muted {
+    color: var(--text-secondary) !important;
+    opacity: 1 !important;
+  }
+
+  .text-secondary {
+    color: var(--text-secondary) !important;
+  }
+
+  small {
+    color: var(--text-secondary);
+  }
+
+  label {
+    color: var(--text-main);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  label,
+  legend,
+  strong,
+  b {
+    color: var(--text-main);
+  }
+
+  /* =====================================================
+     TOPBAR
+  ===================================================== */
+
   .app-topbar {
     position: sticky;
     top: 0;
@@ -27,7 +71,27 @@
     justify-content: center;
   }
 
-  /* SIDEBAR */
+  /* =====================================================
+   GLASS
+===================================================== */
+
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+  }
+
+  .glass-card {
+    padding: 1.5rem;
+  }
+
+  /* =====================================================
+   SIDEBAR
+===================================================== */
+
   .app-sidebar {
     min-height: calc(100vh - 40px);
     padding: 1rem;
@@ -36,82 +100,222 @@
   .sidebar-link {
     display: block;
     padding: 12px;
-    color: var(--text-secondary);
     border-radius: 12px;
+    color: var(--text-secondary);
     text-decoration: none;
+    transition: 0.2s;
   }
 
-  .sidebar-link:hover {
+  .sidebar-link:hover,
+  .sidebar-link.active {
     color: var(--text-main);
     background: rgba(255, 255, 255, 0.08);
   }
 
-  /* MODAL */
-  .modal-content {
-    background: rgba(15, 23, 42, 0.95);
-    color: var(--text-main);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: var(--radius-md);
+  /* =====================================================
+   SETTINGS SIDEBAR
+===================================================== */
+
+  .list-group {
+    background: transparent;
   }
 
-  /* CLOCK */
-  .clock-card {
-    width: 280px;
-    padding: 20px;
-    margin: auto;
-    text-align: center;
+  .list-group-item {
+    background: transparent !important;
+    color: var(--text-main) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
   }
+
+  .list-group-item i {
+    color: inherit;
+  }
+
+  .list-group-item:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #fff !important;
+  }
+
+  .list-group-item.active {
+    background: rgba(59, 130, 246, 0.18) !important;
+    border-color: rgba(59, 130, 246, 0.35) !important;
+    color: #fff !important;
+  }
+
+  /* =====================================================
+   FORMS
+===================================================== */
+
+  .form-control,
+  .form-select {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-main) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  }
+
+  .form-control::placeholder {
+    color: var(--text-secondary) !important;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-main) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.15) !important;
+  }
+
+  .form-select option {
+    background: #0f172a;
+    color: #fff;
+  }
+
+  /* =====================================================
+   SWITCHES
+===================================================== */
+
+  .form-check-label {
+    color: var(--text-main);
+  }
+
+  .form-check-input {
+    cursor: pointer;
+  }
+
+  /* =====================================================
+   BUTTONS
+===================================================== */
+
+  .btn {
+    border-radius: 10px;
+  }
+
+  .btn-primary {
+    color: #fff !important;
+  }
+
+  /* =====================================================
+   TABLES
+===================================================== */
+
+  .table {
+    color: var(--text-main) !important;
+  }
+
+  .table th {
+    color: var(--text-secondary) !important;
+  }
+
+  .table td {
+    color: var(--text-main) !important;
+    vertical-align: middle;
+  }
+
+  /* =====================================================
+   MODALS
+===================================================== */
+
+  .modal-content {
+    background: #0f172ae6;
+    color: var(--text-main);
+  }
+
+  .modal-title {
+    color: var(--text-main);
+  }
+
+  /* =====================================================
+   BADGES
+===================================================== */
+
+  .badge {
+    color: #fff;
+  }
+
+  /* =====================================================
+   SETTINGS PAGE
+===================================================== */
+
+  .settings-page .list-group-item {
+    padding: 1rem 0;
+    background: transparent !important;
+  }
+
+  .settings-page .fw-semibold {
+    color: var(--text-main);
+  }
+
+  .settings-page span,
+  .settings-page div,
+  .settings-page label {
+    color: inherit;
+  }
+
+  .setting-input {
+    min-width: 220px;
+  }
+
+  /* =====================================================
+   CLOCK
+===================================================== */
 
   .dashboard-clock-time {
     font-size: 44px;
     font-weight: 900;
+    color: var(--text-main);
   }
 
   .dashboard-clock-date {
-    font-size: 14px;
-    color: var(--text-muted);
-    white-space: nowrap;
+    color: var(--text-secondary);
   }
 
-  /* CLOCK NAV BUTTONS */
-  .btn-glass-icon {
-    width: 36px;
-    height: 36px;
-    padding: 0;
+  /* =====================================================
+   LOGGER
+===================================================== */
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    flex-shrink: 0;
-
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    color: var(--text-main);
-    transition: all 0.2s ease;
-  }
-
-  .btn-glass-icon:hover {
-    background: rgba(255, 255, 255, 0.14);
-    transform: translateY(-1px);
-  }
-
-  .btn-glass-icon:active {
-    transform: translateY(0);
-  }
-
-  .btn-glass-icon i {
-    font-size: 0.95rem;
-    line-height: 1;
-  }
-
-  /* LOGGER */
   .logger-host {
-    min-height: 174px;
+    min-height: 170px;
+  }
+
+  /* =====================================================
+   BOOTSTRAP OVERRIDES
+===================================================== */
+
+  .card,
+  .card-body,
+  .card-header {
+    background: transparent;
+    color: var(--text-main);
+  }
+
+  .border-bottom,
+  .border-top {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .dropdown-menu {
+    background: #0f172a;
+  }
+
+  .dropdown-item {
+    color: #f8fafc;
+  }
+
+  .dropdown-item:hover {
+    color: whitesmoke;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* =====================================================
+   ICONS
+===================================================== */
+
+  .bi {
+    color: var(--text-main);
+    transition: transform 0.15s ease;
+    display: inline-block; /* important for transform */
+  }
+
+  .bi:hover {
+    transform: scale(1.2);
   }
 </style>

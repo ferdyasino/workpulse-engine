@@ -1,14 +1,21 @@
 <script>
-  // =====================================================
-  // APP BOOT
-  // =====================================================
+  APP.__dutyPromptShown = APP.__dutyPromptShown || false;
 
   function bootApp() {
-    if (!APP.currentPage) {
+    APP.dashboard.viewingDate = formatDateKey(new Date());
+
+    const user = getCurrentUser();
+
+    const isLoggedIn = user && user.user_id && user.workspace_id;
+
+    if (isLoggedIn) {
+      APP.currentPage =
+        localStorage.getItem(STORAGE_KEYS.LAST_PAGE) ||
+        APP.currentPage ||
+        "dashboard";
+    } else {
       APP.currentPage = "login";
     }
-
-    APP.dashboard.viewingDate = formatDateKey(new Date());
 
     go(APP.currentPage);
   }
@@ -18,6 +25,10 @@
   // =====================================================
 
   function go(page) {
+    if (!APP.settingsLoaded) {
+      console.warn("Settings not ready yet");
+    }
+
     APP.currentPage = page;
 
     localStorage.setItem(STORAGE_KEYS.LAST_PAGE, page);
@@ -102,11 +113,13 @@
     const adminMenu = document.getElementById("adminMenuItem");
     const adminSettings = document.getElementById("adminSettings");
     const dashDropId = document.getElementById("dashDropId");
+    document
+      .getElementById("adminReportControls")
+      ?.classList.toggle("d-none", !isAdmin);
 
     if (adminMenu) {
       adminMenu.classList.toggle("d-none", !isAdmin);
       adminSettings.classList.toggle("d-none", !isAdmin);
-      dashDropId.classList.toggle("d-none", !isAdmin);
     }
   }
 
@@ -129,20 +142,30 @@
   // - Does NOT interfere with existing dashboard flow
   // =====================================================
 
+  // =====================================================
+  // PAGE DATA LOADER DISPATCH
+  // =====================================================
+
   function loadPageData(page) {
     try {
       switch (page) {
         case "dashboard":
-          // Dashboard hydration already happens inside applyUIState()
+          // Dashboard hydration already handled
+          break;
+
+        case "reports":
+          loadReportsPage?.();
+          break;
+
+        case "settings":
+          renderSettingsGroup?.();
           break;
 
         case "users":
-          // Future / current employee management page
           loadUsersAdminPage?.();
           break;
 
         case "admin":
-          // Optional admin home loader if you add one later
           loadAdminHomePage?.();
           break;
 
@@ -151,6 +174,8 @@
       }
     } catch (error) {
       console.error("loadPageData error:", error);
+
+      showToast?.(error.message || "Unable to load page", "error");
     }
   }
 
@@ -221,34 +246,6 @@
     // Add admin landing-page hydration here later if needed
   }
 
-  // =====================================================
-  // DASHBOARD TOGGLE
-  // =====================================================
-
-  function toggleDashboard() {
-    const isAdmin = APP.role === "admin" || APP.role === "owner";
-
-    if (!isAdmin) {
-      showToast?.("Access denied", "error");
-      return;
-    }
-
-    if (APP.currentPage === "admin") {
-      showToast?.("Switching to dashboard", "info");
-      go("dashboard");
-    } else {
-      showToast?.("Switching to admin panel", "info");
-      go("admin");
-    }
-  }
-
-  // =====================================================
-  // CLEAN DASHBOARD RESET
-  // IMPORTANT:
-  // - DO NOT destroy the logger container here
-  // - logger is persistent shell rendered by initDashboardAttendanceUI()
-  // =====================================================
-
   function clearDashboardUI() {
     const leftTimelogsList = document.getElementById("leftTimelogsList");
     if (leftTimelogsList) {
@@ -281,13 +278,6 @@
     // Logger shell must persist and be managed by renderTimeLogger().
   }
 
-  // =====================================================
-  // SINGLE SOURCE DASHBOARD SYNC (PRIMARY)
-  // - fetch logs once
-  // - build state once
-  // - hydrate through one pipeline
-  // =====================================================
-
   function syncAttendanceState({ silent = false } = {}) {
     const user = getCurrentUser();
 
@@ -310,20 +300,17 @@
           console.error("No attendance state returned.");
           return;
         }
-
-        console.log("attendance state", state);
-
         APP.dashboard.viewingDate = work_date;
 
         APP.attendanceState = state;
         APP.workStatus = state.status || "NOT_STARTED";
         APP.timeLogs = state.raw_logs || [];
 
-        // Refresh the displayed date immediately
         updateDashboardClock?.();
 
         hydrateAttendanceUI?.(state);
         renderUserHeader?.();
+        maybePromptForDuty();
       })
       .withFailureHandler((err) => {
         if (!silent) hideLoader?.();
@@ -334,14 +321,16 @@
       .getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date);
   }
 
-  // =====================================================
-  // INIT
-  // =====================================================
-
-  window.addEventListener("DOMContentLoaded", () => {
+  window.addEventListener("DOMContentLoaded", async () => {
     parseServerData();
+
     restoreSession();
-    renderUserHeader?.();
+
+    // Only load settings if a restored session exists
+    if (getCurrentUser()?.workspace_id) {
+      await bootstrapSettings();
+    }
+
     bootApp();
   });
 </script>

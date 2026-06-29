@@ -55,14 +55,11 @@
     box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.15);
   }
 
-  /* =====================================================
-   BUTTONS
-===================================================== */
-
   .btn {
     border-radius: var(--radius-sm);
   }
 
+  /* PRIMARY */
   .btn-primary {
     background: var(--primary);
     border-color: var(--primary);
@@ -73,28 +70,44 @@
     border-color: var(--primary-hover);
   }
 
+  /* GLASS BASE */
   .btn-glass {
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-main);
     border: 1px solid rgba(255, 255, 255, 0.12);
+
+    /* important for stable rendering */
+    transition:
+      transform 0.15s ease,
+      background 0.15s ease,
+      color 0.15s ease;
+    will-change: transform;
   }
 
+  /* GLASS HOVER */
   .btn-glass:hover {
     background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main); /* ensures text never fades */
+    transform: scale(1.05);
   }
 
+  /* DANGER GLASS */
   .btn-glass-danger {
     background: rgba(239, 68, 68, 0.12);
     color: #fca5a5;
     border: 1px solid rgba(239, 68, 68, 0.25);
+    transition:
+      transform 0.15s ease,
+      background 0.15s ease,
+      color 0.15s ease;
   }
 
+  /* DANGER HOVER */
   .btn-glass-danger:hover {
     background: rgba(239, 68, 68, 0.2);
-    color: #fff;
-    transform: translateY(-1px);
+    color: #ffffff;
+    transform: translateY(-1px) scale(1.03);
   }
-
   /* =====================================================
    TABLE
 ===================================================== */
@@ -247,5 +260,150 @@
     color: #cbd5e1;
     opacity: 0.85;
     cursor: not-allowed;
+  }
+
+  /* =====================================================
+   REPORTS PAGE IMPROVEMENT LAYER
+   (drop-in override only for reports page)
+===================================================== */
+
+  .page-container {
+    max-width: 1400px;
+    margin: auto;
+    padding: 24px;
+  }
+
+  /* =====================================================
+   HEADER
+===================================================== */
+  .page-container .glass-card h4 {
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: 0.3px;
+  }
+
+  .page-container .glass-card small {
+    color: var(--text-secondary);
+    opacity: 0.9;
+  }
+
+  /* =====================================================
+   KPI CARDS (IMPORTANT FIX)
+===================================================== */
+  .page-container .glass-card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .page-container .glass-card .text-muted {
+    color: var(--text-secondary) !important;
+    font-size: 0.82rem;
+    letter-spacing: 0.3px;
+  }
+
+  /* BIG NUMBERS */
+  .page-container .glass-card .fs-3,
+  .page-container .glass-card .fs-4 {
+    color: var(--text-main);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+
+  /* COLOR EMPHASIS FIX */
+  #repOTHours {
+    color: #fbbf24 !important; /* stronger amber */
+  }
+
+  #repPresent {
+    color: #22c55e !important;
+  }
+
+  #repAbsent {
+    color: #ef4444 !important;
+  }
+
+  /* =====================================================
+   KPI GRID VISUAL BALANCE
+===================================================== */
+  .page-container .row.g-3 > div > .glass-card {
+    height: 100%;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* =====================================================
+   SECOND ROW (LESS IMPORTANT METRICS)
+===================================================== */
+  #repLate,
+  #repWorkdays {
+    color: var(--text-main);
+    font-weight: 700;
+  }
+
+  /* =====================================================
+   REPORT TABLE VISIBILITY FIX
+   (PLACE AT VERY BOTTOM OF CSS)
+===================================================== */
+
+  .page-container .table,
+  .page-container .table * {
+    color: #f8fafc !important;
+  }
+
+  /* Header */
+  .page-container .table thead th {
+    color: #cbd5e1 !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    font-weight: 600;
+  }
+
+  /* Body */
+  .page-container .table tbody td {
+    color: #f8fafc !important;
+    background: transparent !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Alternate rows */
+  .page-container .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background: rgba(255, 255, 255, 0.02) !important;
+    color: #f8fafc !important;
+  }
+
+  .page-container .table-striped > tbody > tr:nth-of-type(even) > * {
+    background: transparent !important;
+    color: #f8fafc !important;
+  }
+
+  /* Hover */
+  .page-container .table-hover > tbody > tr:hover > * {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+  }
+
+  /* Links */
+  .page-container .table a {
+    color: #7dd3fc !important;
+  }
+
+  /* Small text */
+  .page-container .table small,
+  .page-container .table .text-muted {
+    color: #cbd5e1 !important;
+  }
+
+  /* Bootstrap utility overrides */
+  .page-container .table .text-dark,
+  .page-container .table .text-black,
+  .page-container .table .text-body,
+  .page-container .table .text-secondary {
+    color: #f8fafc !important;
+  }
+
+  /* Status badge text */
+  .page-container .badge {
+    color: #fff !important;
   }
 </style>

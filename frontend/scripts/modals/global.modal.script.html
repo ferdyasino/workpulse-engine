@@ -1,85 +1,82 @@
 <script>
-function formatLabel(value) {
-  if (!value) return "-";
+  function formatLabel(value) {
+    if (!value) return "-";
 
-  return String(value)
-    .toLowerCase()
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, c => c.toUpperCase());
-}
+    return String(value)
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
 
-const GlobalModal = (() => {
-
-  /* =====================================================
+  const GlobalModal = (() => {
+    /* =====================================================
      BOOTSTRAP HELPERS
   ===================================================== */
 
-  function getModal(id) {
-    return document.getElementById(id);
-  }
+    function getModal(id) {
+      return document.getElementById(id);
+    }
 
-  function show(id) {
-    const el = getModal(id);
+    function show(id) {
+      const el = getModal(id);
 
-    const modal = new bootstrap.Modal(el, {
-      backdrop: "static",
-      keyboard: false
-    });
+      const modal = new bootstrap.Modal(el, {
+        backdrop: "static",
+        keyboard: false,
+      });
 
-    modal.show();
-  }
+      modal.show();
+    }
 
-  function hide(id) {
-    const el = getModal(id);
-    bootstrap.Modal.getInstance(el)?.hide();
-  }
+    function hide(id) {
+      const el = getModal(id);
+      bootstrap.Modal.getInstance(el)?.hide();
+    }
 
-  /* =====================================================
+    /* =====================================================
      LIST MODAL
   ===================================================== */
 
-  function openList(config = {}) {
-    document.getElementById("globalListTitle").innerText =
-      config.title || "List";
+    function openList(config = {}) {
+      document.getElementById("globalListTitle").innerText =
+        config.title || "List";
 
-    const head = document.getElementById("globalListHead");
+      const head = document.getElementById("globalListHead");
 
-    head.innerHTML = `
+      head.innerHTML = `
       <tr>
-        ${(config.columns || [])
-          .map(col => `<th>${col}</th>`)
-          .join("")}
+        ${(config.columns || []).map((col) => `<th>${col}</th>`).join("")}
         <th class="text-end">Actions</th>
       </tr>
     `;
 
-    const addBtn = document.getElementById("globalListAddBtn");
-    addBtn.onclick = null;
-    addBtn.onclick = config.onAdd || null;
+      const addBtn = document.getElementById("globalListAddBtn");
+      addBtn.onclick = null;
+      addBtn.onclick = config.onAdd || null;
 
-    show("globalListModal");
-  }
+      show("globalListModal");
+    }
 
-  /* =====================================================
+    /* =====================================================
      FORM MODAL
   ===================================================== */
 
-  function openForm(config = {}) {
-    document.getElementById("globalFormTitle").innerText =
-      config.title || "Form";
+    function openForm(config = {}) {
+      document.getElementById("globalFormTitle").innerText =
+        config.title || "Form";
 
-    const form = document.getElementById("globalForm");
-    const container = document.getElementById("globalFormFields");
+      const form = document.getElementById("globalForm");
+      const container = document.getElementById("globalFormFields");
 
-    form.reset();
-    container.innerHTML = "";
+      form.reset();
+      container.innerHTML = "";
 
-    (config.fields || []).forEach(field => {
-      const colClass = field.col || "col-md-6";
-      let html = "";
+      (config.fields || []).forEach((field) => {
+        const colClass = field.col || "col-md-6";
+        let html = "";
 
-      if (field.type === "select") {
-        html = `
+        if (field.type === "select") {
+          html = `
           <div class="${colClass}">
             <label class="form-label">${field.label || ""}</label>
 
@@ -95,14 +92,18 @@ const GlobalModal = (() => {
                     : ""
                 }
 
-                ${(field.options || []).map(option => `
+                ${(field.options || [])
+                  .map(
+                    (option) => `
                   <option
                     value="${option.value}"
                     ${String(option.value) === String(field.value) ? "selected" : ""}
                   >
                     ${formatLabel(option.label || option.value)}
                   </option>
-                `).join("")}
+                `,
+                  )
+                  .join("")}
               </select>
 
               ${
@@ -122,10 +123,8 @@ const GlobalModal = (() => {
             </div>
           </div>
         `;
-      }
-
-      else if (field.type === "textarea") {
-        html = `
+        } else if (field.type === "textarea") {
+          html = `
           <div class="${colClass}">
             <label class="form-label">${field.label || ""}</label>
 
@@ -137,10 +136,8 @@ const GlobalModal = (() => {
             >${field.value || ""}</textarea>
           </div>
         `;
-      }
-
-      else {
-        html = `
+        } else {
+          html = `
           <div class="${colClass}">
             <label class="form-label">${field.label || ""}</label>
 
@@ -154,70 +151,93 @@ const GlobalModal = (() => {
             >
           </div>
         `;
-      }
+        }
 
-      container.insertAdjacentHTML("beforeend", html);
-    });
+        container.insertAdjacentHTML("beforeend", html);
+      });
 
-    container.onclick = (e) => {
-      const btn = e.target.closest("[data-add-field]");
-      if (!btn) return;
+      container.onclick = (e) => {
+        const btn = e.target.closest("[data-add-field]");
+        if (!btn) return;
 
-      const fieldName = btn.dataset.addField;
-      config.onAddField?.(fieldName, e);
-    };
+        const fieldName = btn.dataset.addField;
+        config.onAddField?.(fieldName, e);
+      };
 
-    form.onsubmit = (e) => {
-      e.preventDefault();
+      form.onsubmit = (e) => {
+        e.preventDefault();
 
-      const data = Object.fromEntries(
-        new FormData(form).entries()
-      );
+        const data = Object.fromEntries(new FormData(form).entries());
 
-      config.onSubmit?.(data);
-    };
+        config.onSubmit?.(data);
+      };
 
-    show("globalFormModal");
-  }
+      show("globalFormModal");
+    }
 
-  /* =====================================================
+    /* =====================================================
      DELETE MODAL
   ===================================================== */
 
-  function openDelete(config = {}) {
-    document.getElementById("globalDeleteTitle").innerText =
-      config.title || "Confirm Action";
+    function openDelete(config = {}) {
+      document.getElementById("globalDeleteTitle").innerText =
+        config.title || "Confirm Action";
 
-    document.getElementById("globalDeleteMessage").innerText =
-      config.message || "Choose an action.";
+      document.getElementById("globalDeleteMessage").innerText =
+        config.message || "Choose an action.";
 
-    document.getElementById("globalDeleteId").value =
-      config.id || "";
+      document.getElementById("globalDeleteId").value = config.id || "";
 
-    const deleteBtn = document.getElementById("globalDeleteBtn");
-    const deactivateBtn = document.getElementById("globalDeactivateBtn");
+      const deleteBtn = document.getElementById("globalDeleteBtn");
+      const deactivateBtn = document.getElementById("globalDeactivateBtn");
 
-    deleteBtn.onclick = null;
-    deactivateBtn.onclick = null;
+      deleteBtn.onclick = null;
+      deactivateBtn.onclick = null;
 
-    if (deleteBtn) {
-      deleteBtn.onclick = () => config.onDelete?.(config.id);
+      if (deleteBtn) {
+        deleteBtn.onclick = () => config.onDelete?.(config.id);
+      }
+
+      if (deactivateBtn) {
+        deactivateBtn.onclick = () => config.onDeactivate?.(config.id);
+      }
+
+      show("globalDeleteModal");
     }
 
-    if (deactivateBtn) {
-      deactivateBtn.onclick = () => config.onDeactivate?.(config.id);
+    function openConfirm(config = {}) {
+      document.getElementById("globalConfirmTitle").textContent =
+        config.title || "Confirm";
+
+      document.getElementById("globalConfirmMessage").innerHTML =
+        config.message || "";
+
+      const okBtn = document.getElementById("globalConfirmBtn");
+      const cancelBtn = document.getElementById("globalConfirmCancelBtn");
+
+      okBtn.textContent = config.confirmText || "Confirm";
+      cancelBtn.textContent = config.cancelText || "Cancel";
+
+      okBtn.onclick = () => {
+        hide("globalConfirmModal");
+        config.onConfirm?.();
+      };
+
+      cancelBtn.onclick = () => {
+        hide("globalConfirmModal");
+        config.onCancel?.();
+      };
+
+      show("globalConfirmModal");
     }
 
-    show("globalDeleteModal");
-  }
-
-  return {
-    openList,
-    openForm,
-    openDelete,
-    show,
-    hide
-  };
-
-})();
+    return {
+      openList,
+      openForm,
+      openDelete,
+      openConfirm,
+      show,
+      hide,
+    };
+  })();
 </script>

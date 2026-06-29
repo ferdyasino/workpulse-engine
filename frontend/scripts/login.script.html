@@ -67,10 +67,38 @@
   });
 
   // =====================================================
+  // REPORT RESET
+  // =====================================================
+
+  function resetReportsState() {
+    APP.reports = {
+      range: "today",
+      rows: [],
+      filteredRows: [],
+      kpis: {},
+      initialized: APP.reports?.initialized || false,
+    };
+
+    const tbody = document.getElementById("reportTableBody");
+
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="20" class="text-center text-muted py-4">
+            Loading reports...
+          </td>
+        </tr>
+      `;
+    }
+
+    renderReportKPIs({});
+  }
+
+  // =====================================================
   // LOGIN SUCCESS
   // =====================================================
 
-  function handleLoginSuccess(result) {
+  async function handleLoginSuccess(result) {
     hideLoader?.();
 
     if (!result) {
@@ -79,21 +107,27 @@
     }
 
     resetAppSessionState();
+    resetReportsState();
     clearDashboardUI?.();
 
     setCurrentUser(result);
 
-    APP.workStatus = "NOT STARTED";
+    await bootstrapSettings();
+
+    APP.workStatus = "Not Started";
     APP.dashboard = APP.dashboard || {};
     APP.dashboard.viewingDate = formatDateKey(new Date());
 
     renderUserHeader();
     applyRoleUI?.();
 
-    const isAdmin = APP.role === "admin" || APP.role === "owner";
-    if (isAdmin) {
+    if (APP.role === "admin" || APP.role === "owner") {
       UserInit?.();
     }
+
+    await bootstrapSettings();
+
+    maybePromptForDuty();
 
     go("dashboard");
   }
@@ -129,6 +163,7 @@
     }
 
     resetAppSessionState();
+    resetReportsState();
     APP.workspaceSlug = workspaceSlug;
 
     resetUIAfterLogout();
@@ -155,6 +190,7 @@
     APP.selectedUser = null;
     APP.dashboard = APP.dashboard || {};
     APP.dashboard.viewingDate = formatDateKey(new Date());
+    APP.__dutyPromptShown = false;
   }
 
   // =====================================================
@@ -280,6 +316,7 @@
       APP.user = null;
       APP.role = "guest";
       APP.currentPage = "login";
+      resetReportsState();
       return;
     }
 
@@ -288,19 +325,24 @@
     APP.user = user;
     APP.role = DISPLAY.lower(user.role || "guest");
 
+    resetReportsState();
     renderUserHeader();
     applyRoleUI?.();
 
     const isAdmin = APP.role === "admin" || APP.role === "owner";
+    const allowedPages = ["dashboard", "admin", "reports"];
+
     const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
 
     if (isAdmin) {
       UserInit?.();
-      APP.currentPage =
-        lastPage === "dashboard" || lastPage === "admin" ? lastPage : "admin";
-    } else {
-      APP.currentPage = "dashboard";
     }
+
+    APP.currentPage = allowedPages.includes(lastPage)
+      ? lastPage
+      : isAdmin
+        ? "admin"
+        : "dashboard";
   }
 
   // =====================================================
@@ -343,6 +385,31 @@
     const statusEl = document.getElementById("globalStatusText");
     if (statusEl) {
       statusEl.textContent = DISPLAY.status(APP.workStatus || "NOT STARTED");
+    }
+  }
+
+  async function bootstrapSettings(force = false) {
+    const workspace_id = getCurrentUser()?.workspace_id;
+
+    if (!workspace_id) {
+      APP.settings = {};
+      APP.settingsLoaded = false;
+      return;
+    }
+
+    if (APP.settingsLoaded && !force) {
+      return APP.settings;
+    }
+
+    try {
+      APP.settings = await SettingsAPI.getAll();
+      APP.settingsLoaded = true;
+
+      return APP.settings;
+    } catch (err) {
+      APP.settings = {};
+      APP.settingsLoaded = false;
+      throw err;
     }
   }
 </script>
