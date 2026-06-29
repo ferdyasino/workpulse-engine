@@ -108,11 +108,11 @@
 
       renderSettingsGroup(window.currentSettingsGroup || "ALL");
 
-      showToast("Workspace settings updated.", "success");
+      showToast("Settings updated.", "success");
     } catch (err) {
       console.error(err);
 
-      showToast(err.message || "Unable to save workspace settings.", "error");
+      showToast(err.message || "Unable to save settings.", "error");
     }
   }
 
