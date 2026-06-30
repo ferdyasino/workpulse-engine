@@ -130,6 +130,7 @@ id="page-error"
   <!-- =====================================================
   SCRIPTS
   ====================================================== -->
+  <?!= include("frontend/scripts/scripts"); ?>
   <script>
     window.SERVER_DATA =
     '<?= JSON.stringify(SERVER_DATA) ?>';
@@ -141,6 +142,8 @@ id="page-error"
   <?!= include("frontend/scripts/timelogs/timelog.modal.script"); ?>
   <?!= include("frontend/scripts/report.api.script"); ?>
   <?!= include("frontend/scripts/report.script"); ?>
+  <?!= include("frontend/scripts/report.excel.script"); ?>
+  <?!= include("frontend/scripts/report.pdf.script"); ?>
   <?!= include("frontend/scripts/timelogs/timelog.picker.script"); ?>
   <?!= include("frontend/scripts/timelogs/timelogger.script"); ?>
   <?!= include("frontend/scripts/dashboard.state.script"); ?>
