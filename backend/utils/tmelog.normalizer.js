@@ -6,7 +6,6 @@
  * =====================================================
  */
 function formatDateKey(date = new Date()) {
-
   const d = new Date(date);
 
   const year = d.getFullYear();
@@ -28,7 +27,10 @@ function normalizeTimeLogFilters(filters = {}) {
   }
 
   if (Object.prototype.hasOwnProperty.call(normalized, "workspace_id")) {
-    normalized.workspace_id = normalize("workspace_id", normalized.workspace_id);
+    normalized.workspace_id = normalize(
+      "workspace_id",
+      normalized.workspace_id,
+    );
   }
 
   if (Object.prototype.hasOwnProperty.call(normalized, "user_id")) {
@@ -54,7 +56,6 @@ function normalizeTimeLogFilters(filters = {}) {
   return normalized;
 }
 
-
 function normalizeTimeLogActionPayload(payload = {}) {
   return {
     ...payload,
@@ -70,7 +71,7 @@ function normalizeTimeLogActionPayload(payload = {}) {
     location: normalize("location", payload.location),
     location_status: normalize("location_status", payload.location_status),
     location_message: normalize("location_message", payload.location_message),
-    remarks: normalize("remarks", payload.remarks)
+    remarks: normalize("remarks", payload.remarks),
   };
 }
 
@@ -86,26 +87,53 @@ function normalizeTimeLog(data, workspace_id) {
   }
 
   const finalTimestamp = timestampDate.toISOString();
-  const finalDate =
-    normalize("date", payload.date) ||
-    formatDateKey(timestampDate);
-    
+
+  // --------------------------------------------------
+  // Resolve work date
+  // Uses shift work date for overnight shifts.
+  // Falls back to calendar date if no shift exists.
+  // --------------------------------------------------
+
+  let finalDate = normalize("date", payload.date);
+
+  if (!finalDate) {
+    const shift = payload.shift_id
+      ? getShiftById(workspace_id || payload.workspace_id, payload.shift_id)
+      : null;
+
+    finalDate = shift
+      ? resolveShiftWorkDate(shift, timestampDate)
+      : formatDateKey(timestampDate);
+  }
+
   return {
     log_id: normalize("log_id", payload.log_id || generateId("LOG")),
-    workspace_id: normalize("workspace_id", workspace_id || payload.workspace_id),
+
+    workspace_id: normalize(
+      "workspace_id",
+      workspace_id || payload.workspace_id,
+    ),
+
     user_id: normalize("user_id", payload.user_id),
+
     email: normalize("email", payload.email),
+
     action: normalize("action", payload.action),
 
     timestamp: finalTimestamp,
+
+    // Shift-aware work date
     date: finalDate,
 
     shift_id: normalize("shift_id", payload.shift_id),
+
     device_info: normalize("device_info", payload.device_info),
+
     location: normalize("location", payload.location),
+
     remarks: normalize("remarks", payload.remarks),
 
-    created_at: now.toISOString()
+    created_at: now.toISOString(),
   };
 }
 
@@ -132,6 +160,6 @@ function normalizeTimeLogRecord(record) {
     device_info: normalized.device_info,
     location: normalized.location,
     remarks: normalized.remarks,
-    created_at: normalized.created_at
+    created_at: normalized.created_at,
   });
 }
