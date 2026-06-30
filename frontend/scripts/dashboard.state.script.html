@@ -301,7 +301,6 @@
       const workspace_id = user.workspace_id;
       const email = user.email;
       const shift_id = user.shift_id;
-      const work_date = formatDateKey(new Date());
 
       if (!workspace_id || !email) {
         resolve();
@@ -323,7 +322,8 @@
             return;
           }
 
-          APP.dashboard.viewingDate = work_date;
+          // Server is now the source of truth
+          APP.dashboard.viewingDate = state.work_date;
           APP.attendanceState = state;
           APP.workStatus = state.status || "NOT_STARTED";
           APP.timeLogs = state.raw_logs || [];
@@ -345,7 +345,7 @@
 
           reject(err);
         })
-        .getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date);
+        .getCurrentState(workspace_id, email, shift_id);
     });
   }
 

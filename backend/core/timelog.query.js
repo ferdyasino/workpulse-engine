@@ -20,12 +20,12 @@ function getCurrentState(workspace_id, email, shift_id, timestamp) {
         normalizedWorkspaceId,
         normalizedEmail,
         normalizedShiftId,
-        targetTime
+        targetTime,
       )
     : getTodayTimeLogsByEmail(
         normalizedWorkspaceId,
         normalizedEmail,
-        targetTime
+        targetTime,
       );
 
   const workDate = normalizedShiftId
@@ -36,7 +36,7 @@ function getCurrentState(workspace_id, email, shift_id, timestamp) {
     logs,
     normalizedShiftId ? "shift" : "day",
     normalizedShiftId,
-    workDate
+    workDate,
   );
 }
 
@@ -56,7 +56,7 @@ function getTodayTimeLogsByEmail(workspace_id, email, timestamp) {
   return getTimeLogsByDate(
     normalizedWorkspaceId,
     normalizedEmail,
-    formatDateKey(timestamp || new Date())
+    formatDateKey(timestamp || new Date()),
   );
 }
 
@@ -130,13 +130,13 @@ function getLatestShiftTimeLogByEmail(
   workspace_id,
   email,
   shift_id,
-  timestamp
+  timestamp,
 ) {
   const logs = getShiftTimeLogsByEmail(
     workspace_id,
     email,
     shift_id,
-    timestamp
+    timestamp,
   );
 
   return logs.length ? logs[logs.length - 1] : null;
@@ -192,7 +192,7 @@ function getAttendanceStateByWorkDate(
   workspace_id,
   email,
   shift_id,
-  work_date
+  work_date,
 ) {
   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
 
@@ -227,7 +227,7 @@ function getAttendanceStateByWorkDate(
     logs,
     "shift",
     normalizedShiftId,
-    normalizedWorkDate
+    normalizedWorkDate,
   );
 }
 
