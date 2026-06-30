@@ -12,10 +12,17 @@ function enrichReportRows(
       row.email
     ) || {};
 
-    const shift = getShiftById(
-      workspace_id,
-      row.shift_id || user.shift_id
-    ) || {};
+    const shift = Object.assign(
+      {
+        shift_name: "",
+        start_time: "",
+        end_time: ""
+      },
+      getShiftById(
+        workspace_id,
+        row.shift_id || user.shift_id
+      )
+    );
 
     return {
 
@@ -160,7 +167,7 @@ function api_getReports(
 }
 
 
-function buildReportKPIs(rows = []) {
+function buildReportKPIs(rows = [], shift) {
 
   const kpi = {
 
@@ -369,7 +376,7 @@ function calculateShiftAttendance(shift, state) {
   }
 
   result.scheduled_minutes = Math.round(
-    (shiftEnd - shiftStart) / 60000
+    (shiftEnd.getTime() - shiftStart.getTime()) / 60000
   );
 
   // --------------------------------------------------
@@ -379,14 +386,14 @@ function calculateShiftAttendance(shift, state) {
   result.late_minutes = Math.max(
     0,
     Math.round(
-      (timeIn - shiftStart) / 60000
+      (timeIn.getTime() - shiftStart.getTime()) / 60000
     )
   );
 
   result.undertime_minutes = Math.max(
     0,
     Math.round(
-      (shiftEnd - timeOut) / 60000
+      (shiftEnd.getTime() - timeOut.getTime()) / 60000
     )
   );
 
@@ -413,7 +420,7 @@ function calculateShiftAttendance(shift, state) {
     result.break_minutes += Math.max(
       0,
       Math.round(
-        (breakOut - breakIn) / 60000
+        (breakOut.getTime() - breakIn.getTime()) / 60000
       )
     );
 
@@ -439,7 +446,7 @@ function calculateShiftAttendance(shift, state) {
       result.lunch_minutes = Math.max(
         0,
         Math.round(
-          (lunchOut - lunchIn) / 60000
+          (lunchOut.getTime() - lunchIn.getTime()) / 60000
         )
       );
 
@@ -454,7 +461,7 @@ function calculateShiftAttendance(shift, state) {
   result.worked_minutes = Math.max(
     0,
     Math.round(
-      (timeOut - timeIn) / 60000
+      (timeOut.getTime() - timeIn.getTime()) / 60000
     )
   );
 

@@ -160,7 +160,7 @@
         getDepartmentName(user.department_id),
       );
       const positionName = DISPLAY.name(getPositionName(user.position_id));
-      const shiftName = DISPLAY.name(getShiftName(user.shift_id));
+      const shift = getShift(user.shift_id);
       const status = DISPLAY.status(user.status || "UNKNOWN");
       const isOwner =
         String(user.role || "")
@@ -172,7 +172,7 @@
       <td>${escapeHtml(email)}</td>
       <td>${escapeHtml(departmentName)}</td>
       <td>${escapeHtml(positionName)}</td>
-      <td>${escapeHtml(shiftName)}</td>
+      <td>${escapeHtml(shift)}</td>
       <td>
         <span class="badge ${getStatusClass(status)}">
           ${escapeHtml(status)}
@@ -277,6 +277,10 @@
   function getPositionName(id) {
     const found = state.positions.find((p) => p.position_id === id);
     return found?.position_name || "-";
+  }
+
+  function getShift(id) {
+    return window.formatShiftLabel(state.shifts.find((s) => s.shift_id === id));
   }
 
   function getShiftName(id) {

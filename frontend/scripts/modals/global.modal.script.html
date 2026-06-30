@@ -95,13 +95,13 @@
                 ${(field.options || [])
                   .map(
                     (option) => `
-                  <option
+                    <option
                     value="${option.value}"
                     ${String(option.value) === String(field.value) ? "selected" : ""}
                   >
-                    ${formatLabel(option.label || option.value)}
+                    ${escapeHtml(option.label || option.value)}
                   </option>
-                `,
+                  `,
                   )
                   .join("")}
               </select>
