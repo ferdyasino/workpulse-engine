@@ -48,9 +48,7 @@
   }
 
   function getBreakIndicatorLimit() {
-    const value =
-      APP?.settings?.attendance?.max_breaks ??
-      APP?.attendancePolicy?.max_breaks;
+    const value = APP?.settings?.attendance?.max_breaks ?? APP?.attendancePolicy?.max_breaks;
 
     const number = Number(value);
 
@@ -241,8 +239,7 @@
     const user = getCurrentUser() || {};
 
     const email = user.email;
-    const workspace_id =
-      user.workspace_id || document.getElementById("sid")?.value;
+    const workspace_id = user.workspace_id || document.getElementById("sid")?.value;
     const shiftId = user.shift_id;
     const userId = user.user_id;
 
@@ -347,38 +344,8 @@
     container.innerHTML = logs
       .map(function (log) {
         const action = String(log.action || "").toLowerCase();
-        let label = null;
 
-        switch (action) {
-          case "time_in":
-            label = "Time In";
-            break;
-
-          case "time_out":
-            label = "Time Out";
-            break;
-
-          case "break_start":
-            breakNumber++;
-            label = `Break ${breakNumber} Start`;
-            break;
-
-          case "break_end":
-            label = `Break ${breakNumber} End`;
-            break;
-
-          case "lunch_start":
-            label = "Lunch Start";
-            break;
-
-          case "lunch_end":
-            label = "Lunch End";
-            break;
-
-          default:
-            return "";
-        }
-
+        let label = "";
         let indent = "";
         let textClass = "";
 
@@ -421,11 +388,11 @@
         }
 
         return `
-          <div class="d-flex justify-content-between py-1 ${indent}">
-            <span class="${textClass}">${escapeHtml(label)}</span>
-            <strong>${escapeHtml(formatTime(log.timestamp))}</strong>
-          </div>
-        `;
+        <div class="d-flex justify-content-between py-1 ${indent}">
+          <span class="${textClass}">${escapeHtml(label)}</span>
+          <strong>${escapeHtml(formatTime(log.timestamp))}</strong>
+        </div>
+      `;
       })
       .join("");
   }
