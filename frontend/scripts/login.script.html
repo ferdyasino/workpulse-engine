@@ -114,10 +114,6 @@
     renderReportKPIs({});
   }
 
-  // =====================================================
-  // LOGIN SUCCESS
-  // =====================================================
-
   async function handleLoginSuccess(result) {
     if (!result) {
       hideLoader?.();
@@ -128,37 +124,45 @@
     try {
       resetAppSessionState();
       resetReportsState();
-      clearDashboardUI?.();
 
       setCurrentUser(result);
-
-      await bootstrapSettings();
 
       APP.workStatus = "NOT STARTED";
       APP.dashboard = APP.dashboard || {};
       APP.dashboard.viewingDate = formatDateKey(new Date());
 
+      hideLoader?.();
       renderUserHeader();
       applyRoleUI?.();
 
-      if (APP.role === "admin" || APP.role === "owner") {
-        UserInit?.();
-      }
+      // 🚨 SHOW SHELL FIRST
 
-      maybePromptForDuty();
-
+      // 🚨 NAVIGATE WITHOUT WAITING FOR ANY BACKEND
       await go("dashboard");
-    } finally {
-      hideLoader?.();
+
+      // background only AFTER paint
+      queueMicrotask(() => {
+        bootstrapSettings().catch(console.error);
+
+        if (APP.role === "admin" || APP.role === "owner") {
+          UserInit?.();
+        }
+
+        maybePromptForDuty?.();
+      });
+    } catch (err) {
+      console.error(err);
+      showToast?.("Unable to load dashboard", "error");
+      await go("login");
     }
   }
-
   // =====================================================
   // LOGIN ERROR
   // =====================================================
 
   function handleLoginError(err) {
     hideLoader?.();
+    resetLoginForm();
 
     console.error("LOGIN ERROR:", err);
 
@@ -188,6 +192,7 @@
     APP.workspaceSlug = workspaceSlug;
 
     resetUIAfterLogout();
+    resetLoginForm();
 
     showToast?.("Logged out successfully", "info");
     await go("login");
@@ -327,7 +332,46 @@
   // SESSION RESTORE
   // =====================================================
 
-  function restoreSession() {
+  // function restoreSession() {
+  //   const user_id = localStorage.getItem(STORAGE_KEYS.USER_ID);
+  //   const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
+  //   const role = localStorage.getItem(STORAGE_KEYS.ROLE);
+  //   const workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID);
+
+  //   if (!user_id || !email || !role || !workspace_id) {
+  //     APP.user = null;
+  //     APP.role = "guest";
+  //     APP.currentPage = "login";
+  //     resetReportsState();
+  //     return;
+  //   }
+
+  //   const user = getCurrentUser();
+
+  //   APP.user = user;
+  //   APP.role = DISPLAY.lower(user.role || "guest");
+
+  //   resetReportsState();
+  //   renderUserHeader();
+  //   applyRoleUI?.();
+
+  //   const isAdmin = APP.role === "admin" || APP.role === "owner";
+  //   const allowedPages = ["dashboard", "admin", "reports"];
+
+  //   const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
+
+  //   if (isAdmin) {
+  //     UserInit?.();
+  //   }
+
+  //   APP.currentPage = allowedPages.includes(lastPage)
+  //     ? lastPage
+  //     : isAdmin
+  //       ? "admin"
+  //       : "dashboard";
+  // }
+
+  function restoreSessionLite() {
     const user_id = localStorage.getItem(STORAGE_KEYS.USER_ID);
     const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
     const role = localStorage.getItem(STORAGE_KEYS.ROLE);
@@ -337,33 +381,15 @@
       APP.user = null;
       APP.role = "guest";
       APP.currentPage = "login";
-      resetReportsState();
       return;
     }
 
-    const user = getCurrentUser();
-
-    APP.user = user;
-    APP.role = DISPLAY.lower(user.role || "guest");
-
-    resetReportsState();
-    renderUserHeader();
-    applyRoleUI?.();
-
-    const isAdmin = APP.role === "admin" || APP.role === "owner";
-    const allowedPages = ["dashboard", "admin", "reports"];
+    APP.user = getCurrentUser();
+    APP.role = DISPLAY.lower(APP.user.role || "guest");
 
     const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
 
-    if (isAdmin) {
-      UserInit?.();
-    }
-
-    APP.currentPage = allowedPages.includes(lastPage)
-      ? lastPage
-      : isAdmin
-        ? "admin"
-        : "dashboard";
+    APP.currentPage = lastPage || "dashboard";
   }
 
   // =====================================================
@@ -432,5 +458,15 @@
       APP.settingsLoaded = false;
       throw err;
     }
+  }
+
+  function resetLoginForm() {
+    const form = document.getElementById("loginForm");
+
+    if (!form) return;
+
+    form.querySelectorAll("input, button, select, textarea").forEach((el) => {
+      el.disabled = false;
+    });
   }
 </script>

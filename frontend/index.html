@@ -1,173 +1,173 @@
 <!DOCTYPE html>
 <html>
 
-<head>
-  <base target="_top">
+  <head>
+    <base target="_top">
 
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Attendance System</title>
+    <title>Attendance System</title>
 
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-  >
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    >
 
-  <?!= include("frontend/layouts/styles/theme"); ?>
-  <?!= include("frontend/layouts/styles/components"); ?>
-  <?!= include("frontend/layouts/styles/layout"); ?>
-</head>
+    <?!= include("frontend/layouts/styles/theme"); ?>
+    <?!= include("frontend/layouts/styles/components"); ?>
+    <?!= include("frontend/layouts/styles/layout"); ?>
+  </head>
 
-<body>
+  <body>
 
-  <!-- =====================================================
-       TOPBAR
-  ====================================================== -->
+    <!-- =====================================================
+        TOPBAR
+    ====================================================== -->
 
-  <header
-    id="appTopbar"
-    class="app-topbar glass d-none">
+    <header
+      id="appTopbar"
+      class="app-topbar glass d-none">
 
-    <?!= include("frontend/layouts/topbar"); ?>
-
-  </header>
-
-  <!-- =====================================================
-       GLOBAL COMPONENTS
-  ====================================================== -->
-
-  
-  <?!= include("frontend/components/toast"); ?>
-  <?!= include("frontend/components/loader"); ?>
-  <?!= include("frontend/components/modals/confirm.global"); ?>
-  <?!= include("frontend/components/modals/list.global"); ?>
-  <?!= include("frontend/components/modals/form.global"); ?>
-  <?!= include("frontend/components/modals/delete.global"); ?>
-  
-  
-  <!-- =====================================================
-  SHARED CLOCK
-  (moves between dashboard and topbar)
-  ====================================================== -->
-  
-  <?!= include("frontend/components/clock"); ?>
-  
-  <!-- =====================================================
-  APPLICATION
-  ====================================================== -->
-  
-  <main id="app">
+      <?!= include("frontend/layouts/topbar"); ?>
+      
+    </header>
     
-    <!-- LOGIN -->
-    <section
-    id="page-login"
-    class="app-page d-none">
+    <!-- =====================================================
+        GLOBAL COMPONENTS
+        ====================================================== -->
+
+      
+      <?!= include("frontend/components/toast"); ?>
+      <?!= include("frontend/components/loader"); ?>
+    <?!= include("frontend/components/modals/confirm.global"); ?>
+    <?!= include("frontend/components/modals/list.global"); ?>
+    <?!= include("frontend/components/modals/form.global"); ?>
+    <?!= include("frontend/components/modals/delete.global"); ?>
     
-    <?!= include("frontend/pages/login"); ?>
     
-  </section>
-  
-  <!-- HOME -->
-  <section
-      id="page-home"
+    <!-- =====================================================
+    SHARED CLOCK
+    (moves between dashboard and topbar)
+    ====================================================== -->
+    
+    <?!= include("frontend/components/clock"); ?>
+    
+    <!-- =====================================================
+    APPLICATION
+    ====================================================== -->
+    
+    <main id="app">
+      
+      <!-- LOGIN -->
+      <section
+      id="page-login"
       class="app-page d-none">
       
-      <?!= include("frontend/pages/home"); ?>
-      
-  </section>
-    
-    <!-- USER DASHBOARD -->
-  <section
-    id="page-dashboard"
-    class="app-page d-none">
-    
-    <?!= include("frontend/pages/dashboard"); ?>
-    
-  </section>
-  
-  <!-- ADMIN DASHBOARD -->
-  <section
-  id="page-admin-dashboard"
-  class="app-page d-none">
-  
-  <?!= include("frontend/pages/adminDashboard"); ?>
-  
-</section>
-
-<section
-  id="page-reports"
-  class="app-page d-none">
-  
-  <?!= include("frontend/pages/reports"); ?>
-</section>
-
-<section
-  id="page-settings"
-  class="app-page d-none">
-
-  <?!= include("frontend/pages/settings"); ?>
-
-</section>
-
-<!-- ERROR -->
-<section
-id="page-error"
-      class="app-page d-none">
-      
-      <?!= include("frontend/pages/error"); ?>
+      <?!= include("frontend/pages/login"); ?>
       
     </section>
+    
+    <!-- HOME -->
+    <section
+        id="page-home"
+        class="app-page d-none">
+        
+        <?!= include("frontend/pages/home"); ?>
+        
+    </section>
+      
+      <!-- USER DASHBOARD -->
+    <section
+      id="page-dashboard"
+      class="app-page d-none">
+      
+      <?!= include("frontend/pages/dashboard"); ?>
+      
+    </section>
+    
+    <!-- ADMIN DASHBOARD -->
+    <section
+    id="page-admin-dashboard"
+    class="app-page d-none">
+    
+    <?!= include("frontend/pages/adminDashboard"); ?>
+    
+  </section>
 
-  </main>
-  
-  <!-- =====================================================
-  FOOTER
-  ====================================================== -->
-  
-  <?!= include("frontend/layouts/footer"); ?>
-  
-  <!-- =====================================================
-  SCRIPTS
-  ====================================================== -->
-  <?!= include("frontend/scripts/scripts"); ?>
-  <script>
-    window.SERVER_DATA =
-    '<?= JSON.stringify(SERVER_DATA) ?>';
-    </script>
-  <?!= include("frontend/scripts/app.core.script"); ?>
-  <?!= include("frontend/scripts/helper.script"); ?>
-  <?!= include("frontend/scripts/login.script"); ?>
-  <?!= include("frontend/scripts/modals/global.modal.script"); ?>
-  <?!= include("frontend/scripts/timelogs/timelog.modal.script"); ?>
-  <?!= include("frontend/scripts/report.api.script"); ?>
-  <?!= include("frontend/scripts/report.script"); ?>
-  <?!= include("frontend/scripts/report.excel.script"); ?>
-  <?!= include("frontend/scripts/report.pdf.script"); ?>
-  <?!= include("frontend/scripts/timelogs/timelog.picker.script"); ?>
-  <?!= include("frontend/scripts/timelogs/timelogger.script"); ?>
-  <?!= include("frontend/scripts/dashboard.state.script"); ?>
-  <?!= include("frontend/scripts/clock.script"); ?>
-  
-  <?!= include("frontend/scripts/user.api.script"); ?>
-  <?!= include("frontend/scripts/user.script"); ?>
-  <?!= include("frontend/scripts/user.action"); ?>
-  
-  <?!= include("frontend/scripts/dept.script"); ?>
-  <?!= include("frontend/scripts/pos.script"); ?>
-  <?!= include("frontend/scripts/shift.script"); ?>
+  <section
+    id="page-reports"
+    class="app-page d-none">
+    
+    <?!= include("frontend/pages/reports"); ?>
+  </section>
 
-  <?!= include("frontend/scripts/settings.script"); ?>
-  <?!= include("frontend/scripts/settings.api.script"); ?>
-  <?!= include("frontend/scripts/settings.render.script"); ?>
-  
-  
-  <?!= include("frontend/scripts/modals/user.modal.script"); ?>
-  <?!= include("frontend/scripts/modals/dept.modal.script"); ?>
-  <?!= include("frontend/scripts/modals/pos.modal.script"); ?>
-  <?!= include("frontend/scripts/modals/shift.modal.script"); ?>
-  <?!= include("frontend/scripts/modals/settings.modal.script"); ?>
-  <?!= include("frontend/scripts/toast.script"); ?>
-</body>
+  <section
+    id="page-settings"
+    class="app-page d-none">
+
+    <?!= include("frontend/pages/settings"); ?>
+
+  </section>
+
+  <!-- ERROR -->
+  <section
+  id="page-error"
+        class="app-page d-none">
+        
+        <?!= include("frontend/pages/error"); ?>
+        
+      </section>
+
+    </main>
+    
+    <!-- =====================================================
+    FOOTER
+    ====================================================== -->
+    
+    <?!= include("frontend/layouts/footer"); ?>
+    
+    <!-- =====================================================
+    SCRIPTS
+    ====================================================== -->
+    <?!= include("frontend/scripts/scripts"); ?>
+    <script>
+      window.SERVER_DATA =
+      '<?= JSON.stringify(SERVER_DATA) ?>';
+      </script>
+    <?!= include("frontend/scripts/app.core.script"); ?>
+    <?!= include("frontend/scripts/helper.script"); ?>
+    <?!= include("frontend/scripts/login.script"); ?>
+    <?!= include("frontend/scripts/settings.script"); ?>
+    <?!= include("frontend/scripts/settings.api.script"); ?>
+    <?!= include("frontend/scripts/settings.render.script"); ?>
+    <?!= include("frontend/scripts/modals/global.modal.script"); ?>
+    <?!= include("frontend/scripts/timelogs/timelog.modal.script"); ?>
+    <?!= include("frontend/scripts/report.api.script"); ?>
+    <?!= include("frontend/scripts/report.script"); ?>
+    <?!= include("frontend/scripts/report.excel.script"); ?>
+    <?!= include("frontend/scripts/report.pdf.script"); ?>
+    <?!= include("frontend/scripts/timelogs/timelog.picker.script"); ?>
+    <?!= include("frontend/scripts/timelogs/timelogger.script"); ?>
+    <?!= include("frontend/scripts/dashboard.state.script"); ?>
+    <?!= include("frontend/scripts/clock.script"); ?>
+    
+    <?!= include("frontend/scripts/user.api.script"); ?>
+    <?!= include("frontend/scripts/user.script"); ?>
+    <?!= include("frontend/scripts/user.action"); ?>
+    
+    <?!= include("frontend/scripts/dept.script"); ?>
+    <?!= include("frontend/scripts/pos.script"); ?>
+    <?!= include("frontend/scripts/shift.script"); ?>
+
+    
+    
+    <?!= include("frontend/scripts/modals/user.modal.script"); ?>
+    <?!= include("frontend/scripts/modals/dept.modal.script"); ?>
+    <?!= include("frontend/scripts/modals/pos.modal.script"); ?>
+    <?!= include("frontend/scripts/modals/shift.modal.script"); ?>
+    <?!= include("frontend/scripts/modals/settings.modal.script"); ?>
+    <?!= include("frontend/scripts/toast.script"); ?>
+  </body>
 
 </html>

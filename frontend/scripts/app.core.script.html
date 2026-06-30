@@ -107,17 +107,15 @@
     APP.currentLocation = null;
   }
 
-  // =====================================================
-  // LOADER
-  // =====================================================
-
   function showLoader() {
-    console.log("showLoader");
-    document.getElementById("loader")?.classList.remove("d-none");
+    const el = document.getElementById("loader");
+    if (!el) return;
+    el.classList.remove("d-none");
   }
 
   function hideLoader() {
-    console.log("hideLoader");
-    document.getElementById("loader")?.classList.add("d-none");
+    const el = document.getElementById("loader");
+    if (!el) return;
+    el.classList.add("d-none");
   }
 </script>

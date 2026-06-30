@@ -20,15 +20,7 @@
     await go(APP.currentPage);
   }
 
-  // =====================================================
-  // ROUTER
-  // =====================================================
-
   async function go(page) {
-    if (!APP.settingsLoaded) {
-      console.warn("Settings not ready yet");
-    }
-
     APP.currentPage = page;
     localStorage.setItem(STORAGE_KEYS.LAST_PAGE, page);
 
@@ -37,25 +29,25 @@
 
     if (!el) {
       console.error("Invalid page:", page);
-      showToast?.("Page not found", "error");
       return;
     }
 
-    // Hide every page first
     hideAllPages();
 
-    // Prepare global UI while loader is visible
-    applyRoleUI();
-    updateDashboardTitle(page);
-
-    // Load everything required for the page
-    await loadPageData(page);
-
-    // Only now reveal the page
+    // STEP 1: show shell instantly
     el.classList.remove("d-none");
 
-    // Apply page-specific UI after it is visible
+    applyRoleUI();
+    updateDashboardTitle(page);
     applyUIState(page);
+
+    // STEP 2: allow paint first
+    await new Promise(requestAnimationFrame);
+
+    // STEP 3: defer ALL hydration safely
+    setTimeout(() => {
+      loadPageData(page).catch(console.error);
+    }, 0);
 
     console.log("ROUTE →", page);
   }
@@ -68,6 +60,28 @@
     document
       .querySelectorAll(".app-page")
       .forEach((pageEl) => pageEl.classList.add("d-none"));
+  }
+
+  function buildDashboardShell() {
+    renderUserHeader?.();
+
+    clearDashboardUI?.();
+
+    initDashboardAttendanceUI?.();
+
+    updateDashboardClock?.();
+
+    const status = document.getElementById("globalStatusText");
+
+    if (status) {
+      status.textContent = "Loading attendance...";
+    }
+
+    const dot = document.getElementById("statusDot");
+
+    if (dot) {
+      dot.className = "status-dot bg-secondary";
+    }
   }
 
   // =====================================================
@@ -128,23 +142,17 @@
     el.textContent = PAGE_TITLES[page] || "Dashboard";
   }
 
-  // =====================================================
-  // PAGE DATA LOADER DISPATCH
-  // IMPORTANT:
-  // - Keeps routing separate from page-specific data fetching
-  // - Safe no-op for pages that do not have a loader yet
-  // - Does NOT interfere with existing dashboard flow
-  // =====================================================
-
-  // =====================================================
-  // PAGE DATA LOADER DISPATCH
-  // =====================================================
-
   async function loadPageData(page) {
     try {
       switch (page) {
         case "dashboard":
-          await syncAttendanceState({ silent: true });
+          // 🚨 NEVER block UI thread
+          requestIdleCallback?.(() => {
+            syncAttendanceState({ silent: true }).catch(console.error);
+          }) ||
+            setTimeout(() => {
+              syncAttendanceState({ silent: true }).catch(console.error);
+            }, 0);
           break;
 
         case "reports":
@@ -162,13 +170,9 @@
         case "admin":
           await loadAdminHomePage?.();
           break;
-
-        default:
-          break;
       }
     } catch (error) {
       console.error("loadPageData error:", error);
-      showToast?.(error.message || "Unable to load page", "error");
     }
   }
 
@@ -241,20 +245,36 @@
 
   function clearDashboardUI() {
     const leftTimelogsList = document.getElementById("leftTimelogsList");
+
     if (leftTimelogsList) {
-      leftTimelogsList.innerHTML = `<div class="text-muted-custom">No break activity yet</div>`;
+      leftTimelogsList.innerHTML = `
+      <div class="text-muted-custom">
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Loading attendance...
+      </div>
+    `;
     }
 
     const summaryTimeIn = document.getElementById("summaryTimeIn");
-    if (summaryTimeIn) summaryTimeIn.textContent = "--";
+
+    if (summaryTimeIn) {
+      summaryTimeIn.textContent = "--:--";
+    }
 
     const summaryTimeOut = document.getElementById("summaryTimeOut");
-    if (summaryTimeOut) summaryTimeOut.textContent = "--";
+
+    if (summaryTimeOut) {
+      summaryTimeOut.textContent = "--:--";
+    }
 
     const globalStatusText = document.getElementById("globalStatusText");
-    if (globalStatusText) globalStatusText.textContent = "NOT STARTED";
+
+    if (globalStatusText) {
+      globalStatusText.textContent = "Loading attendance...";
+    }
 
     const dot = document.getElementById("statusDot");
+
     if (dot) {
       dot.className = "status-dot bg-secondary";
     }
@@ -262,13 +282,17 @@
     const breakButtonContainer = document.getElementById(
       "breakButtonContainer",
     );
-    if (breakButtonContainer) {
-      breakButtonContainer.innerHTML = "";
-    }
 
-    // IMPORTANT:
-    // dashboardTimelogsList is NOT cleared here anymore.
-    // Logger shell must persist and be managed by renderTimeLogger().
+    if (breakButtonContainer) {
+      breakButtonContainer.innerHTML = `
+      <button
+        class="btn btn-secondary w-100"
+        disabled>
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Loading...
+      </button>
+    `;
+    }
   }
 
   function syncAttendanceState({ silent = false } = {}) {
@@ -290,14 +314,17 @@
         return;
       }
 
-      if (!silent) showLoader?.();
+      if (!silent) {
+        showLoader?.();
+      }
 
       google.script.run
         .withSuccessHandler((state) => {
-          if (!silent) hideLoader?.();
+          if (!silent) {
+            hideLoader?.();
+          }
 
           if (!state) {
-            console.error("No attendance state returned.");
             resolve();
             return;
           }
@@ -307,21 +334,21 @@
           APP.workStatus = state.status || "NOT_STARTED";
           APP.timeLogs = state.raw_logs || [];
 
-          updateDashboardClock?.();
+          // Only hydrate existing UI
           hydrateAttendanceUI?.(state);
+
           renderUserHeader?.();
-          maybePromptForDuty();
+
+          updateDashboardClock?.();
+
+          maybePromptForDuty?.();
 
           resolve(state);
         })
         .withFailureHandler((err) => {
-          if (!silent) hideLoader?.();
-
-          console.error("syncAttendanceState:", err);
-          showToast?.(
-            err?.message || "Unable to load attendance state",
-            "error",
-          );
+          if (!silent) {
+            hideLoader?.();
+          }
 
           reject(err);
         })
@@ -332,23 +359,11 @@
   window.addEventListener("DOMContentLoaded", async () => {
     showLoader();
 
-    // Allow the browser to paint the loader
-    await new Promise(requestAnimationFrame);
+    parseServerData();
+    restoreSessionLite();
 
-    try {
-      parseServerData();
+    await bootApp();
 
-      restoreSession();
-
-      if (getCurrentUser()?.workspace_id) {
-        await bootstrapSettings();
-      }
-
-      await bootApp();
-    } catch (error) {
-      console.error("Application initialization failed:", error);
-    } finally {
-      hideLoader();
-    }
+    hideLoader();
   });
 </script>
