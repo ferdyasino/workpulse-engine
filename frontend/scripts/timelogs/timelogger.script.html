@@ -5,7 +5,7 @@
     renderTimeLogger();
     renderGlobalState({});
     renderTimeSummary({});
-    renderBreakActivity({});
+    // renderBreakActivity({});
   };
 
   /* =====================================================
@@ -48,9 +48,7 @@
   }
 
   function getBreakIndicatorLimit() {
-    const value =
-      APP?.settings?.attendance?.max_breaks ??
-      APP?.attendancePolicy?.max_breaks;
+    const value = APP?.settings?.attendance?.max_breaks ?? APP?.attendancePolicy?.max_breaks;
 
     const number = Number(value);
 
@@ -107,12 +105,28 @@
 
     if (timeInBtn) {
       timeInBtn.disabled = false;
-      timeInBtn.onclick = () => logTime("time_in");
+
+      timeInBtn.onclick = () => {
+        showTimeInPrompt({
+          shift: getCurrentShift(),
+          onConfirm() {
+            logTime("time_in");
+          },
+        });
+      };
     }
 
     if (timeOutBtn) {
       timeOutBtn.disabled = false;
-      timeOutBtn.onclick = () => logTime("time_out");
+
+      timeOutBtn.onclick = () => {
+        showTimeOutPrompt({
+          shift: getCurrentShift(),
+          onConfirm() {
+            logTime("time_out");
+          },
+        });
+      };
     }
 
     if (breakStartBtn) {
@@ -225,8 +239,7 @@
     const user = getCurrentUser() || {};
 
     const email = user.email;
-    const workspace_id =
-      user.workspace_id || document.getElementById("sid")?.value;
+    const workspace_id = user.workspace_id || document.getElementById("sid")?.value;
     const shiftId = user.shift_id;
     const userId = user.user_id;
 
@@ -308,77 +321,133 @@
      SUMMARY UI
   ===================================================== */
   function renderTimeSummary(state = {}) {
-    const inEl = document.getElementById("summaryTimeIn");
-    const outEl = document.getElementById("summaryTimeOut");
-
-    if (inEl) {
-      inEl.textContent = state.time_in ? formatTime(state.time_in) : "--";
-    }
-
-    if (outEl) {
-      outEl.textContent = state.time_out ? formatTime(state.time_out) : "--";
-    }
-  }
-
-  /* =====================================================
-     BREAK ACTIVITY UI
-  ===================================================== */
-  function renderBreakActivity(state = {}) {
-    const container = document.getElementById("leftTimelogsList");
+    const container = document.getElementById("dashboardSummaryList");
     if (!container) return;
 
-    const rows = [];
-    const breaks = Array.isArray(state.breaks) ? state.breaks : [];
-    const lunch = state.lunch || {};
+    const logs = Array.isArray(state.raw_logs) ? state.raw_logs.slice() : [];
 
-    breaks.forEach((b, i) => {
-      if (b?.in) {
-        rows.push({
-          label: `Break ${i + 1} Start`,
-          time: b.in,
-        });
-      }
-
-      if (b?.out) {
-        rows.push({
-          label: `Break ${i + 1} End`,
-          time: b.out,
-        });
-      }
+    logs.sort(function (a, b) {
+      return new Date(a.timestamp) - new Date(b.timestamp);
     });
 
-    if (lunch.in) {
-      rows.push({
-        label: "Lunch Start",
-        time: lunch.in,
-      });
-    }
-
-    if (lunch.out) {
-      rows.push({
-        label: "Lunch End",
-        time: lunch.out,
-      });
-    }
-
-    if (!rows.length) {
+    if (!logs.length) {
       container.innerHTML = `
-        <div class="text-muted-custom">No break activity yet</div>
-      `;
+      <div class="text-muted-custom">
+        No attendance yet
+      </div>
+    `;
       return;
     }
 
-    container.innerHTML = rows
-      .map(
-        (row) => `
-          <div class="d-flex justify-content-between py-1">
-            <span>${escapeHtml(row.label)}</span>
-            <strong>${escapeHtml(formatTime(row.time))}</strong>
-          </div>
-        `,
-      )
+    let breakNumber = 0;
+
+    container.innerHTML = logs
+      .map(function (log) {
+        const action = String(log.action || "").toLowerCase();
+
+        let label = "";
+        let indent = "";
+        let textClass = "";
+
+        switch (action) {
+          case "time_in":
+            label = "Time In";
+            break;
+
+          case "time_out":
+            label = "Time Out";
+            break;
+
+          case "break_start":
+            breakNumber++;
+            label = `Break ${breakNumber} Start`;
+            indent = "ps-4";
+            textClass = "text-warning";
+            break;
+
+          case "break_end":
+            label = `Break ${breakNumber} End`;
+            indent = "ps-4";
+            textClass = "text-warning";
+            break;
+
+          case "lunch_start":
+            label = "Lunch Start";
+            indent = "ps-4";
+            textClass = "text-info";
+            break;
+
+          case "lunch_end":
+            label = "Lunch End";
+            indent = "ps-4";
+            textClass = "text-info";
+            break;
+
+          default:
+            return "";
+        }
+
+        return `
+        <div class="d-flex justify-content-between py-1 ${indent}">
+          <span class="${textClass}">${escapeHtml(label)}</span>
+          <strong>${escapeHtml(formatTime(log.timestamp))}</strong>
+        </div>
+      `;
+      })
       .join("");
   }
+  /* =====================================================
+     BREAK ACTIVITY UI
+  ===================================================== */
+  // function renderBreakActivity(state = {}) {
+  // const container = document.getElementById("leftTimelogsList");
+  // if (!container) return;
+  // const rows = [];
+  // const breaks = Array.isArray(state.breaks) ? state.breaks : [];
+  // const lunch = state.lunch || {};
+  // breaks.forEach((b, i) => {
+  //   if (b?.in) {
+  //     rows.push({
+  //       label: `Break ${i + 1} Start`,
+  //       time: b.in,
+  //     });
+  //   }
+  //   if (b?.out) {
+  //     rows.push({
+  //       label: `Break ${i + 1} End`,
+  //       time: b.out,
+  //     });
+  //   }
+  // });
+  // if (lunch.in) {
+  //   rows.push({
+  //     label: "Lunch Start",
+  //     time: lunch.in,
+  //   });
+  // }
+  // if (lunch.out) {
+  //   rows.push({
+  //     label: "Lunch End",
+  //     time: lunch.out,
+  //   });
+  // }
+  // if (!rows.length) {
+  //   container.innerHTML = `
+  //     <div class="text-muted-custom">No break activity yet</div>
+  //   `;
+  //   return;
+  // }
+  // container.innerHTML = rows
+  //   .map(
+  //     (row) => `
+  //       <div class="d-flex justify-content-between py-1">
+  //         <span>${escapeHtml(row.label)}</span>
+  //         <strong>${escapeHtml(formatTime(row.time))}</strong>
+  //       </div>
+  //     `,
+  //   )
+  //   .join("");
+  // }
 
   /* =====================================================
      SINGLE HYDRATION ENTRY POINT
@@ -389,7 +458,7 @@
   function hydrateAttendanceUI(state = {}) {
     renderGlobalState(state);
     renderTimeSummary(state);
-    renderBreakActivity(state);
+    // renderBreakActivity(state);
     syncLoggerButtons();
   }
 </script>

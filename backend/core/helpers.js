@@ -8,6 +8,7 @@ function getMasterDatabase() {
     throw new Error("Master AUTH_SPREADSHEET_ID not configured");
   }
 
+  // @ts-ignore
   return SpreadsheetApp.openById(DB_CONFIG.AUTH_SPREADSHEET_ID);
 }
 
@@ -16,6 +17,7 @@ function getMasterDatabase() {
  */
 function resolveDb(dbRef) {
   if (typeof dbRef === "string") {
+    // @ts-ignore
     return SpreadsheetApp.openById(dbRef);
   }
 

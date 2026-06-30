@@ -44,6 +44,8 @@
   document.getElementById("loginForm")?.addEventListener("submit", (e) => {
     e.preventDefault();
 
+    const form = e.currentTarget;
+
     const email =
       DISPLAY.email(document.getElementById("email")?.value || "") ||
       DISPLAY.email(APP.serverEmail || "");
@@ -58,11 +60,29 @@
       return;
     }
 
+    document.activeElement?.blur();
+
+    form
+      .querySelectorAll("input, button, select, textarea")
+      .forEach((el) => (el.disabled = true));
+
+    // Hide the login page immediately
+    hideAllPages();
+
     showLoader?.();
+    showToast?.("Signing you in...", "info");
 
     google.script.run
       .withSuccessHandler(handleLoginSuccess)
-      .withFailureHandler(handleLoginError)
+      .withFailureHandler((err) => {
+        hideLoader?.();
+
+        form
+          .querySelectorAll("input, button, select, textarea")
+          .forEach((el) => (el.disabled = false));
+
+        handleLoginError(err);
+      })
       .loginResolver(workspaceSlug, email);
   });
 
@@ -94,50 +114,55 @@
     renderReportKPIs({});
   }
 
-  // =====================================================
-  // LOGIN SUCCESS
-  // =====================================================
-
   async function handleLoginSuccess(result) {
-    hideLoader?.();
-
     if (!result) {
+      hideLoader?.();
       showToast?.("Invalid login response", "error");
       return;
     }
 
-    resetAppSessionState();
-    resetReportsState();
-    clearDashboardUI?.();
+    try {
+      resetAppSessionState();
+      resetReportsState();
 
-    setCurrentUser(result);
+      setCurrentUser(result);
 
-    await bootstrapSettings();
+      APP.workStatus = "NOT STARTED";
+      APP.dashboard = APP.dashboard || {};
+      APP.dashboard.viewingDate = formatDateKey(new Date());
 
-    APP.workStatus = "Not Started";
-    APP.dashboard = APP.dashboard || {};
-    APP.dashboard.viewingDate = formatDateKey(new Date());
+      hideLoader?.();
+      renderUserHeader();
+      applyRoleUI?.();
 
-    renderUserHeader();
-    applyRoleUI?.();
+      // 🚨 SHOW SHELL FIRST
 
-    if (APP.role === "admin" || APP.role === "owner") {
-      UserInit?.();
+      // 🚨 NAVIGATE WITHOUT WAITING FOR ANY BACKEND
+      await go("dashboard");
+
+      // background only AFTER paint
+      queueMicrotask(() => {
+        bootstrapSettings().catch(console.error);
+
+        if (APP.role === "admin" || APP.role === "owner") {
+          UserInit?.();
+        }
+
+        maybePromptForDuty?.();
+      });
+    } catch (err) {
+      console.error(err);
+      showToast?.("Unable to load dashboard", "error");
+      await go("login");
     }
-
-    await bootstrapSettings();
-
-    maybePromptForDuty();
-
-    go("dashboard");
   }
-
   // =====================================================
   // LOGIN ERROR
   // =====================================================
 
   function handleLoginError(err) {
     hideLoader?.();
+    resetLoginForm();
 
     console.error("LOGIN ERROR:", err);
 
@@ -150,7 +175,7 @@
   // LOGOUT
   // =====================================================
 
-  function logout() {
+  async function logout() {
     const workspaceSlug =
       localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) ||
       APP.workspaceSlug ||
@@ -167,9 +192,10 @@
     APP.workspaceSlug = workspaceSlug;
 
     resetUIAfterLogout();
+    resetLoginForm();
 
     showToast?.("Logged out successfully", "info");
-    go("login");
+    await go("login");
   }
 
   // =====================================================
@@ -306,7 +332,46 @@
   // SESSION RESTORE
   // =====================================================
 
-  function restoreSession() {
+  // function restoreSession() {
+  //   const user_id = localStorage.getItem(STORAGE_KEYS.USER_ID);
+  //   const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
+  //   const role = localStorage.getItem(STORAGE_KEYS.ROLE);
+  //   const workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID);
+
+  //   if (!user_id || !email || !role || !workspace_id) {
+  //     APP.user = null;
+  //     APP.role = "guest";
+  //     APP.currentPage = "login";
+  //     resetReportsState();
+  //     return;
+  //   }
+
+  //   const user = getCurrentUser();
+
+  //   APP.user = user;
+  //   APP.role = DISPLAY.lower(user.role || "guest");
+
+  //   resetReportsState();
+  //   renderUserHeader();
+  //   applyRoleUI?.();
+
+  //   const isAdmin = APP.role === "admin" || APP.role === "owner";
+  //   const allowedPages = ["dashboard", "admin", "reports"];
+
+  //   const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
+
+  //   if (isAdmin) {
+  //     UserInit?.();
+  //   }
+
+  //   APP.currentPage = allowedPages.includes(lastPage)
+  //     ? lastPage
+  //     : isAdmin
+  //       ? "admin"
+  //       : "dashboard";
+  // }
+
+  function restoreSessionLite() {
     const user_id = localStorage.getItem(STORAGE_KEYS.USER_ID);
     const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
     const role = localStorage.getItem(STORAGE_KEYS.ROLE);
@@ -316,23 +381,16 @@
       APP.user = null;
       APP.role = "guest";
       APP.currentPage = "login";
-      resetReportsState();
       return;
     }
 
-    const user = getCurrentUser();
+    APP.user = getCurrentUser();
+    APP.role = DISPLAY.lower(APP.user.role || "guest");
 
-    APP.user = user;
-    APP.role = DISPLAY.lower(user.role || "guest");
-
-    resetReportsState();
-    renderUserHeader();
-    applyRoleUI?.();
+    const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
 
     const isAdmin = APP.role === "admin" || APP.role === "owner";
     const allowedPages = ["dashboard", "admin", "reports"];
-
-    const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
 
     if (isAdmin) {
       UserInit?.();
@@ -411,5 +469,15 @@
       APP.settingsLoaded = false;
       throw err;
     }
+  }
+
+  function resetLoginForm() {
+    const form = document.getElementById("loginForm");
+
+    if (!form) return;
+
+    form.querySelectorAll("input, button, select, textarea").forEach((el) => {
+      el.disabled = false;
+    });
   }
 </script>

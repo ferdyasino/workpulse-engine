@@ -1,148 +1,147 @@
 <script>
-const UsersModal = (() => {
+  const UsersModal = (() => {
+    // =====================================================
+    // LIST MODAL
+    // =====================================================
 
-  // =====================================================
-  // LIST MODAL
-  // =====================================================
+    function openListModal(config = {}) {
+      GlobalModal.openList({
+        title: "Employee Records",
 
-  function openListModal(config = {}) {
-    GlobalModal.openList({
-      title: "Employee Records",
+        columns: [
+          "Employee No",
+          "Full Name",
+          "Email",
+          "Department",
+          "Position",
+          "Shift",
+          "Status",
+        ],
 
-      columns: [
-        "Employee No",
-        "Full Name",
-        "Email",
-        "Department",
-        "Position",
-        "Shift",
-        "Status"
-      ],
-
-      onAdd: () => {
-        openCreateModal({}, config);
-      },
-
-      onMount: config.onMount || null
-    });
-  }
-
-  // =====================================================
-  // CREATE / EDIT MODAL
-  // =====================================================
-
-  function openCreateModal(user = {}, config = {}) {
-    GlobalModal.openForm({
-      title: user.user_id ? "Edit Employee" : "Create Employee",
-
-      fields: [
-        {
-          name: "fullname",
-          label: "Full Name",
-          value: user.fullname || ""
+        onAdd: () => {
+          openCreateModal({}, config);
         },
 
-        {
-          name: "email",
-          label: "Email",
-          type: "email",
-          value: user.email || ""
+        onMount: config.onMount || null,
+      });
+    }
+
+    // =====================================================
+    // CREATE / EDIT MODAL
+    // =====================================================
+
+    function openCreateModal(user = {}, config = {}) {
+      GlobalModal.openForm({
+        title: user.user_id ? "Edit Employee" : "Create Employee",
+
+        fields: [
+          {
+            name: "fullname",
+            label: "Full Name",
+            value: user.fullname || "",
+          },
+
+          {
+            name: "email",
+            label: "Email",
+            type: "email",
+            value: user.email || "",
+          },
+
+          {
+            name: "department_id",
+            label: "Department",
+            type: "select",
+            options: (config.departments || []).map((d) => ({
+              value: d.department_id,
+              label: d.department_name,
+            })),
+            value: user.department_id || config.selectedDepartmentId || "",
+            onAdd: true,
+          },
+
+          {
+            name: "position_id",
+            label: "Position",
+            type: "select",
+            options: (config.positions || []).map((p) => ({
+              value: p.position_id,
+              label: p.position_name,
+            })),
+            value: user.position_id || config.selectedPositionId || "",
+            onAdd: true,
+          },
+
+          {
+            name: "shift_id",
+            label: "Shift",
+            type: "select",
+            options: (config.shifts || []).map((s) => ({
+              value: s.shift_id,
+              label: window.formatShiftLabel(s),
+            })),
+            value: user.shift_id || config.selectedShiftId || "",
+            onAdd: true,
+          },
+          {
+            name: "status",
+            label: "Status",
+            type: "select",
+            options: [
+              { value: "ACTIVE", label: "Active" },
+              { value: "INACTIVE", label: "Inactive" },
+            ],
+            value: user.status || "",
+          },
+        ],
+
+        onAddField: (fieldName, e) => {
+          config.onAddField?.(fieldName, e);
         },
-        
-        {
-          name: "department_id",
-          label: "Department",
-          type: "select",
-          options: (config.departments || []).map(d => ({
-            value: d.department_id,
-            label: d.department_name
-          })),
-          value: user.department_id || config.selectedDepartmentId || "",
-          onAdd: true
+
+        onSubmit: (formData) => {
+          config.onSubmit?.(formData, user);
         },
-        
-        {
-          name: "position_id",
-          label: "Position",
-          type: "select",
-          options: (config.positions || []).map(p => ({
-            value: p.position_id,
-            label: p.position_name
-          })),
-          value: user.position_id || config.selectedPositionId || "",
-          onAdd: true
-        },
-        
-        {
-          name: "shift_id",
-          label: "Shift",
-          type: "select",
-          options: (config.shifts || []).map(s => ({
-            value: s.shift_id,
-            label: s.shift_name
-          })),
-          value: user.shift_id || config.selectedShiftId || "",
-          onAdd: true
-        },
-        {
-          name: "status",
-          label: "Status",
-          type: "select",
-          options: [
-            { value: "ACTIVE", label: "Active" },
-            { value: "INACTIVE", label: "Inactive" }
-          ],
-          value: user.status || ""
-        },
-      ],
+      });
+    }
 
-      onAddField: (fieldName, e) => {
-        config.onAddField?.(fieldName, e);
-      },
+    // =====================================================
+    // EDIT WRAPPER
+    // =====================================================
 
-      onSubmit: (formData) => {
-        config.onSubmit?.(formData, user);
-      }
-    });
-  }
+    function openEditModal(emp, handlers = {}) {
+      openCreateModal(emp, handlers);
+    }
 
-  // =====================================================
-  // EDIT WRAPPER
-  // =====================================================
+    function closeFormModal() {
+      GlobalModal.hide("globalFormModal");
+    }
 
-  function openEditModal(emp, handlers = {}) {
-    openCreateModal(emp, handlers);
-  }
+    // =====================================================
+    // DELETE MODAL
+    // =====================================================
 
-  function closeFormModal() {
-    GlobalModal.hide("globalFormModal");
-  }
+    function openDeleteModal(id, handlers = {}) {
+      GlobalModal.openDelete({
+        title: "Employee Action",
+        message:
+          "Choose whether to deactivate or permanently delete this employee.",
+        id,
+        onDelete: handlers.onDelete,
+        onDeactivate: handlers.onDeactivate,
+      });
+    }
 
-  // =====================================================
-  // DELETE MODAL
-  // =====================================================
+    // =====================================================
+    // PUBLIC API
+    // =====================================================
 
-  function openDeleteModal(id, handlers = {}) {
-    GlobalModal.openDelete({
-      title: "Employee Action",
-      message: "Choose whether to deactivate or permanently delete this employee.",
-      id,
-      onDelete: handlers.onDelete,
-      onDeactivate: handlers.onDeactivate
-    });
-  }
-
-  // =====================================================
-  // PUBLIC API
-  // =====================================================
-
-  return {
-    openListModal,
-    openCreateModal,
-    openEditModal,
-    openDeleteModal,
-    closeFormModal
-  };
-
-})();
+    return {
+      openListModal,
+      openCreateModal,
+      openEditModal,
+      openDeleteModal,
+      closeFormModal,
+    };
+  })();
 </script>

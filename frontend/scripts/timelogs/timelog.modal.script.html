@@ -12,6 +12,26 @@
       return;
     }
 
+    APP.__dutyPromptShown = true;
+
+    showTimeInPrompt({
+      shift,
+      onConfirm() {
+        logTime("time_in");
+      },
+    });
+  }
+
+  // =====================================================
+  // TIME IN PROMPT
+  // =====================================================
+
+  window.showTimeInPrompt = function ({ shift, onConfirm, onCancel } = {}) {
+    if (!shift) {
+      onConfirm?.();
+      return;
+    }
+
     const now = new Date();
 
     const shiftStart = parseShiftTimeToDate(shift.start_time, now);
@@ -21,85 +41,182 @@
 
     const minutesUntilEnd = shiftEnd ? diffMinutes(shiftEnd, now) : 0;
 
-    let title = "Ready to Start Work?";
+    let title = "";
     let message = "";
 
     // -----------------------------------------------------
     // BEFORE SHIFT
     // -----------------------------------------------------
+
     if (minutesUntilStart > 0) {
-      title = "Ready to Start Work?";
+      title = "Clock In Early?";
 
       message = `
-        Your shift starts in
-        <strong>${formatMinutesDuration(minutesUntilStart)}</strong>
-        at <strong>${formatTime(shift.start_time)}</strong>.
-      `;
+      Your shift starts in
+      <strong>${formatMinutesDuration(minutesUntilStart)}</strong>
+      at <strong>${formatTime(shift.start_time)}</strong>.
+
+      <br><br>
+
+      If you clock in now, your work will begin immediately.
+      Any work before your scheduled shift may be treated as
+      <strong>early work or overtime</strong> depending on company policy.
+
+      <br><br>
+
+      Do you want to clock in now?
+    `;
     }
 
     // -----------------------------------------------------
-    // SHIFT JUST STARTED / DURING SHIFT
+    // DURING SHIFT
     // -----------------------------------------------------
     else if (minutesUntilEnd >= 0) {
       const minutesLate = Math.abs(minutesUntilStart);
 
       if (minutesLate === 0) {
-        title = "Your Shift Starts Now";
-
+        title = "Clock In";
         message = `
-          Your scheduled shift has started at
-          <strong>${formatTime(shift.start_time)}</strong>.
-        `;
-      } else {
-        title = "Clock In Reminder";
+        Your shift has just started.
 
-        message = `
-          Your shift started
-          <strong>${formatMinutesDuration(minutesLate)}</strong>
-          ago.
-          <br><br>
-          You have not clocked in today.
-        `;
-      }
-
-      message += `
         <br><br>
-        Remaining shift:
-        <strong>${formatMinutesDuration(minutesUntilEnd)}</strong>.
+
+        Do you want to clock in now?
       `;
+      } else {
+        title = "Late Clock In";
+
+        message = `
+        Your shift started
+        <strong>${formatMinutesDuration(minutesLate)}</strong>
+        ago.
+
+        <br><br>
+
+        Do you want to clock in now?
+      `;
+      }
     }
 
     // -----------------------------------------------------
-    // SHIFT ENDED
+    // AFTER SHIFT
     // -----------------------------------------------------
     else {
-      title = "Missed Shift?";
+      title = "Clock In After Shift?";
 
       message = `
-        Your scheduled shift ended
-        <strong>${formatMinutesDuration(Math.abs(minutesUntilEnd))}</strong>
-        ago.
-        <br><br>
-        No clock-in was recorded for today.
-      `;
-    }
+      Your scheduled shift ended
+      <strong>${formatMinutesDuration(Math.abs(minutesUntilEnd))}</strong>
+      ago.
 
-    message += `
       <br><br>
-      Would you like to clock in now?
-    `;
 
-    APP.__dutyPromptShown = true;
+      If you start work now, it may be recorded as
+      <strong>overtime or an unscheduled shift</strong>
+      depending on company policy.
+
+      <br><br>
+
+      Do you want to clock in?
+    `;
+    }
 
     GlobalModal.openConfirm({
       title,
       message,
       confirmText: "Clock In",
-      cancelText: "Not Working Today",
-
-      onConfirm() {
-        logTime("time_in");
-      },
+      cancelText: "Cancel",
+      onConfirm,
+      onCancel,
     });
-  }
+  };
+
+  // =====================================================
+  // TIME OUT PROMPT
+  // =====================================================
+
+  window.showTimeOutPrompt = function ({ shift, onConfirm, onCancel } = {}) {
+    if (!shift) {
+      onConfirm?.();
+      return;
+    }
+
+    const now = new Date();
+
+    const shiftEnd = parseShiftTimeToDate(shift.end_time, now);
+
+    if (!shiftEnd) {
+      onConfirm?.();
+      return;
+    }
+
+    const minutesUntilEnd = diffMinutes(shiftEnd, now);
+
+    // -----------------------------------------------------
+    // EARLY TIME OUT
+    // -----------------------------------------------------
+
+    if (minutesUntilEnd > 0) {
+      GlobalModal.openConfirm({
+        title: "Clock Out Early?",
+        message: `
+        You still have
+        <strong>${formatMinutesDuration(minutesUntilEnd)}</strong>
+        remaining in your scheduled shift.
+
+        <br><br>
+
+        Clocking out now may be recorded as an
+        <strong>Early Out</strong>.
+
+        <br><br>
+
+        Are you sure you want to clock out?
+      `,
+        confirmText: "Clock Out",
+        cancelText: "Continue Working",
+        onConfirm,
+        onCancel,
+      });
+
+      return;
+    }
+
+    // -----------------------------------------------------
+    // AFTER SHIFT
+    // -----------------------------------------------------
+
+    const overtime = Math.abs(minutesUntilEnd);
+
+    if (overtime > 0) {
+      GlobalModal.openConfirm({
+        title: "Finish Working?",
+        message: `
+        Your scheduled shift ended
+        <strong>${formatMinutesDuration(overtime)}</strong>
+        ago.
+
+        <br><br>
+
+        If you clock out now, this additional time may be
+        recorded as <strong>overtime</strong> depending on
+        company policy.
+
+        <br><br>
+
+        Do you want to clock out now?
+      `,
+        confirmText: "Clock Out",
+        cancelText: "Continue Working",
+        onConfirm,
+        onCancel,
+      });
+
+      return;
+    }
+
+    // Exactly on schedule
+
+    onConfirm?.();
+  };
 </script>

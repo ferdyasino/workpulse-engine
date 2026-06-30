@@ -26,6 +26,7 @@
       .withSuccessHandler((state) => {
         APP.attendanceState = state;
         APP.timeLogs = state.raw_logs || [];
+        APP.sessions = state.sessions || [];
         APP.dashboard.viewingDate = state.work_date;
 
         hydrateAttendanceUI(state);

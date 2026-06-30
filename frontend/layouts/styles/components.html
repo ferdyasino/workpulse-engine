@@ -1,12 +1,10 @@
 <style>
-  /* =====================================================
-   DESIGN TOKENS (implicit usage)
-===================================================== */
-  /* var(--glass-bg), --radius-sm, --radius-md, --blur, etc. */
-
-  /* =====================================================
-   GLASS SYSTEM
-===================================================== */
+  .app-page,
+  .glass,
+  .glass-card {
+    position: relative;
+    z-index: 1;
+  }
 
   .glass {
     background: var(--glass-bg);
@@ -199,6 +197,17 @@
     to {
       transform: rotate(360deg);
     }
+  }
+
+  #loader,
+  .app-loader,
+  .global-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 999999 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* =====================================================

@@ -85,28 +85,39 @@ function saveWorkspaceSettings(workspace_id, settingsRows) {
 
       let value;
 
+      // @ts-ignore
       switch (setting.type) {
 
         case "boolean":
+          // @ts-ignore
           value = setting.value ? "ENABLED" : "DISABLED";
           break;
 
         case "number":
+          // @ts-ignore
           value = setting.value;
           break;
 
         default:
+          // @ts-ignore
           value = serializeSettingValue(setting.value);
       }
 
       return [
+        // @ts-ignore
         setting.key,
         value,
+        // @ts-ignore
         setting.type,
+        // @ts-ignore
         setting.group,
+        // @ts-ignore
         setting.options.join("|"),
+        // @ts-ignore
         setting.label,
+        // @ts-ignore
         setting.description,
+        // @ts-ignore
         setting.updated_at || now
       ];
     });
