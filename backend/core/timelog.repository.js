@@ -142,11 +142,18 @@ function insertTimeLog(workspace_id, payload) {
   sheet.appendRow(row);
 
   return {
-    success: true,
-    message: buildActionMessage(log.action),
-    log_id: log.log_id,
-    workspace_id: normalizedWorkspaceId,
-    work_date: log.date
+      success: true,
+      message: buildActionMessage(log.action),
+
+      log_id: log.log_id,
+
+      workspace_id: normalizedWorkspaceId,
+
+      timestamp: log.timestamp,
+
+      shift_id: log.shift_id,
+
+      work_date: log.date
   };
 }
 

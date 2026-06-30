@@ -20,6 +20,7 @@ function formatDateKey(date = new Date()) {
  * Timelog filter normalizer
  */
 function normalizeTimeLogFilters(filters = {}) {
+  /** @type {{[key: string]: any}} */
   const normalized = { ...filters };
 
   if (Object.prototype.hasOwnProperty.call(normalized, "log_id")) {
@@ -87,11 +88,7 @@ function normalizeTimeLog(data, workspace_id) {
   const finalTimestamp = timestampDate.toISOString();
   const finalDate =
     normalize("date", payload.date) ||
-    Utilities.formatDate(
-      timestampDate,
-      Session.getScriptTimeZone(),
-      "yyyy-MM-dd"
-    );
+    formatDateKey(timestampDate);
     
   return {
     log_id: normalize("log_id", payload.log_id || generateId("LOG")),
@@ -119,11 +116,7 @@ function normalizeTimeLogRecord(record) {
   const normalized = { ...(record || {}) };
 
   if (normalized.date instanceof Date) {
-    normalized.date = Utilities.formatDate(
-      normalized.date,
-      Session.getScriptTimeZone(),
-      "yyyy-MM-dd"
-    );
+    normalized.date = formatDateKey(normalized.date);
   }
 
   return normalizeRecord({

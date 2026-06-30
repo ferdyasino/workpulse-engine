@@ -4,14 +4,16 @@ function getCurrentState(
   shift_id,
   timestamp
 ) {
-  const normalizedEmail = String(email || "")
-    .trim()
-    .toLowerCase();
+  const normalizedWorkspaceId =
+    normalize("workspace_id", workspace_id);
 
-  const normalizedShiftId = String(shift_id || "")
-    .trim();
+  const normalizedEmail =
+    normalize("email", email);
 
-  if (!workspace_id) {
+  const normalizedShiftId =
+    normalize("shift_id", shift_id);
+
+  if (!normalizedWorkspaceId) {
     throw new Error("workspace_id is required");
   }
 
@@ -23,48 +25,57 @@ function getCurrentState(
 
   const logs = normalizedShiftId
     ? getShiftTimeLogsByEmail(
-        workspace_id,
+        normalizedWorkspaceId,
         normalizedEmail,
         normalizedShiftId,
         targetTime
       )
     : getTodayTimeLogsByEmail(
-        workspace_id,
-        normalizedEmail
+        normalizedWorkspaceId,
+        normalizedEmail,
+        targetTime
       );
 
-  const state = buildTimeLogState(logs);
+  const workDate = normalizedShiftId
+    ? getShiftWorkDate(
+        normalizedWorkspaceId,
+        normalizedShiftId,
+        targetTime
+      )
+    : formatDateKey(targetTime);
 
-  return {
-    ...state,
-    scope: normalizedShiftId ? "shift" : "day",
-    shift_id: normalizedShiftId,
-    work_date: normalizedShiftId
-      ? getShiftWorkDate(
-          workspace_id,
-          normalizedShiftId,
-          new Date()
-        )
-      : formatDateKey(new Date()),
-    raw_logs: logs
-  };
+  return buildAttendanceState(
+    logs,
+    normalizedShiftId ? "shift" : "day",
+    normalizedShiftId,
+    workDate
+  );
 }
 
 
-/* =========================
-   DAY QUERIES
-========================= */
-function getTodayTimeLogsByEmail(workspace_id, email) {
-  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
-  const normalizedEmail = normalize("email", email);
+function getTodayTimeLogsByEmail(
+  workspace_id,
+  email,
+  timestamp
+) {
+  const normalizedWorkspaceId =
+    normalize("workspace_id", workspace_id);
 
-  if (!normalizedWorkspaceId) throw new Error("workspace_id is required");
-  if (!normalizedEmail) throw new Error("email is required");
+  const normalizedEmail =
+    normalize("email", email);
+
+  if (!normalizedWorkspaceId) {
+    throw new Error("workspace_id is required");
+  }
+
+  if (!normalizedEmail) {
+    throw new Error("email is required");
+  }
 
   return getTimeLogsByDate(
     normalizedWorkspaceId,
     normalizedEmail,
-    formatDateKey(new Date())
+    formatDateKey(timestamp || new Date())
   );
 }
 
@@ -211,10 +222,17 @@ function getAttendanceStateByWorkDate(
   shift_id,
   work_date
 ) {
-  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
-  const normalizedEmail = normalize("email", email);
-  const normalizedShiftId = normalize("shift_id", shift_id);
-  const normalizedWorkDate = normalize("date", work_date);
+  const normalizedWorkspaceId =
+    normalize("workspace_id", workspace_id);
+
+  const normalizedEmail =
+    normalize("email", email);
+
+  const normalizedShiftId =
+    normalize("shift_id", shift_id);
+
+  const normalizedWorkDate =
+    normalize("date", work_date);
 
   if (!normalizedWorkspaceId) {
     throw new Error("workspace_id is required");
@@ -241,13 +259,31 @@ function getAttendanceStateByWorkDate(
     }
   );
 
+  return buildAttendanceState(
+    logs,
+    "shift",
+    normalizedShiftId,
+    normalizedWorkDate
+  );
+}
+
+/* =========================
+   STATE RESPONSE
+========================= */
+
+function buildAttendanceState(
+  logs,
+  scope,
+  shift_id,
+  work_date
+) {
   const state = buildTimeLogState(logs);
 
   return {
     ...state,
-    scope: "shift",
-    shift_id: normalizedShiftId,
-    work_date: normalizedWorkDate,
+    scope,
+    shift_id: shift_id || "",
+    work_date,
     raw_logs: logs
   };
 }

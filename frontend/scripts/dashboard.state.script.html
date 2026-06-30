@@ -1,7 +1,7 @@
 <script>
   APP.__dutyPromptShown = APP.__dutyPromptShown || false;
 
-  function bootApp() {
+  async function bootApp() {
     APP.dashboard.viewingDate = formatDateKey(new Date());
 
     const user = getCurrentUser();
@@ -17,26 +17,22 @@
       APP.currentPage = "login";
     }
 
-    go(APP.currentPage);
+    await go(APP.currentPage);
   }
 
   // =====================================================
   // ROUTER
   // =====================================================
 
-  function go(page) {
+  async function go(page) {
     if (!APP.settingsLoaded) {
       console.warn("Settings not ready yet");
     }
 
     APP.currentPage = page;
-
     localStorage.setItem(STORAGE_KEYS.LAST_PAGE, page);
 
     const targetId = ROUTES[page] || ROUTES.home;
-
-    hideAllPages();
-
     const el = document.getElementById(targetId);
 
     if (!el) {
@@ -45,16 +41,21 @@
       return;
     }
 
-    el.classList.remove("d-none");
+    // Hide every page first
+    hideAllPages();
 
-    applyUIState(page);
+    // Prepare global UI while loader is visible
     applyRoleUI();
     updateDashboardTitle(page);
 
-    // IMPORTANT:
-    // Page-specific data loaders run AFTER shell/UI state is applied.
-    // This keeps existing flow intact and allows admin pages to hydrate safely.
-    loadPageData(page);
+    // Load everything required for the page
+    await loadPageData(page);
+
+    // Only now reveal the page
+    el.classList.remove("d-none");
+
+    // Apply page-specific UI after it is visible
+    applyUIState(page);
 
     console.log("ROUTE →", page);
   }
@@ -92,15 +93,8 @@
     }
 
     if (page === "dashboard") {
-      // 1) Reset dashboard data display only
       clearDashboardUI?.();
-
-      // 2) Render attendance shell immediately (logger + empty placeholders)
       initDashboardAttendanceUI?.();
-
-      // 3) Hydrate actual attendance state in background
-      // silent:true = do not block dashboard with loader on initial dashboard load
-      syncAttendanceState({ silent: true });
     }
   }
 
@@ -146,27 +140,27 @@
   // PAGE DATA LOADER DISPATCH
   // =====================================================
 
-  function loadPageData(page) {
+  async function loadPageData(page) {
     try {
       switch (page) {
         case "dashboard":
-          // Dashboard hydration already handled
+          await syncAttendanceState({ silent: true });
           break;
 
         case "reports":
-          loadReportsPage?.();
+          await loadReportsPage?.();
           break;
 
         case "settings":
-          renderSettingsGroup?.();
+          await renderSettingsGroup?.();
           break;
 
         case "users":
-          loadUsersAdminPage?.();
+          await loadUsersAdminPage?.();
           break;
 
         case "admin":
-          loadAdminHomePage?.();
+          await loadAdminHomePage?.();
           break;
 
         default:
@@ -174,7 +168,6 @@
       }
     } catch (error) {
       console.error("loadPageData error:", error);
-
       showToast?.(error.message || "Unable to load page", "error");
     }
   }
@@ -279,58 +272,83 @@
   }
 
   function syncAttendanceState({ silent = false } = {}) {
-    const user = getCurrentUser();
+    return new Promise((resolve, reject) => {
+      const user = getCurrentUser();
 
-    if (!user) return;
+      if (!user) {
+        resolve();
+        return;
+      }
 
-    const workspace_id = user.workspace_id;
-    const email = user.email;
-    const shift_id = user.shift_id;
-    const work_date = formatDateKey(new Date());
+      const workspace_id = user.workspace_id;
+      const email = user.email;
+      const shift_id = user.shift_id;
+      const work_date = formatDateKey(new Date());
 
-    if (!workspace_id || !email) return;
+      if (!workspace_id || !email) {
+        resolve();
+        return;
+      }
 
-    if (!silent) showLoader?.();
+      if (!silent) showLoader?.();
 
-    google.script.run
-      .withSuccessHandler((state) => {
-        if (!silent) hideLoader?.();
+      google.script.run
+        .withSuccessHandler((state) => {
+          if (!silent) hideLoader?.();
 
-        if (!state) {
-          console.error("No attendance state returned.");
-          return;
-        }
-        APP.dashboard.viewingDate = work_date;
+          if (!state) {
+            console.error("No attendance state returned.");
+            resolve();
+            return;
+          }
 
-        APP.attendanceState = state;
-        APP.workStatus = state.status || "NOT_STARTED";
-        APP.timeLogs = state.raw_logs || [];
+          APP.dashboard.viewingDate = work_date;
+          APP.attendanceState = state;
+          APP.workStatus = state.status || "NOT_STARTED";
+          APP.timeLogs = state.raw_logs || [];
 
-        updateDashboardClock?.();
+          updateDashboardClock?.();
+          hydrateAttendanceUI?.(state);
+          renderUserHeader?.();
+          maybePromptForDuty();
 
-        hydrateAttendanceUI?.(state);
-        renderUserHeader?.();
-        maybePromptForDuty();
-      })
-      .withFailureHandler((err) => {
-        if (!silent) hideLoader?.();
+          resolve(state);
+        })
+        .withFailureHandler((err) => {
+          if (!silent) hideLoader?.();
 
-        console.error("syncAttendanceState:", err);
-        showToast?.(err?.message || "Unable to load attendance state", "error");
-      })
-      .getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date);
+          console.error("syncAttendanceState:", err);
+          showToast?.(
+            err?.message || "Unable to load attendance state",
+            "error",
+          );
+
+          reject(err);
+        })
+        .getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date);
+    });
   }
 
   window.addEventListener("DOMContentLoaded", async () => {
-    parseServerData();
+    showLoader();
 
-    restoreSession();
+    // Allow the browser to paint the loader
+    await new Promise(requestAnimationFrame);
 
-    // Only load settings if a restored session exists
-    if (getCurrentUser()?.workspace_id) {
-      await bootstrapSettings();
+    try {
+      parseServerData();
+
+      restoreSession();
+
+      if (getCurrentUser()?.workspace_id) {
+        await bootstrapSettings();
+      }
+
+      await bootApp();
+    } catch (error) {
+      console.error("Application initialization failed:", error);
+    } finally {
+      hideLoader();
     }
-
-    bootApp();
   });
 </script>

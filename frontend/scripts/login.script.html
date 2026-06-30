@@ -44,6 +44,8 @@
   document.getElementById("loginForm")?.addEventListener("submit", (e) => {
     e.preventDefault();
 
+    const form = e.currentTarget;
+
     const email =
       DISPLAY.email(document.getElementById("email")?.value || "") ||
       DISPLAY.email(APP.serverEmail || "");
@@ -58,11 +60,29 @@
       return;
     }
 
+    document.activeElement?.blur();
+
+    form
+      .querySelectorAll("input, button, select, textarea")
+      .forEach((el) => (el.disabled = true));
+
+    // Hide the login page immediately
+    hideAllPages();
+
     showLoader?.();
+    showToast?.("Signing you in...", "info");
 
     google.script.run
       .withSuccessHandler(handleLoginSuccess)
-      .withFailureHandler(handleLoginError)
+      .withFailureHandler((err) => {
+        hideLoader?.();
+
+        form
+          .querySelectorAll("input, button, select, textarea")
+          .forEach((el) => (el.disabled = false));
+
+        handleLoginError(err);
+      })
       .loginResolver(workspaceSlug, email);
   });
 
@@ -99,37 +119,38 @@
   // =====================================================
 
   async function handleLoginSuccess(result) {
-    hideLoader?.();
-
     if (!result) {
+      hideLoader?.();
       showToast?.("Invalid login response", "error");
       return;
     }
 
-    resetAppSessionState();
-    resetReportsState();
-    clearDashboardUI?.();
+    try {
+      resetAppSessionState();
+      resetReportsState();
+      clearDashboardUI?.();
 
-    setCurrentUser(result);
+      setCurrentUser(result);
 
-    await bootstrapSettings();
+      await bootstrapSettings();
 
-    APP.workStatus = "Not Started";
-    APP.dashboard = APP.dashboard || {};
-    APP.dashboard.viewingDate = formatDateKey(new Date());
+      APP.workStatus = "NOT STARTED";
+      APP.dashboard = APP.dashboard || {};
+      APP.dashboard.viewingDate = formatDateKey(new Date());
 
-    renderUserHeader();
-    applyRoleUI?.();
+      renderUserHeader();
+      applyRoleUI?.();
 
-    if (APP.role === "admin" || APP.role === "owner") {
-      UserInit?.();
+      if (APP.role === "admin" || APP.role === "owner") {
+        UserInit?.();
+      }
+
+      maybePromptForDuty();
+
+      await go("dashboard");
+    } finally {
+      hideLoader?.();
     }
-
-    await bootstrapSettings();
-
-    maybePromptForDuty();
-
-    go("dashboard");
   }
 
   // =====================================================
@@ -150,7 +171,7 @@
   // LOGOUT
   // =====================================================
 
-  function logout() {
+  async function logout() {
     const workspaceSlug =
       localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) ||
       APP.workspaceSlug ||
@@ -169,7 +190,7 @@
     resetUIAfterLogout();
 
     showToast?.("Logged out successfully", "info");
-    go("login");
+    await go("login");
   }
 
   // =====================================================
