@@ -302,6 +302,9 @@ function calculateShiftAttendance(shift, state) {
     lunch_minutes: 0,
 
     regular_minutes: 0,
+
+    before_shift_minutes: 0,
+    after_shift_minutes: 0,
     overtime_minutes: 0,
 
     late_minutes: 0,
@@ -331,53 +334,16 @@ function calculateShiftAttendance(shift, state) {
   // Shift Window
   // --------------------------------------------------
 
-  const shiftStart = new Date(timeIn);
-  const shiftEnd = new Date(timeIn);
-
-  const startParts = String(
-    shift.start_time || "00:00"
-  )
-    .split(":")
-    .map(Number);
-
-  const endParts = String(
-    shift.end_time || "00:00"
-  )
-    .split(":")
-    .map(Number);
-
-  shiftStart.setHours(
-    startParts[0],
-    startParts[1],
-    0,
-    0
+  const window = resolveShiftWindow(
+    shift,
+    timeIn
   );
 
-  shiftEnd.setHours(
-    endParts[0],
-    endParts[1],
-    0,
-    0
-  );
+  const shiftStart = window.shift_start;
+  const shiftEnd = window.shift_end;
 
-  // Overnight shift
-  if (shiftEnd <= shiftStart) {
-
-    shiftEnd.setDate(
-      shiftEnd.getDate() + 1
-    );
-
-    if (timeOut <= timeIn) {
-      timeOut.setDate(
-        timeOut.getDate() + 1
-      );
-    }
-
-  }
-
-  result.scheduled_minutes = Math.round(
-    (shiftEnd.getTime() - shiftStart.getTime()) / 60000
-  );
+  result.scheduled_minutes =
+    window.scheduled_minutes;
 
   // --------------------------------------------------
   // Late / Undertime
@@ -386,14 +352,16 @@ function calculateShiftAttendance(shift, state) {
   result.late_minutes = Math.max(
     0,
     Math.round(
-      (timeIn.getTime() - shiftStart.getTime()) / 60000
+      (timeIn.getTime() -
+        shiftStart.getTime()) / 60000
     )
   );
 
   result.undertime_minutes = Math.max(
     0,
     Math.round(
-      (shiftEnd.getTime() - timeOut.getTime()) / 60000
+      (shiftEnd.getTime() -
+        timeOut.getTime()) / 60000
     )
   );
 
@@ -420,7 +388,8 @@ function calculateShiftAttendance(shift, state) {
     result.break_minutes += Math.max(
       0,
       Math.round(
-        (breakOut.getTime() - breakIn.getTime()) / 60000
+        (breakOut.getTime() -
+          breakIn.getTime()) / 60000
       )
     );
 
@@ -443,10 +412,11 @@ function calculateShiftAttendance(shift, state) {
       !isNaN(lunchOut.getTime())
     ) {
 
-      result.lunch_minutes = Math.max(
+      result.lunch_minutes += Math.max(
         0,
         Math.round(
-          (lunchOut.getTime() - lunchIn.getTime()) / 60000
+          (lunchOut.getTime() -
+            lunchIn.getTime()) / 60000
         )
       );
 
@@ -461,7 +431,8 @@ function calculateShiftAttendance(shift, state) {
   result.worked_minutes = Math.max(
     0,
     Math.round(
-      (timeOut.getTime() - timeIn.getTime()) / 60000
+      (timeOut.getTime() -
+        timeIn.getTime()) / 60000
     )
   );
 
@@ -473,18 +444,56 @@ function calculateShiftAttendance(shift, state) {
   );
 
   // --------------------------------------------------
-  // Regular / OT
+  // Before Shift OT
   // --------------------------------------------------
 
-  result.regular_minutes = Math.min(
-    result.paid_minutes,
-    result.scheduled_minutes
-  );
+  if (timeIn < shiftStart) {
 
-  result.overtime_minutes = Math.max(
+    result.before_shift_minutes =
+      Math.round(
+        (shiftStart.getTime() -
+          timeIn.getTime()) / 60000
+      );
+
+  }
+
+  // --------------------------------------------------
+  // After Shift OT
+  // --------------------------------------------------
+
+  if (timeOut > shiftEnd) {
+
+    result.after_shift_minutes =
+      Math.round(
+        (timeOut.getTime() -
+          shiftEnd.getTime()) / 60000
+      );
+
+  }
+
+  // --------------------------------------------------
+  // Total OT
+  // --------------------------------------------------
+
+  result.overtime_minutes =
+    result.before_shift_minutes +
+    result.after_shift_minutes;
+
+  // --------------------------------------------------
+  // Regular Minutes
+  // --------------------------------------------------
+
+  result.regular_minutes = Math.max(
     0,
     result.paid_minutes -
-      result.scheduled_minutes
+      result.overtime_minutes
+  );
+
+  // Never exceed scheduled shift
+
+  result.regular_minutes = Math.min(
+    result.regular_minutes,
+    result.scheduled_minutes
   );
 
   // --------------------------------------------------
