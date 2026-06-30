@@ -308,16 +308,44 @@
      SUMMARY UI
   ===================================================== */
   function renderTimeSummary(state = {}) {
-    const inEl = document.getElementById("summaryTimeIn");
-    const outEl = document.getElementById("summaryTimeOut");
+    const container = document.getElementById("dashboardSummaryList");
+    if (!container) return;
 
-    if (inEl) {
-      inEl.textContent = state.time_in ? formatTime(state.time_in) : "--";
+    const logs = Array.isArray(state.raw_logs) ? state.raw_logs.slice() : [];
+
+    logs.sort(function (a, b) {
+      return new Date(a.timestamp) - new Date(b.timestamp);
+    });
+
+    const rows = logs.filter(function (log) {
+      const action = String(log.action || "").toLowerCase();
+      return action === "time_in" || action === "time_out";
+    });
+
+    if (!rows.length) {
+      container.innerHTML = `
+      <div class="text-muted-custom">
+        No attendance yet
+      </div>
+    `;
+      return;
     }
 
-    if (outEl) {
-      outEl.textContent = state.time_out ? formatTime(state.time_out) : "--";
-    }
+    container.innerHTML = rows
+      .map(function (log) {
+        const label =
+          String(log.action).toLowerCase() === "time_in"
+            ? "Time In"
+            : "Time Out";
+
+        return `
+        <div class="d-flex justify-content-between py-1">
+          <span>${label}</span>
+          <strong>${escapeHtml(formatTime(log.timestamp))}</strong>
+        </div>
+      `;
+      })
+      .join("");
   }
 
   /* =====================================================

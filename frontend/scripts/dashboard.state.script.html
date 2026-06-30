@@ -146,7 +146,11 @@
     try {
       switch (page) {
         case "dashboard":
-          // 🚨 NEVER block UI thread
+          hydrateAttendanceUI?.(state);
+
+          renderUserHeader?.();
+
+          updateDashboardClock?.();
           requestIdleCallback?.(() => {
             syncAttendanceState({ silent: true }).catch(console.error);
           }) ||
@@ -175,16 +179,6 @@
       console.error("loadPageData error:", error);
     }
   }
-
-  // =====================================================
-  // USERS ADMIN PAGE LOADER
-  // PURPOSE:
-  // - safe hook for employee management page
-  // - loads users + departments + positions + shifts
-  // - only runs if the page and API/render functions actually exist
-  // - prevents breaking current app if users page is not fully wired yet
-  // =====================================================
-
   async function loadUsersAdminPage() {
     // Prevent duplicate loads if router fires repeatedly
     if (APP.__usersPageLoading) return;
@@ -334,7 +328,6 @@
           APP.workStatus = state.status || "NOT_STARTED";
           APP.timeLogs = state.raw_logs || [];
 
-          // Only hydrate existing UI
           hydrateAttendanceUI?.(state);
 
           renderUserHeader?.();

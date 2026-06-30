@@ -389,7 +389,18 @@
 
     const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
 
-    APP.currentPage = lastPage || "dashboard";
+    const isAdmin = APP.role === "admin" || APP.role === "owner";
+    const allowedPages = ["dashboard", "admin", "reports"];
+
+    if (isAdmin) {
+      UserInit?.();
+    }
+
+    APP.currentPage = allowedPages.includes(lastPage)
+      ? lastPage
+      : isAdmin
+        ? "admin"
+        : "dashboard";
   }
 
   // =====================================================
