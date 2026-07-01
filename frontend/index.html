@@ -30,75 +30,75 @@
       class="app-topbar glass d-none">
 
       <?!= include("frontend/layouts/topbar"); ?>
-      
+
     </header>
-    
+
     <!-- =====================================================
         GLOBAL COMPONENTS
         ====================================================== -->
 
-      
+
       <?!= include("frontend/components/toast"); ?>
       <?!= include("frontend/components/loader"); ?>
     <?!= include("frontend/components/modals/confirm.global"); ?>
     <?!= include("frontend/components/modals/list.global"); ?>
     <?!= include("frontend/components/modals/form.global"); ?>
     <?!= include("frontend/components/modals/delete.global"); ?>
-    
-    
+
+
     <!-- =====================================================
     SHARED CLOCK
     (moves between dashboard and topbar)
     ====================================================== -->
-    
+
     <?!= include("frontend/components/clock"); ?>
-    
+
     <!-- =====================================================
     APPLICATION
     ====================================================== -->
-    
+
     <main id="app">
-      
+
       <!-- LOGIN -->
       <section
       id="page-login"
       class="app-page d-none">
-      
+
       <?!= include("frontend/pages/login"); ?>
-      
+
     </section>
-    
+
     <!-- HOME -->
     <section
         id="page-home"
         class="app-page d-none">
-        
+
         <?!= include("frontend/pages/home"); ?>
-        
+
     </section>
-      
+
       <!-- USER DASHBOARD -->
     <section
       id="page-dashboard"
       class="app-page d-none">
-      
+
       <?!= include("frontend/pages/dashboard"); ?>
-      
+
     </section>
-    
+
     <!-- ADMIN DASHBOARD -->
     <section
     id="page-admin-dashboard"
     class="app-page d-none">
-    
+
     <?!= include("frontend/pages/adminDashboard"); ?>
-    
+
   </section>
 
   <section
     id="page-reports"
     class="app-page d-none">
-    
+
     <?!= include("frontend/pages/reports"); ?>
   </section>
 
@@ -114,19 +114,19 @@
   <section
   id="page-error"
         class="app-page d-none">
-        
+
         <?!= include("frontend/pages/error"); ?>
-        
+
       </section>
 
     </main>
-    
+
     <!-- =====================================================
     FOOTER
     ====================================================== -->
-    
+
     <?!= include("frontend/layouts/footer"); ?>
-    
+
     <!-- =====================================================
     SCRIPTS
     ====================================================== -->
@@ -151,17 +151,15 @@
     <?!= include("frontend/scripts/timelogs/timelogger.script"); ?>
     <?!= include("frontend/scripts/dashboard.state.script"); ?>
     <?!= include("frontend/scripts/clock.script"); ?>
-    
+
     <?!= include("frontend/scripts/user.api.script"); ?>
     <?!= include("frontend/scripts/user.script"); ?>
     <?!= include("frontend/scripts/user.action"); ?>
-    
+
     <?!= include("frontend/scripts/dept.script"); ?>
     <?!= include("frontend/scripts/pos.script"); ?>
     <?!= include("frontend/scripts/shift.script"); ?>
 
-    
-    
     <?!= include("frontend/scripts/modals/user.modal.script"); ?>
     <?!= include("frontend/scripts/modals/dept.modal.script"); ?>
     <?!= include("frontend/scripts/modals/pos.modal.script"); ?>

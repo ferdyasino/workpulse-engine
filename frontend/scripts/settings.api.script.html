@@ -51,7 +51,6 @@
       }
 
       const settings = await gas("workspaceSettings", workspace_id);
-      console.log("settings", settings);
 
       APP.settings = Array.isArray(settings) ? settings : [];
 
@@ -101,11 +100,7 @@
         throw new Error("settingsRows must be an array");
       }
 
-      const saved = await gas(
-        "saveWorkspaceSettings",
-        workspace_id,
-        settingsRows,
-      );
+      const saved = await gas("saveWorkspaceSettings", workspace_id, settingsRows);
 
       APP.settings = Array.isArray(saved) ? saved : [];
 
@@ -126,11 +121,7 @@
         throw new Error("Workspace not found");
       }
 
-      const saved = await gas(
-        "patchWorkspaceSettings",
-        workspace_id,
-        settingsRows,
-      );
+      const saved = await gas("patchWorkspaceSettings", workspace_id, settingsRows);
 
       APP.settings = Array.isArray(saved) ? saved : APP.settings;
 

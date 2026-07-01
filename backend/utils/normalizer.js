@@ -149,11 +149,11 @@ function normalizeDateKey(value) {
 
   if (isNaN(d.getTime())) return "";
 
-  return Utilities.formatDate(
-    d,
-    "Asia/Manila",
-    "yyyy-MM-dd"
-  );
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -201,7 +201,9 @@ function normalizeId(value) {
  * ===================================================== */
 
 function normalizeRole(input) {
-  const raw = String(input || "").trim().toLowerCase();
+  const raw = String(input || "")
+    .trim()
+    .toLowerCase();
 
   switch (raw) {
     case "superadmin":
@@ -540,5 +542,5 @@ const NORMALIZERS = {
 
   updated_by(value) {
     return normalizeId(value);
-  }
+  },
 };
