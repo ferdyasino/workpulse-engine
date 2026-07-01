@@ -104,6 +104,8 @@
     return new Promise((resolve, reject) => {
       UsersAPI.getDepartments((res) => {
         state.departments = Array.isArray(res) ? res : [];
+        renderDepartmentList(state.departments);
+        renderDepartmentListModal(state.departments);
         resolve(state.departments);
       }, reject);
     });
@@ -113,6 +115,8 @@
     return new Promise((resolve, reject) => {
       UsersAPI.getPositions((res) => {
         state.positions = Array.isArray(res) ? res : [];
+        renderPositionList(state.positions);
+        renderPositionListModal(state.positions);
         resolve(state.positions);
       }, reject);
     });
@@ -121,6 +125,8 @@
   function loadShifts() {
     return new Promise((resolve, reject) => {
       UsersAPI.getShifts((res) => {
+        renderShiftList(state.shifts);
+        renderShiftListModal(state.shifts);
         state.shifts = Array.isArray(res) ? res : [];
         resolve(state.shifts);
       }, reject);
@@ -156,9 +162,7 @@
         .trim()
         .toLowerCase();
       const role = DISPLAY.label(user.role || "");
-      const departmentName = DISPLAY.name(
-        getDepartmentName(user.department_id),
-      );
+      const departmentName = DISPLAY.name(getDepartmentName(user.department_id));
       const positionName = DISPLAY.name(getPositionName(user.position_id));
       const shift = getShift(user.shift_id);
       const status = DISPLAY.status(user.status || "UNKNOWN");
@@ -254,12 +258,7 @@
     };
 
     if (isEdit) {
-      UsersAPI.updateUser(
-        payload.user_id,
-        payload,
-        successHandler,
-        failHandler,
-      );
+      UsersAPI.updateUser(payload.user_id, payload, successHandler, failHandler);
     } else {
       UsersAPI.createUser(payload, successHandler, failHandler);
     }

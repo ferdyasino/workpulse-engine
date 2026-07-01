@@ -1,5 +1,25 @@
 <script>
   const ShiftModal = (() => {
+    function openListModal(shifts = [], handlers = {}) {
+      GlobalModal.openList({
+        title: "Shifts",
+        items: shifts.map((s) => ({
+          id: s.shift_id,
+          label: s.shift_name || "Unknown",
+          description: `${s.start_time || "-"} - ${s.end_time || "-"}`,
+          status: s.status || "ACTIVE",
+        })),
+
+        onItemClick: (shift) => {
+          handlers.onItemClick?.(shift);
+        },
+
+        onAddClick: () => {
+          handlers.onAddClick?.();
+        },
+      });
+    }
+
     function openCreateModal(shift = {}, config = {}) {
       const isEdit = Boolean(shift?.shift_id || config.isEdit);
       const showStatus = config.showStatus ?? isEdit;
@@ -72,12 +92,29 @@
       });
     }
 
+    function openEditModal(shift, handlers = {}) {
+      openCreateModal(shift, handlers);
+    }
+
+    function openDeleteModal(shift, handlers = {}) {
+      GlobalModal.openConfirm({
+        title: "Delete Shift",
+        message: `Are you sure you want to delete the shift "${shift.shift_name}"? This action cannot be undone.`,
+        onConfirm: () => {
+          handlers.onConfirm?.(shift);
+        },
+      });
+    }
+
     function closeFormModal() {
       GlobalModal.hide("globalFormModal");
     }
 
     return {
+      openListModal,
       openCreateModal,
+      openEditModal,
+      openDeleteModal,
       closeFormModal,
     };
   })();

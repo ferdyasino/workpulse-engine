@@ -1,0 +1,107 @@
+<script>
+  function openDepartmentListModal() {
+    DepartmentModal.openListModal({
+      onMount() {
+        UsersAPI.getDepartments(
+          (departments) => {
+            state.departments = Array.isArray(departments) ? departments : [];
+
+            renderDepartmentListModal(state.departments);
+          },
+          (err) => {
+            showToast(err?.message || "Failed to load departments", "error");
+            renderDepartmentListModal([]);
+          },
+        );
+      },
+    });
+  }
+
+  function openCreateDepartment(prefill = {}) {
+    DepartmentModal.openCreateModal(
+      {
+        department_name: prefill.department_name || "",
+        description: prefill.description || "",
+        status: prefill.status || "ACTIVE",
+      },
+      {
+        onSubmit(formData) {
+          UsersAPI.createDepartment(
+            formData,
+            () => {
+              showToast("Department created", "success");
+              DepartmentModal.closeFormModal?.();
+              loadDepartments();
+            },
+            (err) => {
+              showToast(err.message, "error");
+            },
+          );
+        },
+      },
+    );
+  }
+
+  function editDepartment(departmentId) {
+    const department = state.departments.find((d) => d.department_id === departmentId);
+
+    if (!department) return;
+
+    DepartmentModal.openEditModal(department, {
+      onSubmit(formData) {
+        UsersAPI.updateDepartment(
+          departmentId,
+          formData,
+          () => {
+            showToast("Department updated", "success");
+            DepartmentModal.closeFormModal?.();
+            loadDepartments();
+          },
+          (err) => {
+            showToast(err.message, "error");
+          },
+        );
+      },
+    });
+  }
+
+  function deleteDepartment(departmentId) {
+    DepartmentModal.openDeleteModal(departmentId, {
+      onDelete(id) {
+        setLoading(true);
+
+        UsersAPI.deleteDepartment(
+          id,
+          () => {
+            showToast("Department deleted", "success");
+            GlobalModal.hide("globalDeleteModal");
+            loadDepartments();
+          },
+          (err) => {
+            console.error(err);
+            showToast(err.message || "Delete failed", "error");
+            setLoading(false);
+          },
+        );
+      },
+
+      onDeactivate(id) {
+        setLoading(true);
+
+        UsersAPI.deactivateDepartment(
+          id,
+          () => {
+            showToast("Department deactivated", "success");
+            GlobalModal.hide("globalDeleteModal");
+            loadDepartments();
+          },
+          (err) => {
+            console.error(err);
+            showToast(err.message || "Deactivate failed", "error");
+            setLoading(false);
+          },
+        );
+      },
+    });
+  }
+</script>

@@ -1,42 +1,109 @@
 <script>
-const DepartmentModal = (() => {
+  const DepartmentModal = (() => {
+    // =====================================================
+    // LIST MODAL
+    // =====================================================
 
-  function openCreateModal(dept = {}, config = {}) {
-    GlobalModal.openForm({
-      title: dept.department_id ? "Edit Department" : "Create Department",
+    function openListModal(config = {}) {
+      GlobalModal.openList({
+        title: "Department Records",
 
-      fields: [
-        {
-          name: "department_name",
-          label: "Department Name",
-          value: dept.department_name || "",
-          required: true,
-          col: "col-md-12"
+        columns: ["Department", "Description", "Status"],
+
+        onAdd: () => {
+          openCreateModal({}, config);
         },
 
-        {
-          name: "description",
-          label: "Description",
-          type: "textarea",
-          value: dept.description || "",
-          col: "col-md-12"
-        }
-      ],
+        onMount: config.onMount || null,
+      });
+    }
 
-      onSubmit: (formData) => {
-        config.onSubmit?.(formData, dept);
-      }
-    });
-  }
+    // =====================================================
+    // CREATE / EDIT MODAL
+    // =====================================================
 
-  function closeFormModal() {
-    GlobalModal.hide("globalFormModal");
-  }
+    function openCreateModal(dept = {}, config = {}) {
+      GlobalModal.openForm({
+        title: dept.department_id ? "Edit Department" : "Create Department",
 
-  return {
-    openCreateModal,
-    closeFormModal
-  };
+        fields: [
+          {
+            name: "department_name",
+            label: "Department Name",
+            value: dept.department_name || "",
+            required: true,
+            col: "col-md-12",
+          },
 
-})();
+          {
+            name: "description",
+            label: "Description",
+            type: "textarea",
+            value: dept.description || "",
+            col: "col-md-12",
+          },
+
+          {
+            name: "status",
+            label: "Status",
+            type: "select",
+            options: [
+              {
+                value: "ACTIVE",
+                label: "Active",
+              },
+              {
+                value: "INACTIVE",
+                label: "Inactive",
+              },
+            ],
+            value: dept.status || "ACTIVE",
+            col: "col-md-12",
+          },
+        ],
+
+        onSubmit: (formData) => {
+          config.onSubmit?.(formData, dept);
+        },
+      });
+    }
+
+    // =====================================================
+    // EDIT WRAPPER
+    // =====================================================
+
+    function openEditModal(dept, handlers = {}) {
+      openCreateModal(dept, handlers);
+    }
+
+    function closeFormModal() {
+      GlobalModal.hide("globalFormModal");
+    }
+
+    // =====================================================
+    // DELETE MODAL
+    // =====================================================
+
+    function openDeleteModal(id, handlers = {}) {
+      GlobalModal.openDelete({
+        title: "Department Action",
+        message: "Choose whether to deactivate or permanently delete this department.",
+        id,
+        onDelete: handlers.onDelete,
+        onDeactivate: handlers.onDeactivate,
+      });
+    }
+
+    // =====================================================
+    // PUBLIC API
+    // =====================================================
+
+    return {
+      openListModal,
+      openCreateModal,
+      openEditModal,
+      openDeleteModal,
+      closeFormModal,
+    };
+  })();
 </script>

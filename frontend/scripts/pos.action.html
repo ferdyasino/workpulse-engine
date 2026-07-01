@@ -1,0 +1,107 @@
+<script>
+  function openPositionListModal() {
+    PositionModal.openListModal({
+      onMount() {
+        UsersAPI.getPositions(
+          (positions) => {
+            state.positions = Array.isArray(positions) ? positions : [];
+
+            renderPositionListModal(state.positions);
+          },
+          (err) => {
+            showToast(err?.message || "Failed to load positions", "error");
+            renderPositionListModal([]);
+          },
+        );
+      },
+    });
+  }
+
+  function openCreatePosition(prefill = {}) {
+    PositionModal.openCreateModal(
+      {
+        position_name: prefill.position_name || "",
+        description: prefill.description || "",
+        status: prefill.status || "ACTIVE",
+      },
+      {
+        onSubmit(formData) {
+          PositionsAPI.createPosition(
+            formData,
+            () => {
+              showToast("Position created", "success");
+              PositionModal.closeFormModal?.();
+              loadPositions();
+            },
+            (err) => {
+              showToast(err.message, "error");
+            },
+          );
+        },
+      },
+    );
+  }
+
+  function editPosition(positionId) {
+    const position = state.positions.find((p) => p.position_id === positionId);
+
+    if (!position) return;
+
+    PositionModal.openEditModal(position, {
+      onSubmit(formData) {
+        PositionsAPI.updatePosition(
+          positionId,
+          formData,
+          () => {
+            showToast("Position updated", "success");
+            PositionModal.closeFormModal?.();
+            loadPositions();
+          },
+          (err) => {
+            showToast(err.message, "error");
+          },
+        );
+      },
+    });
+  }
+
+  function deletePosition(positionId) {
+    PositionModal.openDeleteModal(positionId, {
+      onDelete(id) {
+        setLoading(true);
+
+        PositionsAPI.deletePosition(
+          id,
+          () => {
+            showToast("Position deleted", "success");
+            GlobalModal.hide("globalDeleteModal");
+            loadPositions();
+          },
+          (err) => {
+            console.error(err);
+            showToast(err.message || "Delete failed", "error");
+            setLoading(false);
+          },
+        );
+      },
+
+      onDeactivate(id) {
+        setLoading(true);
+
+        PositionsAPI.deactivatePosition(
+          id,
+          () => {
+            showToast("Position deactivated", "success");
+            GlobalModal.hide("globalDeleteModal");
+            loadPositions();
+          },
+          (err) => {
+            console.error(err);
+            showToast(err.message || "Deactivate failed", "error");
+            setLoading(false);
+          },
+        );
+      },
+    });
+  }
+</script>

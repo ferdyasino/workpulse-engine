@@ -1,4 +1,16 @@
 <script>
+  // =====================================================
+  // SAFE SHIFT RESOLVER
+  // =====================================================
+
+  function getShiftsSafe() {
+    return Array.isArray(state?.shifts) ? state.shifts : [];
+  }
+
+  // =====================================================
+  // CREATE SHIFT
+  // =====================================================
+
   function openCreateShiftFromUserModal() {
     UsersModal.closeFormModal?.();
 
@@ -10,12 +22,6 @@
             formData,
 
             async (result) => {
-              // =====================================================
-              // IMPORTANT:
-              // Apps Script success handler fires for returned objects too,
-              // including { success:false, message:"..." }.
-              // So we must inspect result.success here.
-              // =====================================================
               if (!result?.success) {
                 showToast(result?.message || "Failed to create shift", "error");
                 return;
@@ -27,13 +33,9 @@
 
               ShiftModal.closeFormModal?.();
 
-              // Prefer backend-created shift_id directly.
-              // Fallback to name lookup only if needed.
               const createdShiftId =
                 result?.data?.shift_id ||
-                findShiftIdByName(
-                  result?.data?.shift_name || formData.shift_name,
-                );
+                findShiftIdByName(result?.data?.shift_name || formData.shift_name);
 
               openCreateUser({
                 shift_id: createdShiftId || "",
@@ -50,47 +52,18 @@
     );
   }
 
-  function renderShiftList(shifts) {
-    const el = document.getElementById("shiftList");
-    if (!el) return;
-
-    if (!Array.isArray(shifts) || shifts.length === 0) {
-      el.innerHTML = `<div class="text-muted">No shifts found</div>`;
-      return;
-    }
-
-    el.innerHTML = shifts
-      .map(mapShiftForView)
-      .map(
-        (s) => `
-      <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-        <div>
-          <strong>${escapeHtml(s.shift_name)}</strong><br>
-          <small class="text-muted">
-            ${formatShift(s.start_time)} - ${formatShift(s.end_time)}
-          </small>
-        </div>
-
-        <div class="text-end">
-          <span class="badge ${getShiftStatusClass(s.status_raw)}">
-            ${escapeHtml(s.status)}
-          </span>
-        </div>
-      </div>
-    `,
-      )
-      .join("");
-  }
+  // =====================================================
+  // HELPERS
+  // =====================================================
 
   function findShiftIdByName(name) {
     const normalized = String(name || "")
       .trim()
       .toLowerCase();
-    const shifts = Array.isArray(state?.shifts) ? state.shifts : [];
 
-    const found = [...shifts].reverse().find(
+    const found = [...getShiftsSafe()].reverse().find(
       (s) =>
-        String(s?.shift_name || "")
+        String(s.shift_name || "")
           .trim()
           .toLowerCase() === normalized,
     );
@@ -98,9 +71,6 @@
     return found?.shift_id || "";
   }
 
-  /* =========================
-   VIEW MAPPER
-========================= */
   function mapShiftForView(s = {}) {
     const rawStatus = String(s.status || "ACTIVE")
       .trim()
@@ -108,17 +78,14 @@
 
     return {
       shift_id: s.shift_id || "",
-      shift_name: DISPLAY.label(s.shift_name || "UNKNOWN"),
+      shift_name: DISPLAY?.label?.(s.shift_name || "UNKNOWN") || "UNKNOWN",
       start_time: s.start_time || "",
       end_time: s.end_time || "",
       status_raw: rawStatus,
-      status: DISPLAY.status(rawStatus),
+      status: DISPLAY?.status?.(rawStatus) || rawStatus,
     };
   }
 
-  /* =========================
-   STATUS STYLE
-========================= */
   function getShiftStatusClass(status) {
     switch (
       String(status || "")
@@ -127,12 +94,107 @@
     ) {
       case "ACTIVE":
         return "badge-success";
-
       case "INACTIVE":
         return "badge-danger";
-
       default:
         return "badge-secondary";
     }
+  }
+
+  function formatShift(time) {
+    return time ? time : "--:--";
+  }
+
+  // =====================================================
+  // CARD LIST (SAFE)
+  // =====================================================
+
+  function renderShiftList(shifts = []) {
+    const el = document.getElementById("shiftList");
+    const countEl = document.getElementById("shiftCount");
+
+    if (!el) return;
+
+    const list = Array.isArray(shifts) ? shifts : [];
+
+    if (countEl) countEl.textContent = String(list.length);
+
+    if (!list.length) {
+      el.innerHTML = `<div class="text-muted small">No shifts found</div>`;
+      return;
+    }
+
+    const mapped = list.map(mapShiftForView);
+
+    el.innerHTML = mapped
+      .map(
+        (s) => `
+          <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+            <div>
+              <strong>${escapeHtml(s.shift_name)}</strong><br>
+              <small class="text-muted">
+                ${escapeHtml(formatShift(s.start_time))} - ${escapeHtml(formatShift(s.end_time))}
+              </small>
+            </div>
+
+            <span class="badge ${getShiftStatusClass(s.status_raw)}">
+              ${escapeHtml(s.status)}
+            </span>
+          </div>
+        `,
+      )
+      .join("");
+  }
+
+  // =====================================================
+  // MODAL LIST (SAFE)
+  // =====================================================
+
+  function renderShiftListModal(shifts = []) {
+    const tbody = document.getElementById("globalListBody");
+
+    if (!tbody) return;
+
+    const list = Array.isArray(shifts) ? shifts : [];
+
+    if (!list.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            No shifts found
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    const mapped = list.map(mapShiftForView);
+
+    tbody.innerHTML = mapped
+      .map(
+        (s) => `
+          <tr>
+            <td>${escapeHtml(s.shift_name)}</td>
+            <td>${escapeHtml(formatShift(s.start_time))}</td>
+            <td>${escapeHtml(formatShift(s.end_time))}</td>
+
+            <td>
+              <span class="badge ${getShiftStatusClass(s.status_raw)}">
+                ${escapeHtml(s.status)}
+              </span>
+            </td>
+
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                onclick="editShift?.('${s.shift_id}')">
+                Edit
+              </button>
+            </td>
+          </tr>
+        `,
+      )
+      .join("");
   }
 </script>

@@ -306,6 +306,41 @@
   }
 
   /* =====================================================
+   MODAL TABLE FIX
+===================================================== */
+
+  .modal-content .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-main);
+    --bs-table-border-color: rgba(255, 255, 255, 0.08);
+
+    background: transparent !important;
+    color: var(--text-main) !important;
+  }
+
+  .modal-content .table thead,
+  .modal-content .table tbody,
+  .modal-content .table tr,
+  .modal-content .table th,
+  .modal-content .table td {
+    background: transparent !important;
+    color: var(--text-main) !important;
+  }
+
+  .modal-content .table th {
+    color: var(--text-secondary) !important;
+    font-weight: 600;
+  }
+
+  .modal-content .table-hover > tbody > tr:hover > * {
+    background: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  .modal-content .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background: rgba(255, 255, 255, 0.02) !important;
+  }
+
+  /* =====================================================
    ICONS
 ===================================================== */
 
