@@ -10,9 +10,7 @@
 
     if (isLoggedIn) {
       APP.currentPage =
-        localStorage.getItem(STORAGE_KEYS.LAST_PAGE) ||
-        APP.currentPage ||
-        "dashboard";
+        localStorage.getItem(STORAGE_KEYS.LAST_PAGE) || APP.currentPage || "dashboard";
     } else {
       APP.currentPage = "login";
     }
@@ -57,9 +55,7 @@
   // =====================================================
 
   function hideAllPages() {
-    document
-      .querySelectorAll(".app-page")
-      .forEach((pageEl) => pageEl.classList.add("d-none"));
+    document.querySelectorAll(".app-page").forEach((pageEl) => pageEl.classList.add("d-none"));
   }
 
   function buildDashboardShell() {
@@ -121,9 +117,7 @@
     const adminMenu = document.getElementById("adminMenuItem");
     const adminSettings = document.getElementById("adminSettings");
     const dashDropId = document.getElementById("dashDropId");
-    document
-      .getElementById("adminReportControls")
-      ?.classList.toggle("d-none", !isAdmin);
+    document.getElementById("adminReportControls")?.classList.toggle("d-none", !isAdmin);
 
     if (adminMenu) {
       adminMenu.classList.toggle("d-none", !isAdmin);
@@ -146,17 +140,21 @@
     try {
       switch (page) {
         case "dashboard":
-          hydrateAttendanceUI?.(state);
-
           renderUserHeader?.();
 
           updateDashboardClock?.();
-          requestIdleCallback?.(() => {
-            syncAttendanceState({ silent: true }).catch(console.error);
-          }) ||
-            setTimeout(() => {
-              syncAttendanceState({ silent: true }).catch(console.error);
-            }, 0);
+
+          (
+            window.requestIdleCallback ||
+            function (cb) {
+              return setTimeout(cb, 0);
+            }
+          )(() => {
+            syncAttendanceState({
+              silent: true,
+            }).catch(console.error);
+          });
+
           break;
 
         case "reports":
@@ -189,8 +187,7 @@
     const positionList = document.getElementById("positionList");
     const shiftList = document.getElementById("shiftList");
 
-    const hasUsersPageUI =
-      !!usersTableBody || !!departmentList || !!positionList || !!shiftList;
+    const hasUsersPageUI = !!usersTableBody || !!departmentList || !!positionList || !!shiftList;
 
     if (!hasUsersPageUI) return;
 
@@ -273,9 +270,7 @@
       dot.className = "status-dot bg-secondary";
     }
 
-    const breakButtonContainer = document.getElementById(
-      "breakButtonContainer",
-    );
+    const breakButtonContainer = document.getElementById("breakButtonContainer");
 
     if (breakButtonContainer) {
       breakButtonContainer.innerHTML = `
@@ -322,7 +317,6 @@
             return;
           }
 
-          // Server is now the source of truth
           APP.dashboard.viewingDate = state.work_date;
           APP.attendanceState = state;
           APP.workStatus = state.status || "NOT_STARTED";

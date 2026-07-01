@@ -1,4 +1,3 @@
-
 function normalizeRecord(record = {}) {
   const data = { ...record };
 
@@ -20,9 +19,7 @@ function normalizeRecord(record = {}) {
 function normalize(field, value) {
   const normalizer = NORMALIZERS[field];
 
-  return typeof normalizer === "function"
-    ? normalizer(value)
-    : value;
+  return typeof normalizer === "function" ? normalizer(value) : value;
 }
 
 function normalizeShiftPolicyRecord(record = {}) {
@@ -50,7 +47,7 @@ function normalizeShiftPolicyRecord(record = {}) {
     allow_time_out_during_break: record.allow_time_out_during_break,
     allow_time_out_during_lunch: record.allow_time_out_during_lunch,
     allow_break_during_lunch: record.allow_break_during_lunch,
-    allow_lunch_during_break: record.allow_lunch_during_break
+    allow_lunch_during_break: record.allow_lunch_during_break,
   });
 }
 
@@ -73,7 +70,7 @@ function normalizeShiftRecord(record = {}) {
     break_minutes: record.break_minutes,
 
     lunch_enabled: record.lunch_enabled,
-    lunch_minutes: record.lunch_minutes
+    lunch_minutes: record.lunch_minutes,
   });
 }
 
@@ -85,13 +82,7 @@ function normalizeEmployeeRecord(record = {}) {
     record.fullname ||
     record.full_name ||
     record.name ||
-    [
-      record.first_name,
-      record.middle_name,
-      record.last_name
-    ]
-      .filter(Boolean)
-      .join(" ");
+    [record.first_name, record.middle_name, record.last_name].filter(Boolean).join(" ");
 
   return normalizeRecord({
     ...record,
@@ -104,7 +95,7 @@ function normalizeEmployeeRecord(record = {}) {
     department_id: record.department_id || record.dept_id,
     department_name: record.department_name || record.dept_name,
     shift_id: record.shift_id,
-    shift_name: record.shift_name
+    shift_name: record.shift_name,
   });
 }
 
@@ -116,7 +107,7 @@ function normalizeDepartmentRecord(record = {}) {
     ...record,
     department_id: record.department_id || record.dept_id,
     department_name: record.department_name || record.dept_name,
-    status: record.status
+    status: record.status,
   });
 }
 
@@ -130,7 +121,7 @@ function normalizeWorkspaceRecord(record = {}) {
     workspace_slug: record.workspace_slug,
     name: record.name,
     status: record.status,
-    owner_id: record.owner_id
+    owner_id: record.owner_id,
   });
 }
 
@@ -162,15 +153,10 @@ NORMALIZERS.description = function (value) {
 
 NORMALIZERS.options = function (value) {
   if (Array.isArray(value)) {
-    return value
-      .map(normalizeTrimmedString)
-      .filter(Boolean);
+    return value.map(normalizeTrimmedString).filter(Boolean);
   }
 
-  return normalizeNullableString(value)
-    .split("|")
-    .map(normalizeTrimmedString)
-    .filter(Boolean);
+  return normalizeNullableString(value).split("|").map(normalizeTrimmedString).filter(Boolean);
 };
 
 NORMALIZERS.value = function (value) {
@@ -188,7 +174,6 @@ NORMALIZERS.value = function (value) {
  * - boolean
  */
 function normalizeSettingRecord(record = {}) {
-
   const normalized = normalizeRecord({
     key: record.key,
     value: record.value,
@@ -197,16 +182,18 @@ function normalizeSettingRecord(record = {}) {
     options: record.options,
     label: record.label,
     description: record.description,
-    updated_at: record.updated_at
+    updated_at: record.updated_at,
   });
 
+  // @ts-ignore
   switch (normalized.type) {
-
     case "boolean":
+      // @ts-ignore
       normalized.value = normalizeBoolean(normalized.value);
       break;
 
     case "number":
+      // @ts-ignore
       normalized.value = normalizeFloat(normalized.value);
       break;
 
@@ -214,13 +201,13 @@ function normalizeSettingRecord(record = {}) {
     case "textarea":
     case "text":
     default:
+      // @ts-ignore
       normalized.value = normalizeNullableString(normalized.value);
       break;
   }
 
-  normalized.updated_at = normalizeIsoDateTime(
-    normalized.updated_at
-  );
+  // @ts-ignore
+  normalized.updated_at = normalizeIsoDateTime(normalized.updated_at);
 
   return normalized;
 }

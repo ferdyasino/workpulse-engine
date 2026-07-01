@@ -27,10 +27,7 @@ function normalizeTimeLogFilters(filters = {}) {
   }
 
   if (Object.prototype.hasOwnProperty.call(normalized, "workspace_id")) {
-    normalized.workspace_id = normalize(
-      "workspace_id",
-      normalized.workspace_id,
-    );
+    normalized.workspace_id = normalize("workspace_id", normalized.workspace_id);
   }
 
   if (Object.prototype.hasOwnProperty.call(normalized, "user_id")) {
@@ -88,12 +85,6 @@ function normalizeTimeLog(data, workspace_id) {
 
   const finalTimestamp = timestampDate.toISOString();
 
-  // --------------------------------------------------
-  // Resolve work date
-  // Uses shift work date for overnight shifts.
-  // Falls back to calendar date if no shift exists.
-  // --------------------------------------------------
-
   let finalDate = normalize("date", payload.date);
 
   if (!finalDate) {
@@ -101,18 +92,13 @@ function normalizeTimeLog(data, workspace_id) {
       ? getShiftById(workspace_id || payload.workspace_id, payload.shift_id)
       : null;
 
-    finalDate = shift
-      ? resolveShiftWorkDate(shift, timestampDate)
-      : formatDateKey(timestampDate);
+    finalDate = shift ? resolveShiftWorkDate(shift, timestampDate) : formatDateKey(timestampDate);
   }
 
   return {
     log_id: normalize("log_id", payload.log_id || generateId("LOG")),
 
-    workspace_id: normalize(
-      "workspace_id",
-      workspace_id || payload.workspace_id,
-    ),
+    workspace_id: normalize("workspace_id", workspace_id || payload.workspace_id),
 
     user_id: normalize("user_id", payload.user_id),
 

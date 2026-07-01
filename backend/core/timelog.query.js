@@ -16,20 +16,11 @@ function getCurrentState(workspace_id, email, shift_id, timestamp) {
   const targetTime = timestamp || new Date();
 
   const logs = normalizedShiftId
-    ? getShiftTimeLogsByEmail(
-        normalizedWorkspaceId,
-        normalizedEmail,
-        normalizedShiftId,
-        targetTime,
-      )
-    : getTodayTimeLogsByEmail(
-        normalizedWorkspaceId,
-        normalizedEmail,
-        targetTime,
-      );
+    ? getShiftTimeLogsByEmail(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, targetTime)
+    : getTodayTimeLogsByEmail(normalizedWorkspaceId, normalizedEmail, targetTime);
 
   const workDate = normalizedShiftId
-    ? getShiftWorkDate(normalizedWorkspaceId, normalizedShiftId, targetTime)
+    ? getShiftWorkDate(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, targetTime)
     : formatDateKey(targetTime);
 
   return buildAttendanceState(
@@ -40,7 +31,7 @@ function getCurrentState(workspace_id, email, shift_id, timestamp) {
   );
 }
 
-function getTodayTimeLogsByEmail(workspace_id, email, timestamp) {
+function getTodayTimeLogsByEmail(workspace_id, email, timestamp, shift) {
   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
 
   const normalizedEmail = normalize("email", email);
@@ -53,11 +44,11 @@ function getTodayTimeLogsByEmail(workspace_id, email, timestamp) {
     throw new Error("email is required");
   }
 
-  return getTimeLogsByDate(
-    normalizedWorkspaceId,
-    normalizedEmail,
-    formatDateKey(timestamp || new Date()),
-  );
+  const workDate = shift
+    ? resolveShiftWorkDate(shift, timestamp)
+    : formatDateKey(timestamp || new Date());
+
+  return getTimeLogsByDate(normalizedWorkspaceId, normalizedEmail, workDate);
 }
 
 function getLatestTodayTimeLogByEmail(workspace_id, email) {
@@ -122,22 +113,12 @@ function getTimeLogsByEmail(workspace_id, email, options) {
 function getShiftTimeLogsByEmail(workspace_id, email, shift_id, timestamp) {
   return getTimeLogsByEmail(workspace_id, email, {
     shift_id,
-    date: getShiftWorkDate(workspace_id, shift_id, timestamp),
+    date: getShiftWorkDate(workspace_id, email, shift_id, timestamp),
   });
 }
 
-function getLatestShiftTimeLogByEmail(
-  workspace_id,
-  email,
-  shift_id,
-  timestamp,
-) {
-  const logs = getShiftTimeLogsByEmail(
-    workspace_id,
-    email,
-    shift_id,
-    timestamp,
-  );
+function getLatestShiftTimeLogByEmail(workspace_id, email, shift_id, timestamp) {
+  const logs = getShiftTimeLogsByEmail(workspace_id, email, shift_id, timestamp);
 
   return logs.length ? logs[logs.length - 1] : null;
 }
@@ -147,11 +128,7 @@ function matchesTimeLogFilters(record, filters) {
     const key = entry[0];
     const filterValue = entry[1];
 
-    if (
-      filterValue === undefined ||
-      filterValue === null ||
-      filterValue === ""
-    ) {
+    if (filterValue === undefined || filterValue === null || filterValue === "") {
       return true;
     }
 
@@ -159,41 +136,11 @@ function matchesTimeLogFilters(record, filters) {
   });
 }
 
-/* =========================
-   SHIFT SESSION DATE
-========================= */
-
 function resolveShiftWorkDate(shift, timestamp) {
-  if (!shift) {
-    throw new Error("Shift is required.");
-  }
-
-  const date =
-    timestamp instanceof Date
-      ? new Date(timestamp)
-      : new Date(timestamp || new Date());
-
-  if (!isOvernightShift(shift)) {
-    return formatDateKey(date);
-  }
-
-  const nowMinutes = date.getHours() * 60 + date.getMinutes();
-
-  const endMinutes = timeToMinutes(shift.end_time);
-
-  if (nowMinutes < endMinutes) {
-    date.setDate(date.getDate() - 1);
-  }
-
-  return formatDateKey(date);
+  return resolveShiftWindow(shift, timestamp).work_date;
 }
 
-function getAttendanceStateByWorkDate(
-  workspace_id,
-  email,
-  shift_id,
-  work_date,
-) {
+function getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date) {
   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
 
   const normalizedEmail = normalize("email", email);
@@ -223,12 +170,7 @@ function getAttendanceStateByWorkDate(
     date: normalizedWorkDate,
   });
 
-  return buildAttendanceState(
-    logs,
-    "shift",
-    normalizedShiftId,
-    normalizedWorkDate,
-  );
+  return buildAttendanceState(logs, "shift", normalizedShiftId, normalizedWorkDate);
 }
 
 /* =========================
