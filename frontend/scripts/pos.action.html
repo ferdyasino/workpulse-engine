@@ -1,6 +1,8 @@
 <script>
   function openPositionListModal() {
     PositionModal.openListModal({
+      departments: state.departments || [],
+
       onMount() {
         UsersAPI.getPositions(
           (positions) => {
@@ -10,6 +12,7 @@
           },
           (err) => {
             showToast(err?.message || "Failed to load positions", "error");
+
             renderPositionListModal([]);
           },
         );
@@ -21,15 +24,23 @@
     PositionModal.openCreateModal(
       {
         position_name: prefill.position_name || "",
+
+        department_ids:
+          prefill.department_ids || (prefill.department_id ? [prefill.department_id] : []),
+
         description: prefill.description || "",
       },
       {
+        departments: state.departments || [],
+
         onSubmit(formData) {
           PositionsAPI.createPosition(
             formData,
             () => {
               showToast("Position created", "success");
+
               PositionModal.closeFormModal?.();
+
               loadPositions();
             },
             (err) => {
@@ -47,13 +58,17 @@
     if (!position) return;
 
     PositionModal.openEditModal(position, {
+      departments: state.departments || [],
+
       onSubmit(formData) {
         PositionsAPI.updatePosition(
           positionId,
           formData,
           () => {
             showToast("Position updated", "success");
+
             PositionModal.closeFormModal?.();
+
             loadPositions();
           },
           (err) => {
@@ -65,20 +80,26 @@
   }
 
   function deletePosition(positionId) {
-    PositionModal.openDeleteModal(positionId, {
-      onDelete(id) {
+    const position = state.positions.find((p) => p.position_id === positionId);
+
+    if (!position) return;
+
+    PositionModal.openDeleteModal(position, {
+      onConfirm() {
         setLoading(true);
 
         PositionsAPI.deletePosition(
-          id,
+          position.position_id,
           () => {
             showToast("Position deleted", "success");
-            GlobalModal.hide("globalDeleteModal");
+
             loadPositions();
           },
           (err) => {
             console.error(err);
+
             showToast(err.message || "Delete failed", "error");
+
             setLoading(false);
           },
         );

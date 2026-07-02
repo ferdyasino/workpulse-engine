@@ -3,11 +3,12 @@
     function getDepartments(config) {
       return Array.isArray(config.departments) ? config.departments : [];
     }
+
     function openListModal(config = {}) {
       GlobalModal.openList({
         title: "Position Records",
 
-        columns: ["Position", "Department", "Description"],
+        columns: ["Position", "Departments", "Description"],
 
         onAdd: () => {
           openCreateModal({}, config);
@@ -33,17 +34,21 @@
           },
 
           {
-            name: "department_id",
-            label: "Department",
-            type: "select",
+            name: "department_ids",
+            label: "Departments",
+            type: "tagselect",
             required: true,
+            col: "col-md-12",
 
             options: departments.map((d) => ({
               value: d.department_id,
               label: d.department_name,
             })),
 
-            value: position.department_id || "",
+            value:
+              position.department_ids || (position.department_id ? [position.department_id] : []),
+
+            placeholder: "Select Department",
           },
 
           {
@@ -56,6 +61,10 @@
         ],
 
         onSubmit: (formData) => {
+          formData.department_ids = Array.isArray(formData.department_ids)
+            ? formData.department_ids
+            : [];
+
           config.onSubmit?.(formData, position);
         },
       });
@@ -69,6 +78,7 @@
       GlobalModal.openConfirm({
         title: "Delete Position",
         message: `Are you sure you want to delete the position "${position.position_name}"? This action cannot be undone.`,
+
         onConfirm: () => {
           handlers.onConfirm?.(position);
         },

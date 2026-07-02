@@ -38,8 +38,7 @@
   ===================================================== */
 
     function openList(config = {}) {
-      document.getElementById("globalListTitle").innerText =
-        config.title || "List";
+      document.getElementById("globalListTitle").innerText = config.title || "List";
 
       const head = document.getElementById("globalListHead");
 
@@ -62,14 +61,77 @@
   ===================================================== */
 
     function openForm(config = {}) {
-      document.getElementById("globalFormTitle").innerText =
-        config.title || "Form";
+      document.getElementById("globalFormTitle").innerText = config.title || "Form";
 
       const form = document.getElementById("globalForm");
       const container = document.getElementById("globalFormFields");
 
       form.reset();
       container.innerHTML = "";
+      setTimeout(() => {
+        container.querySelectorAll("[data-tagselect]").forEach((wrapper) => {
+          const hidden = wrapper.querySelector("input[type=hidden]");
+          const dropdown = wrapper.querySelector("[data-tag-dropdown]");
+          const chipContainer = wrapper.querySelector("[data-tag-container]");
+
+          let values = [];
+
+          try {
+            values = JSON.parse(hidden.value || "[]");
+          } catch {
+            values = [];
+          }
+
+          function render() {
+            chipContainer.innerHTML = "";
+
+            values.forEach((value) => {
+              const option = dropdown.querySelector(`option[value="${CSS.escape(value)}"]`);
+
+              const label = option ? option.textContent : value;
+
+              const chip = document.createElement("span");
+
+              chip.className = "badge bg-primary d-inline-flex align-items-center gap-2";
+
+              chip.innerHTML = `
+          ${escapeHtml(label)}
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            style="font-size:.55rem"
+          ></button>
+        `;
+
+              chip.querySelector("button").onclick = () => {
+                values = values.filter((v) => v !== value);
+
+                hidden.value = JSON.stringify(values);
+
+                render();
+              };
+
+              chipContainer.appendChild(chip);
+            });
+
+            hidden.value = JSON.stringify(values);
+          }
+
+          dropdown.onchange = () => {
+            if (!dropdown.value) return;
+
+            if (!values.includes(dropdown.value)) {
+              values.push(dropdown.value);
+            }
+
+            dropdown.value = "";
+
+            render();
+          };
+
+          render();
+        });
+      });
 
       (config.fields || []).forEach((field) => {
         const colClass = field.col || "col-md-6";
@@ -123,6 +185,101 @@
             </div>
           </div>
         `;
+        } else if (field.type === "multiselect") {
+          const selectedValues = Array.isArray(field.value) ? field.value.map(String) : [];
+
+          html = `
+            <div class="${colClass}">
+              <label class="form-label">${field.label || ""}</label>
+
+              <div class="d-flex gap-2 align-items-start">
+                <select
+                  class="form-select flex-grow-1"
+                  name="${field.name}"
+                  multiple
+                  ${field.required ? "required" : ""}
+                  style="min-height: 140px;"
+                >
+                  ${(field.options || [])
+                    .map(
+                      (option) => `
+                      <option
+                        value="${option.value}"
+                        ${selectedValues.includes(String(option.value)) ? "selected" : ""}
+                      >
+                        ${escapeHtml(option.label || option.value)}
+                      </option>
+                    `,
+                    )
+                    .join("")}
+                </select>
+
+                ${
+                  field.onAdd
+                    ? `
+                      <button
+                        type="button"
+                        class="btn btn-glass btn-glass-icon"
+                        data-add-field="${field.name}"
+                        title="Add ${field.label}"
+                      >
+                        +
+                      </button>
+                    `
+                    : ""
+                }
+              </div>
+
+              <div class="form-text">
+                Hold Ctrl (Windows) or Cmd (Mac) to select multiple.
+              </div>
+            </div>
+          `;
+        } else if (field.type === "tagselect") {
+          const selectedValues = Array.isArray(field.value)
+            ? [...new Set(field.value.map(String))]
+            : [];
+
+          html = `
+        <div class="${colClass}">
+          <label class="form-label">${field.label || ""}</label>
+
+          <div
+            class="border rounded p-2"
+            data-tagselect="${field.name}"
+          >
+            <div
+              class="d-flex flex-wrap gap-2 mb-2"
+              data-tag-container
+            ></div>
+
+            <select
+              class="form-select"
+              data-tag-dropdown
+            >
+              <option value="">
+                ${field.placeholder || `Select ${field.label}`}
+              </option>
+
+              ${(field.options || [])
+                .map(
+                  (option) => `
+                    <option value="${option.value}">
+                      ${escapeHtml(option.label || option.value)}
+                    </option>
+                  `,
+                )
+                .join("")}
+            </select>
+
+            <input
+              type="hidden"
+              name="${field.name}"
+              value='${JSON.stringify(selectedValues)}'
+            />
+          </div>
+        </div>
+      `;
         } else if (field.type === "textarea") {
           html = `
           <div class="${colClass}">
@@ -167,7 +324,20 @@
       form.onsubmit = (e) => {
         e.preventDefault();
 
-        const data = Object.fromEntries(new FormData(form).entries());
+        const formData = new FormData(form);
+        const data = {};
+
+        for (const [key, value] of formData.entries()) {
+          try {
+            if (typeof value === "string" && value.startsWith("[") && value.endsWith("]")) {
+              data[key] = JSON.parse(value);
+            } else {
+              data[key] = value;
+            }
+          } catch {
+            data[key] = value;
+          }
+        }
 
         config.onSubmit?.(data);
       };
@@ -180,8 +350,7 @@
   ===================================================== */
 
     function openDelete(config = {}) {
-      document.getElementById("globalDeleteTitle").innerText =
-        config.title || "Confirm Action";
+      document.getElementById("globalDeleteTitle").innerText = config.title || "Confirm Action";
 
       document.getElementById("globalDeleteMessage").innerText =
         config.message || "Choose an action.";
@@ -206,11 +375,9 @@
     }
 
     function openConfirm(config = {}) {
-      document.getElementById("globalConfirmTitle").textContent =
-        config.title || "Confirm";
+      document.getElementById("globalConfirmTitle").textContent = config.title || "Confirm";
 
-      document.getElementById("globalConfirmMessage").innerHTML =
-        config.message || "";
+      document.getElementById("globalConfirmMessage").innerHTML = config.message || "";
 
       const okBtn = document.getElementById("globalConfirmBtn");
       const cancelBtn = document.getElementById("globalConfirmCancelBtn");
