@@ -136,7 +136,14 @@
       '<?= JSON.stringify(SERVER_DATA) ?>';
       </script>
     <?!= include("frontend/scripts/app.core.script"); ?>
-    <?!= include("frontend/scripts/helper.script"); ?>
+
+    <?!= include("frontend/scripts/helpers/helper.script"); ?>
+    <?!= include("frontend/scripts/helpers/display.helper"); ?>
+    <?!= include("frontend/scripts/helpers/lookup.helper"); ?>
+    <?!= include("frontend/scripts/helpers/dom.helper"); ?>
+    <?!= include("frontend/scripts/helpers/date.helper"); ?>
+    <?!= include("frontend/scripts/helpers/shift.helper"); ?>
+
     <?!= include("frontend/scripts/login.script"); ?>
     <?!= include("frontend/scripts/settings.script"); ?>
     <?!= include("frontend/scripts/settings.api.script"); ?>

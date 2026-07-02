@@ -1,0 +1,129 @@
+<script>
+  (() => {
+    if (window.__DISPLAY_HELPER_READY__) return;
+    window.__DISPLAY_HELPER_READY__ = true;
+
+    const DISPLAY_ACRONYMS = new Set([
+      "am",
+      "pm",
+      "it",
+      "hr",
+      "qa",
+      "ui",
+      "ux",
+      "uiux",
+      "bpo",
+      "seo",
+      "cto",
+      "ceo",
+      "coo",
+      "cfo",
+      "vp",
+      "avp",
+      "ops",
+      "mis",
+      "tl",
+      "csr",
+      "dev",
+      "api",
+      "ui/ux",
+      "tdm",
+    ]);
+
+    function formatDisplayWords(value = "") {
+      const cleaned = String(value ?? "")
+        .trim()
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ");
+
+      if (!cleaned) return "";
+
+      return cleaned
+        .split(" ")
+        .map((word) => {
+          const raw = word.trim();
+          if (!raw) return "";
+
+          const lower = raw.toLowerCase();
+
+          if (DISPLAY_ACRONYMS.has(lower)) {
+            return raw.toUpperCase();
+          }
+
+          if (raw.includes("/")) {
+            return raw
+              .split("/")
+              .map((part) => {
+                const p = part.trim();
+                if (!p) return "";
+
+                const pl = p.toLowerCase();
+
+                if (DISPLAY_ACRONYMS.has(pl)) {
+                  return p.toUpperCase();
+                }
+
+                return pl.charAt(0).toUpperCase() + pl.slice(1);
+              })
+              .join("/");
+          }
+
+          return lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join(" ");
+    }
+
+    window.DISPLAY = {
+      lower(value = "") {
+        return String(value).trim().toLowerCase();
+      },
+
+      upper(value = "") {
+        return String(value).trim().toUpperCase();
+      },
+
+      clean(value = "") {
+        return String(value).trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+      },
+
+      title: formatDisplayWords,
+      label: formatDisplayWords,
+      name: formatDisplayWords,
+      role: formatDisplayWords,
+      status: formatDisplayWords,
+
+      email(value = "") {
+        return String(value).trim().toLowerCase();
+      },
+    };
+
+    window.escapeHtml = function (str = "") {
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    };
+
+    window.getStatusClass = function (status) {
+      switch (
+        String(status || "")
+          .trim()
+          .toUpperCase()
+      ) {
+        case "ACTIVE":
+          return "badge-success";
+
+        case "PENDING":
+          return "badge-warning";
+
+        case "INACTIVE":
+          return "badge-danger";
+
+        default:
+          return "badge-secondary";
+      }
+    };
+  })();
+</script>

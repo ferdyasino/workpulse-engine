@@ -1,0 +1,50 @@
+<script>
+  (() => {
+    if (window.__DATE_HELPER_READY__) return;
+    window.__DATE_HELPER_READY__ = true;
+
+    window.formatDateKey = function (value = new Date()) {
+      if (typeof value === "string") {
+        const str = value.trim();
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+          return str;
+        }
+      }
+
+      const d = value instanceof Date ? new Date(value) : new Date(value);
+
+      if (isNaN(d)) return "";
+
+      return [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, "0"),
+        String(d.getDate()).padStart(2, "0"),
+      ].join("-");
+    };
+
+    window.addMinutes = function (date, minutes = 0) {
+      if (!(date instanceof Date) || isNaN(date)) return null;
+
+      return new Date(date.getTime() + Number(minutes) * 60000);
+    };
+
+    window.diffMinutes = function (later, earlier) {
+      const a = new Date(later);
+      const b = new Date(earlier);
+
+      if (isNaN(a) || isNaN(b)) return 0;
+
+      return Math.floor((a - b) / 60000);
+    };
+
+    window.formatMinutesDuration = function (minutes = 0) {
+      const total = Math.abs(Number(minutes));
+
+      const hrs = Math.floor(total / 60);
+      const mins = total % 60;
+
+      return hrs ? `${hrs}h ${mins}m` : `${mins}m`;
+    };
+  })();
+</script>

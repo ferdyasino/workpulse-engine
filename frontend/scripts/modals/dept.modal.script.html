@@ -5,7 +5,6 @@
     // =====================================================
 
     function openListModal(config = {}) {
-      reloadList = config.onMount || null;
       GlobalModal.openList({
         title: "Department Records",
 
@@ -15,7 +14,7 @@
           openCreateModal({}, config);
         },
 
-        onMount: reloadList,
+        onMount: config.onMount || null,
       });
     }
     // =====================================================
