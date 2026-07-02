@@ -45,6 +45,7 @@
           (d) => `
         <option value="${escapeHtml(d.department_id || "")}">
           ${escapeHtml(DISPLAY.name(d.department_name || ""))}
+          ${escapeHtml(DISPLAY.name(d.supervisor_name || ""))}
         </option>
       `,
         )

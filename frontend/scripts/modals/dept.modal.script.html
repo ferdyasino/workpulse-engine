@@ -8,7 +8,7 @@
       GlobalModal.openList({
         title: "Department Records",
 
-        columns: ["Department", "Description"],
+        columns: ["Department", "Description", "Supervisor"],
 
         onAdd: () => {
           openCreateModal({}, config);
@@ -42,6 +42,13 @@
             value: dept.description || "",
             col: "col-md-12",
           },
+
+          {
+            name: "supervisor_name",
+            label: "Supervisor",
+            value: dept.supervisor_name || "",
+            col: "col-md-12",
+          },
         ],
 
         onSubmit: (formData) => {
@@ -72,7 +79,6 @@
         message: "Choose whether to deactivate or permanently delete this department.",
         id,
         onDelete: handlers.onDelete,
-        onDeactivate: handlers.onDeactivate,
       });
     }
 

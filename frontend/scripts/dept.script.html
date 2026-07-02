@@ -54,6 +54,8 @@
       department_name: DISPLAY.label(dept.department_name || "Unknown"),
 
       description: DISPLAY.label(dept.description || "-"),
+
+      supervisor_name: DISPLAY.label(dept.supervisor_name || "-"),
     };
   }
 
@@ -85,9 +87,12 @@
           <div class="d-flex justify-content-between align-items-center border-bottom py-2">
             <div>
               <strong>${escapeHtml(dept.department_name)}</strong>
+              <div class="text-muted small">
+                ${escapeHtml(dept.description)}
+              </div>
             </div>
             <div>
-              <strong>${escapeHtml(dept.description)}</strong>
+              ${escapeHtml(dept.supervisor_name)}
             </div>
           </div>
         `,
@@ -122,6 +127,7 @@
           <tr>
             <td>${escapeHtml(dept.department_name)}</td>
             <td>${escapeHtml(dept.description)}</td>
+            <td>${escapeHtml(dept.supervisor_name)}</td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
 

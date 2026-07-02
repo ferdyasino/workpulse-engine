@@ -18,9 +18,10 @@ function createDepartment(workspace_id, payload, options = {}) {
     throw new Error("department_name must be at least 2 characters");
   }
 
-  const existing = find(workspace_id, DEPT_TABLE).find(d =>
-    normalize("department_name", d.department_name).toLowerCase() ===
-    departmentName.toLowerCase()
+  const existing = find(workspace_id, DEPT_TABLE).find(
+    (d) =>
+      normalize("department_name", d.department_name).toLowerCase() ===
+      departmentName.toLowerCase(),
   );
 
   if (existing) {
@@ -28,13 +29,13 @@ function createDepartment(workspace_id, payload, options = {}) {
       return {
         success: true,
         data: existing,
-        message: "Department already exists"
+        message: "Department already exists",
       };
     }
 
     return {
       success: false,
-      message: `Department "${payload.department_name}" already exists`
+      message: `Department "${payload.department_name}" already exists`,
     };
   }
 
@@ -42,14 +43,15 @@ function createDepartment(workspace_id, payload, options = {}) {
     department_id: generateId("DEP"),
     department_name: departmentName,
     description: normalize("description", payload.description),
-    created_at: new Date().toISOString()
+    supervisor_name: normalize("supervisor_name", payload.supervisor_name),
+    created_at: new Date().toISOString(),
   };
 
   const result = insert(workspace_id, DEPT_TABLE, department);
 
   return {
     success: true,
-    data: result
+    data: result,
   };
 }
 
@@ -60,7 +62,7 @@ function createDepartment(workspace_id, payload, options = {}) {
  */
 function getDepartmentById(workspace_id, departmentId) {
   return findOne(workspace_id, DEPT_TABLE, {
-    department_id: departmentId
+    department_id: departmentId,
   });
 }
 
@@ -91,17 +93,18 @@ function updateDepartment(workspace_id, departmentId, updates) {
       throw new Error("department_name must be at least 2 characters");
     }
 
-    const duplicate = find(workspace_id, DEPT_TABLE).find(d =>
-      d.department_id !== departmentId &&
-      normalize("department_name", d.department_name).toLowerCase() ===
-      departmentName.toLowerCase()
+    const duplicate = find(workspace_id, DEPT_TABLE).find(
+      (d) =>
+        d.department_id !== departmentId &&
+        normalize("department_name", d.department_name).toLowerCase() ===
+          departmentName.toLowerCase(),
     );
 
     if (duplicate) {
       return {
         success: false,
         message: "Department name already exists",
-        data: duplicate
+        data: duplicate,
       };
     }
 
@@ -112,11 +115,15 @@ function updateDepartment(workspace_id, departmentId, updates) {
     safeUpdates.description = normalize("description", safeUpdates.description);
   }
 
+  if (safeUpdates.supervisor_name !== undefined) {
+    safeUpdates.supervisor_name = normalize("supervisor_name", safeUpdates.supervisor_name);
+  }
+
   const updated = update(workspace_id, DEPT_TABLE, departmentId, safeUpdates);
 
   return {
     success: true,
-    data: updated
+    data: updated,
   };
 }
 
@@ -129,8 +136,9 @@ function deleteDepartment(workspace_id, departmentId) {
   const dept = getDepartmentById(workspace_id, departmentId);
   if (!dept) throw new Error("Department not found");
 
-  const usersInDept = find(workspace_id, TABLES.USERS)
-    .filter(u => u.department_id === departmentId);
+  const usersInDept = find(workspace_id, TABLES.USERS).filter(
+    (u) => u.department_id === departmentId,
+  );
 
   if (usersInDept.length > 0) {
     throw new Error("Cannot delete department: users are assigned to it");
@@ -140,6 +148,6 @@ function deleteDepartment(workspace_id, departmentId) {
 
   return {
     success: true,
-    data: result
+    data: result,
   };
 }

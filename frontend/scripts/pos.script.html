@@ -1,15 +1,7 @@
 <script>
-  // =====================================================
-  // SAFE POSITION RESOLVER
-  // =====================================================
-
   function getPositionsSafe() {
     return state.positions || [];
   }
-
-  // =====================================================
-  // CREATE FROM USER
-  // =====================================================
 
   function openCreatePositionFromUserModal() {
     UsersModal.closeFormModal?.();
@@ -62,10 +54,6 @@
   }
 
   function mapPositionForView(position = {}) {
-    const rawStatus = String(position.status || "ACTIVE")
-      .trim()
-      .toUpperCase();
-
     const deptName =
       typeof getDepartmentName === "function" ? getDepartmentName(position.department_id) : "-";
 
@@ -74,25 +62,8 @@
       position_name: DISPLAY?.label?.(position.position_name || "Unknown") || "Unknown",
       department_name: DISPLAY?.label?.(deptName) || deptName,
       description: DISPLAY?.label?.(position.description || "-") || "-",
-      status_raw: rawStatus,
-      status: DISPLAY?.status?.(rawStatus) || rawStatus,
     };
   }
-
-  function getPositionStatusClass(status) {
-    switch (String(status || "").toUpperCase()) {
-      case "ACTIVE":
-        return "badge-success";
-      case "INACTIVE":
-        return "badge-danger";
-      default:
-        return "badge-secondary";
-    }
-  }
-
-  // =====================================================
-  // CARD LIST (SAFE)
-  // =====================================================
 
   function renderPositionList(positions = []) {
     const list = document.getElementById("positionList");
@@ -117,15 +88,14 @@
         (position) => `
           <div class="d-flex justify-content-between align-items-center border-bottom py-2">
             <div>
-              <strong>${escapeHtml(position.position_id)}</strong>
+              <strong>${escapeHtml(position.position_name)}</strong>
               <div class="text-muted small">
-                ${escapeHtml(position.position_name)} - ${escapeHtml(position.department_name)}
+                ${escapeHtml(position.description)}
+              </div>
+              <div class="text-muted small">
+                ${escapeHtml(position.description)}
               </div>
             </div>
-
-            <span class="badge ${getPositionStatusClass(position.status_raw)}">
-              ${escapeHtml(position.status)}
-            </span>
           </div>
         `,
       )
@@ -159,13 +129,7 @@
           <tr>
             <td>${escapeHtml(position.position_id)}</td>
             <td>${escapeHtml(position.position_name)}</td>
-
-            <td>
-              <span class="badge ${getPositionStatusClass(position.status_raw)}">
-                ${escapeHtml(position.status)}
-              </span>
-            </td>
-
+            <td>${escapeHtml(position.department_name)}</td>
             <td class="text-end">
               <div class="btn-group btn-group-sm">
                 <button

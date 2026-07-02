@@ -1,5 +1,6 @@
 <script>
   function openDepartmentListModal() {
+    console.log("Opening department list modal...", state.departments);
     DepartmentModal.openListModal({
       onMount() {
         UsersAPI.getDepartments(
@@ -22,6 +23,7 @@
       {
         department_name: prefill.department_name || "",
         description: prefill.description || "",
+        supervisor_name: prefill.supervisor_name || "",
       },
       {
         onSubmit(formData) {
@@ -79,24 +81,6 @@
           (err) => {
             console.error(err);
             showToast(err.message || "Delete failed", "error");
-            setLoading(false);
-          },
-        );
-      },
-
-      onDeactivate(id) {
-        setLoading(true);
-
-        UsersAPI.deactivateDepartment(
-          id,
-          () => {
-            showToast("Department deactivated", "success");
-            GlobalModal.hide("globalDeleteModal");
-            loadDepartments();
-          },
-          (err) => {
-            console.error(err);
-            showToast(err.message || "Deactivate failed", "error");
             setLoading(false);
           },
         );

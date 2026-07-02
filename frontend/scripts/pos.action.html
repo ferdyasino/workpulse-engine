@@ -22,7 +22,6 @@
       {
         position_name: prefill.position_name || "",
         description: prefill.description || "",
-        status: prefill.status || "ACTIVE",
       },
       {
         onSubmit(formData) {
@@ -80,24 +79,6 @@
           (err) => {
             console.error(err);
             showToast(err.message || "Delete failed", "error");
-            setLoading(false);
-          },
-        );
-      },
-
-      onDeactivate(id) {
-        setLoading(true);
-
-        PositionsAPI.deactivatePosition(
-          id,
-          () => {
-            showToast("Position deactivated", "success");
-            GlobalModal.hide("globalDeleteModal");
-            loadPositions();
-          },
-          (err) => {
-            console.error(err);
-            showToast(err.message || "Deactivate failed", "error");
             setLoading(false);
           },
         );
