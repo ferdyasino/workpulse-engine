@@ -17,10 +17,6 @@
     loading: false,
   };
 
-  // =====================================================
-  // INIT
-  // =====================================================
-
   function init() {
     loadReferenceData();
     loadUsers();
@@ -106,7 +102,6 @@
       UsersAPI.getDepartments((res) => {
         state.departments = Array.isArray(res) ? res : [];
         renderDepartmentList(state.departments);
-        renderDepartmentListModal(state.departments);
         resolve(state.departments);
       }, reject);
     });
@@ -117,7 +112,6 @@
       UsersAPI.getPositions((res) => {
         state.positions = Array.isArray(res) ? res : [];
         renderPositionList(state.positions);
-        renderPositionListModal(state.positions);
         resolve(state.positions);
       }, reject);
     });
@@ -128,7 +122,6 @@
       UsersAPI.getShifts((res) => {
         state.shifts = Array.isArray(res) ? res : [];
         renderShiftList(state.shifts);
-        renderShiftListModal(state.shifts);
         resolve(state.shifts);
       }, reject);
     });

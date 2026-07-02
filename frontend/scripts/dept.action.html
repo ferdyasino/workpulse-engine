@@ -1,19 +1,17 @@
 <script>
   function openDepartmentListModal() {
-    console.log("Opening department list modal...", state.departments);
     DepartmentModal.openListModal({
       onMount() {
-        UsersAPI.getDepartments(
-          (departments) => {
-            state.departments = Array.isArray(departments) ? departments : [];
-
-            renderDepartmentListModal(state.departments);
-          },
-          (err) => {
+        console.log("Loading departments...");
+        loadDepartments()
+          .then((departments) => {
+            renderDepartmentListModal(departments);
+          })
+          .catch((err) => {
             showToast(err?.message || "Failed to load departments", "error");
+
             renderDepartmentListModal([]);
-          },
-        );
+          });
       },
     });
   }
@@ -32,6 +30,7 @@
             () => {
               showToast("Department created", "success");
               DepartmentModal.closeFormModal?.();
+              GlobalModal.refreshList();
               loadDepartments();
             },
             (err) => {
@@ -56,6 +55,7 @@
           () => {
             showToast("Department updated", "success");
             DepartmentModal.closeFormModal?.();
+            GlobalModal.refreshList();
             loadDepartments();
           },
           (err) => {
@@ -76,6 +76,7 @@
           () => {
             showToast("Department deleted", "success");
             GlobalModal.hide("globalDeleteModal");
+            GlobalModal.refreshList();
             loadDepartments();
           },
           (err) => {

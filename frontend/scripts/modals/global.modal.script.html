@@ -37,23 +37,36 @@
      LIST MODAL
   ===================================================== */
 
+    let currentListConfig = null;
+
     function openList(config = {}) {
+      currentListConfig = config;
       document.getElementById("globalListTitle").innerText = config.title || "List";
 
       const head = document.getElementById("globalListHead");
 
       head.innerHTML = `
-      <tr>
-        ${(config.columns || []).map((col) => `<th>${col}</th>`).join("")}
-        <th class="text-end">Actions</th>
-      </tr>
-    `;
+    <tr>
+      ${(config.columns || []).map((col) => `<th>${col}</th>`).join("")}
+      <th class="text-end">Actions</th>
+    </tr>
+  `;
 
       const addBtn = document.getElementById("globalListAddBtn");
       addBtn.onclick = null;
       addBtn.onclick = config.onAdd || null;
 
       show("globalListModal");
+
+      if (typeof config.onMount === "function") {
+        queueMicrotask(() => config.onMount());
+      }
+    }
+
+    function refreshList() {
+      if (typeof currentListConfig?.onMount === "function") {
+        currentListConfig.onMount();
+      }
     }
 
     /* =====================================================
@@ -400,6 +413,7 @@
 
     return {
       openList,
+      refreshList,
       openForm,
       openDelete,
       openConfirm,
