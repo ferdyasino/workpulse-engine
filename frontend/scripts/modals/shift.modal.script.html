@@ -1,22 +1,16 @@
 <script>
   const ShiftModal = (() => {
-    function openListModal(shifts = [], handlers = {}) {
+    function openListModal(config = {}) {
       GlobalModal.openList({
-        title: "Shifts",
-        items: shifts.map((s) => ({
-          id: s.shift_id,
-          label: s.shift_name || "Unknown",
-          description: `${s.start_time || "-"} - ${s.end_time || "-"}`,
-          status: s.status || "ACTIVE",
-        })),
+        title: "Shift Records",
 
-        onItemClick: (shift) => {
-          handlers.onItemClick?.(shift);
+        columns: ["Shift", "Schedule", "Grace (mins)", "Status"],
+
+        onAdd: () => {
+          openCreateModal({}, config);
         },
 
-        onAddClick: () => {
-          handlers.onAddClick?.();
-        },
+        onMount: config.onMount || null,
       });
     }
 

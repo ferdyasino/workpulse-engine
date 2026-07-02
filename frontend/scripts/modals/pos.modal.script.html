@@ -4,19 +4,16 @@
       return Array.isArray(config.departments) ? config.departments : [];
     }
     function openListModal(config = {}) {
-      const departments = getDepartments(config);
       GlobalModal.openList({
-        title: "Positions",
-        items: (state.positions || []).map((p) => ({
-          id: p.position_id,
-          label: p.position_name,
-          description:
-            departments.find((d) => d.department_id === p.department_id)?.department_name || "-",
-          onClick: () => {
-            GlobalModal.hide("globalListModal");
-            config.onSelect?.(p);
-          },
-        })),
+        title: "Position Records",
+
+        columns: ["Position", "Department", "Description"],
+
+        onAdd: () => {
+          openCreateModal({}, config);
+        },
+
+        onMount: config.onMount || null,
       });
     }
 
