@@ -187,11 +187,16 @@ function normalizeTimeString(value) {
   return String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
 }
 
-/**
- * Generic ID normalizer
- * - trim only
- * - preserve case
- */
+function normalizeStringArray(value) {
+  if (value == null || value === "") {
+    return [];
+  }
+
+  const values = Array.isArray(value) ? value : String(value).split(",");
+
+  return [...new Set(values.map(normalizeTrimmedString).filter(Boolean))];
+}
+
 function normalizeId(value) {
   return normalizeTrimmedString(value);
 }
@@ -272,6 +277,10 @@ const NORMALIZERS = {
     return normalizeId(value);
   },
 
+  employee_no(value) {
+    return normalizeTrimmedString(value);
+  },
+
   email(value) {
     return normalizeLowerString(value);
   },
@@ -324,6 +333,21 @@ const NORMALIZERS = {
   },
 
   dept_name(value) {
+    return normalizeSingleLineText(value);
+  },
+
+  department_ids(value) {
+    return normalizeStringArray(value).map(normalizeId);
+  },
+
+  /* ---------------------------------
+   * POSITION
+  --------------------------------- */
+  position_id(value) {
+    return normalizeId(value);
+  },
+
+  position_name(value) {
     return normalizeSingleLineText(value);
   },
 

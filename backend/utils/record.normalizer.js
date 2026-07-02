@@ -86,14 +86,22 @@ function normalizeEmployeeRecord(record = {}) {
 
   return normalizeRecord({
     ...record,
+
     user_id: record.user_id,
     employee_id: record.employee_id,
+    employee_no: record.employee_no,
+
     email: record.email,
     fullname: fullname,
     role: record.role,
     status: record.status,
-    department_id: record.department_id || record.dept_id,
+
+    department_ids: record.department_ids ?? (record.department_id ? [record.department_id] : []),
+
     department_name: record.department_name || record.dept_name,
+
+    position_id: record.position_id,
+
     shift_id: record.shift_id,
     shift_name: record.shift_name,
   });
@@ -105,8 +113,27 @@ function normalizeEmployeeRecord(record = {}) {
 function normalizeDepartmentRecord(record = {}) {
   return normalizeRecord({
     ...record,
+
     department_id: record.department_id || record.dept_id,
     department_name: record.department_name || record.dept_name,
+
+    status: record.status,
+  });
+}
+
+/**
+ * Position row normalizer
+ */
+function normalizePositionRecord(record = {}) {
+  return normalizeRecord({
+    ...record,
+
+    position_id: record.position_id,
+    position_name: record.position_name,
+
+    department_ids: record.department_ids ?? (record.department_id ? [record.department_id] : []),
+
+    description: record.description,
     status: record.status,
   });
 }
@@ -117,10 +144,13 @@ function normalizeDepartmentRecord(record = {}) {
 function normalizeWorkspaceRecord(record = {}) {
   return normalizeRecord({
     ...record,
+
     workspace_id: record.workspace_id,
     workspace_slug: record.workspace_slug,
+
     name: record.name,
     status: record.status,
+
     owner_id: record.owner_id,
   });
 }

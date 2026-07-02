@@ -74,7 +74,7 @@ const SCHEMA = {
     "rounding_rule",
   ],
 
-  POSITIONS: ["position_id", "position_name", "department_id", "description", "created_at"],
+  POSITIONS: ["position_id", "position_name", "department_ids", "description", "created_at"],
 
   ATTENDANCE_INDEX: [
     "attendance_id",
@@ -119,9 +119,14 @@ const EXTERNAL_SCHEMA = {
     "shift_id",
     "device_info",
     "location",
+
+    "location_status",
+    "location_message",
+
     "source",
     "remarks",
     "created_at",
+
     "computed_worked_minutes",
     "computed_late_minutes",
     "computed_overtime_minutes",
