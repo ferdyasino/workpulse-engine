@@ -2,20 +2,17 @@
   function openPositionListModal() {
     PositionModal.openListModal({
       departments: state.departments || [],
-
       onMount() {
-        UsersAPI.getPositions(
-          (positions) => {
-            state.positions = Array.isArray(positions) ? positions : [];
-
-            renderPositionListModal(state.positions);
-          },
-          (err) => {
+        console.log("Loading positions...");
+        loadPositions()
+          .then((positions) => {
+            renderPositionListModal(positions);
+          })
+          .catch((err) => {
             showToast(err?.message || "Failed to load positions", "error");
 
             renderPositionListModal([]);
-          },
-        );
+          });
       },
     });
   }
@@ -34,12 +31,13 @@
         departments: state.departments || [],
 
         onSubmit(formData) {
-          PositionsAPI.createPosition(
+          UsersAPI.createPosition(
             formData,
             () => {
               showToast("Position created", "success");
 
               PositionModal.closeFormModal?.();
+              GlobalModal.refreshList();
 
               loadPositions();
             },
@@ -61,14 +59,14 @@
       departments: state.departments || [],
 
       onSubmit(formData) {
-        PositionsAPI.updatePosition(
+        UsersAPI.updatePosition(
           positionId,
           formData,
           () => {
             showToast("Position updated", "success");
 
             PositionModal.closeFormModal?.();
-
+            GLobalModal.refreshList();
             loadPositions();
           },
           (err) => {
@@ -88,11 +86,12 @@
       onConfirm() {
         setLoading(true);
 
-        PositionsAPI.deletePosition(
+        UsersAPI.deletePosition(
           position.position_id,
           () => {
             showToast("Position deleted", "success");
-
+            PositionModal.closeDeleteModal?.();
+            GlobalModal.refreshList();
             loadPositions();
           },
           (err) => {

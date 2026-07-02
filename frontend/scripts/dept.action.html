@@ -75,7 +75,7 @@
           id,
           () => {
             showToast("Department deleted", "success");
-            GlobalModal.hide("globalDeleteModal");
+            DepartmentModal.closeDeleteModal?.();
             GlobalModal.refreshList();
             loadDepartments();
           },
