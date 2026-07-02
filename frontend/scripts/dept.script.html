@@ -48,34 +48,13 @@
   }
 
   function mapDepartmentForView(dept = {}) {
-    const rawStatus = String(dept.status || "ACTIVE")
-      .trim()
-      .toUpperCase();
-
     return {
       department_id: dept.department_id || "",
 
       department_name: DISPLAY.label(dept.department_name || "Unknown"),
 
       description: DISPLAY.label(dept.description || "-"),
-
-      status_raw: rawStatus,
-
-      status: DISPLAY.status(rawStatus),
     };
-  }
-
-  function getDepartmentStatusClass(status) {
-    switch (String(status || "").toUpperCase()) {
-      case "ACTIVE":
-        return "badge-success";
-
-      case "INACTIVE":
-        return "badge-danger";
-
-      default:
-        return "badge-secondary";
-    }
   }
 
   // =====================================================
@@ -107,10 +86,9 @@
             <div>
               <strong>${escapeHtml(dept.department_name)}</strong>
             </div>
-
-            <span class="badge ${getDepartmentStatusClass(dept.status_raw)}">
-              ${escapeHtml(dept.status)}
-            </span>
+            <div>
+              <strong>${escapeHtml(dept.description)}</strong>
+            </div>
           </div>
         `,
       )
@@ -143,15 +121,7 @@
         (dept) => `
           <tr>
             <td>${escapeHtml(dept.department_name)}</td>
-
             <td>${escapeHtml(dept.description)}</td>
-
-            <td>
-              <span class="badge ${getDepartmentStatusClass(dept.status_raw)}">
-                ${escapeHtml(dept.status)}
-              </span>
-            </td>
-
             <td class="text-end">
               <div class="btn-group btn-group-sm">
 
@@ -160,7 +130,6 @@
                   onclick="editDepartment('${dept.department_id}')">
                   Edit
                 </button>
-
                 <button
                   class="btn btn-outline-danger"
                   onclick="deleteDepartment('${dept.department_id}')">

@@ -8,7 +8,7 @@
       GlobalModal.openList({
         title: "Department Records",
 
-        columns: ["Department", "Description", "Status"],
+        columns: ["Department", "Description"],
 
         onAdd: () => {
           openCreateModal({}, config);
@@ -40,24 +40,6 @@
             label: "Description",
             type: "textarea",
             value: dept.description || "",
-            col: "col-md-12",
-          },
-
-          {
-            name: "status",
-            label: "Status",
-            type: "select",
-            options: [
-              {
-                value: "ACTIVE",
-                label: "Active",
-              },
-              {
-                value: "INACTIVE",
-                label: "Inactive",
-              },
-            ],
-            value: dept.status || "ACTIVE",
             col: "col-md-12",
           },
         ],
