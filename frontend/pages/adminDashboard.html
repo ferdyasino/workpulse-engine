@@ -6,9 +6,7 @@
         <div class="d-flex justify-content-between align-items-start mb-3">
           <div>
             <h5 class="mb-1">Departments</h5>
-            <div class="text-muted small">
-              Manage department records used by employees
-            </div>
+            <div class="text-muted small">Manage department records used by employees</div>
           </div>
 
           <span id="departmentCount" class="badge badge-secondary">0</span>
@@ -26,14 +24,6 @@
           >
             Manage
           </button>
-
-          <button
-            type="button"
-            class="btn btn-glass btn-sm"
-            onclick="openCreateDepartmentFromUserModal?.()"
-          >
-            Add
-          </button>
         </div>
       </div>
     </div>
@@ -44,9 +34,7 @@
         <div class="d-flex justify-content-between align-items-start mb-3">
           <div>
             <h5 class="mb-1">Positions</h5>
-            <div class="text-muted small">
-              Manage employee positions and assignments
-            </div>
+            <div class="text-muted small">Manage employee positions and assignments</div>
           </div>
 
           <span id="positionCount" class="badge badge-secondary">0</span>
@@ -57,20 +45,8 @@
         </div>
 
         <div class="d-flex gap-2 mt-3">
-          <button
-            type="button"
-            class="btn btn-primary btn-sm"
-            onclick="openPositionListModal?.()"
-          >
+          <button type="button" class="btn btn-primary btn-sm" onclick="openPositionListModal?.()">
             Manage
-          </button>
-
-          <button
-            type="button"
-            class="btn btn-glass btn-sm"
-            onclick="openCreatePositionFromUserModal?.()"
-          >
-            Add
           </button>
         </div>
       </div>
@@ -82,9 +58,7 @@
         <div class="d-flex justify-content-between align-items-start mb-3">
           <div>
             <h5 class="mb-1">Shifts</h5>
-            <div class="text-muted small">
-              Manage shift schedules used in attendance
-            </div>
+            <div class="text-muted small">Manage shift schedules used in attendance</div>
           </div>
 
           <span id="shiftCount" class="badge badge-secondary">0</span>
@@ -95,20 +69,8 @@
         </div>
 
         <div class="d-flex gap-2 mt-3">
-          <button
-            type="button"
-            class="btn btn-primary btn-sm"
-            onclick="openShiftListModal?.()"
-          >
+          <button type="button" class="btn btn-primary btn-sm" onclick="openShiftListModal?.()">
             Manage
-          </button>
-
-          <button
-            type="button"
-            class="btn btn-glass btn-sm"
-            onclick="openCreateShiftFromUserModal?.()"
-          >
-            Add
           </button>
         </div>
       </div>
@@ -123,19 +85,11 @@
       <h5 class="mb-0">Employee Records</h5>
 
       <div class="d-flex gap-2">
-        <button
-          id="btnRefreshUsers"
-          class="btn btn-primary btn-sm"
-          onclick="loadUsers?.()"
-        >
+        <button id="btnRefreshUsers" class="btn btn-primary btn-sm" onclick="loadUsers?.()">
           Refresh
         </button>
 
-        <button
-          id="btnAddUser"
-          class="btn btn-primary btn-sm"
-          onclick="openCreateUser?.()"
-        >
+        <button id="btnAddUser" class="btn btn-primary btn-sm" onclick="openCreateUser?.()">
           Add Employee
         </button>
       </div>
@@ -161,9 +115,7 @@
         <tbody id="usersTableBody">
           <!-- EMPTY STATE (controlled by JS) -->
           <tr>
-            <td colspan="8" class="text-center text-muted py-4">
-              No employees loaded
-            </td>
+            <td colspan="8" class="text-center text-muted py-4">No employees loaded</td>
           </tr>
         </tbody>
       </table>

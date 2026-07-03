@@ -1,186 +1,178 @@
 <script>
+  window.UsersAPI = (() => {
+    const ws = () => {
+      const id = APP.user?.workspace_id || localStorage.getItem("workspace_id");
 
-window.UsersAPI = (() => {
+      if (!id) {
+        throw new Error("Workspace ID not found. Please login again.");
+      }
 
-  const ws = () => {
-    const id =
-      APP.user?.workspace_id ||
-      localStorage.getItem("workspace_id");
+      return id;
+    };
 
-    if (!id) {
-      throw new Error("Workspace ID not found. Please login again.");
+    // =====================================================
+    // USERS
+    // =====================================================
+
+    function getUsers(success, fail) {
+      google.script.run.withSuccessHandler(success).withFailureHandler(fail).getUsers(ws());
     }
 
-    return id;
-  };
+    function createUser(payload, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .createUser(ws(), payload);
+    }
 
-  // =====================================================
-  // USERS
-  // =====================================================
+    function updateUser(userId, payload, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .updateUser(ws(), userId, payload);
+    }
 
-  function getUsers(success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .getUsers(ws());
-  }
+    function deleteUser(userId, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .deleteUser(ws(), userId);
+    }
 
-  function createUser(payload, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .createUser(ws(), payload);
-  }
+    function deactivateUser(userId, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .deactivateUser(ws(), userId);
+    }
 
-  function updateUser(userId, payload, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .updateUser(ws(), userId, payload);
-  }
-
-  function deleteUser(userId, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .deleteUser(ws(), userId);
-  }
-
-  function deactivateUser(userId, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .deactivateUser(ws(), userId);
-  }
-
-  // =====================================================
-  // DEPARTMENTS
-  // =====================================================
-
-  function getDepartments(success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .getAllDepartments(ws());
-  }
-
-  function createDepartment(payload, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .createDepartment(ws(), payload);
-  }
-
-  function updateDepartment(departmentId, payload, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .updateDepartment(ws(), departmentId, payload);
-  }
-
-  function deleteDepartment(departmentId, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .deleteDepartment(ws(), departmentId);
-  }
-
-  // =====================================================
-  // POSITIONS
-  // =====================================================
-
-  function getPositions(success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .getAllPositions(ws());
-  }
-
-  function createPosition(payload, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .createPosition(ws(), payload);
-  }
-
-  function updatePosition(positionId, payload, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .updatePosition(ws(), positionId, payload);
-  }
-
-  function deletePosition(positionId, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .deletePosition(ws(), positionId);
-  }
-
-  // =====================================================
-  // SHIFTS
-  // =====================================================
-// console.log("ws", ws());
-  function getShifts(success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .getAllShifts(ws());
-  }
-  
-  function createShift(payload, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .createShift(ws(), payload);
-  }
-
-  function updateShift(shiftId, payload, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .updateShift(ws(), shiftId, payload);
-  }
-
-  function deleteShift(shiftId, success, fail) {
-    google.script.run
-      .withSuccessHandler(success)
-      .withFailureHandler(fail)
-      .deleteShift(ws(), shiftId);
-  }
-
-  // =====================================================
-  // PUBLIC API
-  // =====================================================
-
-  return {
-
-    // USERS
-    getUsers,
-    createUser,
-    updateUser,
-    deleteUser,
-    deactivateUser,
-
+    // =====================================================
     // DEPARTMENTS
-    getDepartments,
-    createDepartment,
-    updateDepartment,
-    deleteDepartment,
+    // =====================================================
 
+    function getDepartments(success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .getAllDepartments(ws());
+    }
+
+    function createDepartment(payload, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .createDepartment(ws(), payload);
+    }
+
+    function updateDepartment(departmentId, payload, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .updateDepartment(ws(), departmentId, payload);
+    }
+
+    function deleteDepartment(departmentId, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .deleteDepartment(ws(), departmentId);
+    }
+
+    // =====================================================
     // POSITIONS
-    getPositions,
-    createPosition,
-    updatePosition,
-    deletePosition,
+    // =====================================================
 
+    function getPositions(success, fail) {
+      google.script.run.withSuccessHandler(success).withFailureHandler(fail).getAllPositions(ws());
+    }
+
+    function createPosition(payload, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .createPosition(ws(), payload);
+    }
+
+    function updatePosition(positionId, payload, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .updatePosition(ws(), positionId, payload);
+    }
+
+    function deletePosition(positionId, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .deletePosition(ws(), positionId);
+    }
+
+    // =====================================================
     // SHIFTS
-    getShifts,
-    createShift,
-    updateShift,
-    deleteShift
-  };
+    // =====================================================
+    // console.log("ws", ws());
+    function getShifts(success, fail) {
+      google.script.run.withSuccessHandler(success).withFailureHandler(fail).getAllShifts(ws());
+    }
 
-})();
+    function createShift(payload, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .createShift(ws(), payload);
+    }
 
+    function updateShift(shiftId, payload, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .updateShift(ws(), shiftId, payload);
+    }
+
+    function deleteShift(shiftId, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .deleteShift(ws(), shiftId);
+    }
+
+    function deactivateShift(shiftId, success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .deactivateShift(ws(), shiftId);
+    }
+
+    // =====================================================
+    // PUBLIC API
+    // =====================================================
+
+    return {
+      // USERS
+      getUsers,
+      createUser,
+      updateUser,
+      deleteUser,
+      deactivateUser,
+
+      // DEPARTMENTS
+      getDepartments,
+      createDepartment,
+      updateDepartment,
+      deleteDepartment,
+
+      // POSITIONS
+      getPositions,
+      createPosition,
+      updatePosition,
+      deletePosition,
+
+      // SHIFTS
+      getShifts,
+      createShift,
+      updateShift,
+      deleteShift,
+      deactivateShift,
+    };
+  })();
 </script>

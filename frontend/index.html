@@ -40,10 +40,10 @@
 
       <?!= include("frontend/components/toast"); ?>
       <?!= include("frontend/components/loader"); ?>
-    <?!= include("frontend/components/modals/confirm.global"); ?>
-    <?!= include("frontend/components/modals/list.global"); ?>
-    <?!= include("frontend/components/modals/form.global"); ?>
-    <?!= include("frontend/components/modals/delete.global"); ?>
+      <?!= include("frontend/components/modals/list.global"); ?>
+      <?!= include("frontend/components/modals/form.global"); ?>
+      <?!= include("frontend/components/modals/delete.global"); ?>
+      <?!= include("frontend/components/modals/confirm.global"); ?>
 
 
     <!-- =====================================================
@@ -136,7 +136,14 @@
       '<?= JSON.stringify(SERVER_DATA) ?>';
       </script>
     <?!= include("frontend/scripts/app.core.script"); ?>
-    <?!= include("frontend/scripts/helper.script"); ?>
+
+    <?!= include("frontend/scripts/helpers/helper.script"); ?>
+    <?!= include("frontend/scripts/helpers/display.helper"); ?>
+    <?!= include("frontend/scripts/helpers/lookup.helper"); ?>
+    <?!= include("frontend/scripts/helpers/dom.helper"); ?>
+    <?!= include("frontend/scripts/helpers/date.helper"); ?>
+    <?!= include("frontend/scripts/helpers/shift.helper"); ?>
+
     <?!= include("frontend/scripts/login.script"); ?>
     <?!= include("frontend/scripts/settings.script"); ?>
     <?!= include("frontend/scripts/settings.api.script"); ?>
@@ -155,6 +162,9 @@
     <?!= include("frontend/scripts/user.api.script"); ?>
     <?!= include("frontend/scripts/user.script"); ?>
     <?!= include("frontend/scripts/user.action"); ?>
+    <?!= include("frontend/scripts/dept.action"); ?>
+    <?!= include("frontend/scripts/pos.action"); ?>
+    <?!= include("frontend/scripts/shift.action"); ?>
 
     <?!= include("frontend/scripts/dept.script"); ?>
     <?!= include("frontend/scripts/pos.script"); ?>

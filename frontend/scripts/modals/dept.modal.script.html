@@ -1,42 +1,108 @@
 <script>
-const DepartmentModal = (() => {
+  const DepartmentModal = (() => {
+    // =====================================================
+    // LIST MODAL
+    // =====================================================
 
-  function openCreateModal(dept = {}, config = {}) {
-    GlobalModal.openForm({
-      title: dept.department_id ? "Edit Department" : "Create Department",
+    function openListModal(config = {}) {
+      GlobalModal.openList({
+        title: "Department Records",
 
-      fields: [
-        {
-          name: "department_name",
-          label: "Department Name",
-          value: dept.department_name || "",
-          required: true,
-          col: "col-md-12"
+        columns: ["Department", "Description", "Supervisor"],
+
+        onAdd: () => {
+          openCreateModal({}, config);
         },
 
-        {
-          name: "description",
-          label: "Description",
-          type: "textarea",
-          value: dept.description || "",
-          col: "col-md-12"
-        }
-      ],
+        onMount: config.onMount || null,
+      });
+    }
+    // =====================================================
+    // CREATE / EDIT MODAL
+    // =====================================================
 
-      onSubmit: (formData) => {
-        config.onSubmit?.(formData, dept);
+    function openCreateModal(dept = {}, config = {}) {
+      GlobalModal.openForm({
+        title: dept.department_id ? "Edit Department" : "Create Department",
+
+        fields: [
+          {
+            name: "department_name",
+            label: "Department Name",
+            value: dept.department_name || "",
+            required: true,
+            col: "col-md-12",
+          },
+
+          {
+            name: "description",
+            label: "Description",
+            type: "textarea",
+            value: dept.description || "",
+            col: "col-md-12",
+          },
+
+          {
+            name: "supervisor_name",
+            label: "Supervisor",
+            value: dept.supervisor_name || "",
+            col: "col-md-12",
+          },
+        ],
+
+        onSubmit: (formData) => {
+          config.onSubmit?.(formData, dept);
+        },
+      });
+    }
+
+    // =====================================================
+    // EDIT WRAPPER
+    // =====================================================
+
+    function openEditModal(dept, handlers = {}) {
+      openCreateModal(dept, handlers);
+    }
+
+    function closeFormModal() {
+      GlobalModal.hide("globalFormModal");
+    }
+
+    // =====================================================
+    // DELETE MODAL
+    // =====================================================
+
+    function openDeleteModal(dept, handlers = {}) {
+      GlobalModal.openConfirm({
+        title: "Delete Department",
+        message: `Are you sure you want to delete the department "${dept.department_name}"? This action cannot be undone.`,
+
+        onConfirm: () => {
+          handlers.onConfirm?.(dept);
+        },
+      });
+    }
+
+    function closeListModal() {
+      const body = document.getElementById("globalListBody");
+      if (body) {
+        body.innerHTML = "";
       }
-    });
-  }
 
-  function closeFormModal() {
-    GlobalModal.hide("globalFormModal");
-  }
+      GlobalModal.hide("globalListModal");
+    }
 
-  return {
-    openCreateModal,
-    closeFormModal
-  };
+    // =====================================================
+    // PUBLIC API
+    // =====================================================
 
-})();
+    return {
+      openListModal,
+      openCreateModal,
+      openEditModal,
+      openDeleteModal,
+      closeFormModal,
+      closeListModal,
+    };
+  })();
 </script>

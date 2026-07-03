@@ -1,98 +1,156 @@
 <script>
-function openCreateDepartmentFromUserModal() {
-  // close employee form first so modals do not stack badly
-  UsersModal.closeFormModal?.();
-
-  DepartmentModal.openCreateModal({}, {
-    onSubmit(formData) {
-      UsersAPI.createDepartment(
-        formData,
-        async () => {
-          showToast("Department created", "success");
-
-          await reloadAllReferences();
-
-          DepartmentModal.closeFormModal?.();
-
-          const newDepartmentId =
-            findDepartmentIdByName(formData.department_name);
-
-          openCreateUser({
-            department_id: newDepartmentId
-          });
-        },
-        (err) => {
-          showToast(err.message || "Failed to create department", "error");
-        }
-      );
-    }
-  });
-}
-
-function renderDepartmentList(depts) {
-  const el = document.getElementById("departmentList");
-  if (!el) return;
-
-  if (!Array.isArray(depts) || depts.length === 0) {
-    el.innerHTML = `<div class="text-muted">No departments found</div>`;
-    return;
+  function initDepartment() {
+    loadDepartments();
   }
 
-  el.innerHTML = depts
-    .map(mapDepartmentForView)
-    .map(d => `
-      <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-        <div>
-          <strong>${escapeHtml(d.department_name)}</strong>
-        </div>
+  function openCreateDepartmentFromUserModal() {
+    UsersModal.closeFormModal?.();
 
-        <span class="badge ${getDepartmentStatusClass(d.status_raw)}">
-          ${escapeHtml(d.status)}
-        </span>
-      </div>
-    `)
-    .join("");
-}
+    DepartmentModal.openCreateModal(
+      {},
+      {
+        onSubmit(formData) {
+          UsersAPI.createDepartment(
+            formData,
+            async () => {
+              showToast("Department created", "success");
 
-function findDepartmentIdByName(name) {
-  const normalized = String(name || "").trim().toLowerCase();
+              await reloadAllReferences();
 
-  const found = [...(state.departments || [])]
-    .reverse()
-    .find(d =>
-      String(d.department_name || "").trim().toLowerCase() === normalized
+              DepartmentModal.closeFormModal?.();
+
+              openCreateUser({
+                department_id: findDepartmentIdByName(formData.department_name),
+              });
+            },
+            (err) => {
+              showToast(err.message || "Failed to create department", "error");
+            },
+          );
+        },
+      },
+    );
+  }
+
+  // =====================================================
+  // HELPERS
+  // =====================================================
+
+  function findDepartmentIdByName(name) {
+    const normalized = String(name || "")
+      .trim()
+      .toLowerCase();
+
+    const found = [...(state.departments || [])].reverse().find(
+      (d) =>
+        String(d.department_name || "")
+          .trim()
+          .toLowerCase() === normalized,
     );
 
-  return found?.department_id || "";
-}
-
-/* =========================
-   VIEW MAPPER
-========================= */
-function mapDepartmentForView(d = {}) {
-  const rawStatus = String(d.status || "ACTIVE").trim().toUpperCase();
-
-  return {
-    department_id: d.department_id || "",
-    department_name: DISPLAY.label(d.department_name || "UNKNOWN"),
-    status_raw: rawStatus,
-    status: DISPLAY.status(rawStatus)
-  };
-}
-
-/* =========================
-   STATUS UI MAPPING
-========================= */
-function getDepartmentStatusClass(status) {
-  switch (String(status || "").trim().toUpperCase()) {
-    case "ACTIVE":
-      return "badge-success";
-
-    case "INACTIVE":
-      return "badge-danger";
-
-    default:
-      return "badge-secondary";
+    return found?.department_id || "";
   }
-}
+
+  function mapDepartmentForView(dept = {}) {
+    return {
+      department_id: dept.department_id || "",
+
+      department_name: DISPLAY.label(dept.department_name || "Unknown"),
+
+      description: DISPLAY.label(dept.description || "-"),
+
+      supervisor_name: DISPLAY.label(dept.supervisor_name || "-"),
+    };
+  }
+
+  // =====================================================
+  // CARD LIST
+  // =====================================================
+
+  function renderDepartmentList(departments = []) {
+    const list = document.getElementById("departmentList");
+    const count = document.getElementById("departmentCount");
+
+    if (!list) return;
+
+    count.textContent = departments.length;
+
+    if (!departments.length) {
+      list.innerHTML = `
+        <div class="text-muted small">
+          No departments found
+        </div>
+      `;
+      return;
+    }
+
+    list.innerHTML = departments
+      .map(mapDepartmentForView)
+      .map(
+        (dept) => `
+          <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+            <div>
+              <strong>${escapeHtml(dept.department_name)}</strong>
+              <div class="text-muted small">
+                ${escapeHtml(dept.description)}
+              </div>
+            </div>
+            <div>
+              ${escapeHtml(dept.supervisor_name)}
+            </div>
+          </div>
+        `,
+      )
+      .join("");
+  }
+
+  // =====================================================
+  // MODAL LIST
+  // =====================================================
+
+  function renderDepartmentListModal(departments = []) {
+    const tbody = document.getElementById("globalListBody");
+
+    if (!tbody) return;
+
+    if (!departments.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" class="text-center text-muted py-4">
+            No departments found
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = departments
+      .map(mapDepartmentForView)
+      .map(
+        (dept) => `
+          <tr>
+            <td>${escapeHtml(dept.department_name)}</td>
+            <td>${escapeHtml(dept.description)}</td>
+            <td>${escapeHtml(dept.supervisor_name)}</td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm">
+
+                <button
+                  class="btn btn-outline-primary"
+                  onclick="editDepartment('${dept.department_id}')">
+                  Edit
+                </button>
+                <button
+                  class="btn btn-outline-danger"
+                  onclick="deleteDepartment('${dept.department_id}')">
+                  Delete
+                </button>
+
+              </div>
+            </td>
+          </tr>
+        `,
+      )
+      .join("");
+  }
 </script>

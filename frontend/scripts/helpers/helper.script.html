@@ -1,0 +1,252 @@
+<script>
+  window.evaluateShiftAttendance = function ({ shift = {}, time_in = null, time_out = null } = {}) {
+    const normalizedShift = window.normalizeShift(shift);
+
+    const scheduledStart = window.parseShiftTimeToDate(normalizedShift.start_time);
+
+    const scheduledEnd = window.parseShiftTimeToDate(normalizedShift.end_time);
+
+    const graceEnd = scheduledStart
+      ? window.addMinutes(scheduledStart, normalizedShift.grace_minutes)
+      : null;
+
+    const actualTimeIn = time_in ? new Date(time_in) : null;
+    const actualTimeOut = time_out ? new Date(time_out) : null;
+
+    const validTimeIn =
+      actualTimeIn instanceof Date && !isNaN(actualTimeIn.getTime()) ? actualTimeIn : null;
+
+    const validTimeOut =
+      actualTimeOut instanceof Date && !isNaN(actualTimeOut.getTime()) ? actualTimeOut : null;
+
+    let timeInStatus = {
+      code: "NOT_TIMED_IN",
+      label: "Not Timed In",
+      minutes_late: 0,
+      minutes_early: 0,
+    };
+
+    if (validTimeIn && scheduledStart) {
+      if (validTimeIn <= scheduledStart) {
+        timeInStatus = {
+          code: "ON_TIME",
+          label: "On Time",
+          minutes_late: 0,
+          minutes_early: Math.max(0, window.diffMinutes(scheduledStart, validTimeIn)),
+        };
+      } else if (graceEnd && validTimeIn <= graceEnd) {
+        timeInStatus = {
+          code: "WITHIN_GRACE",
+          label: "Within Grace Period",
+          minutes_late: Math.max(0, window.diffMinutes(validTimeIn, scheduledStart)),
+          minutes_early: 0,
+        };
+      } else {
+        timeInStatus = {
+          code: "LATE",
+          label: "Late",
+          minutes_late: Math.max(0, window.diffMinutes(validTimeIn, scheduledStart)),
+          minutes_early: 0,
+        };
+      }
+    }
+
+    let timeOutStatus = {
+      code: "NOT_TIMED_OUT",
+      label: "Not Timed Out",
+      minutes_early_out: 0,
+      overtime_minutes: 0,
+    };
+
+    if (validTimeOut && scheduledEnd) {
+      const minutesDiff = window.diffMinutes(validTimeOut, scheduledEnd);
+
+      if (minutesDiff < 0) {
+        timeOutStatus = {
+          code: "EARLY_OUT",
+          label: "Early Out",
+          minutes_early_out: Math.abs(minutesDiff),
+          overtime_minutes: 0,
+        };
+      } else if (minutesDiff === 0) {
+        timeOutStatus = {
+          code: "ON_SCHEDULE",
+          label: "On Schedule",
+          minutes_early_out: 0,
+          overtime_minutes: 0,
+        };
+      } else {
+        timeOutStatus = {
+          code: "OVERTIME",
+          label: "Overtime",
+          minutes_early_out: 0,
+          overtime_minutes: minutesDiff,
+        };
+      }
+    }
+
+    return {
+      shift: normalizedShift,
+      scheduled_start: scheduledStart,
+      scheduled_end: scheduledEnd,
+      grace_end: graceEnd,
+      actual_time_in: validTimeIn,
+      actual_time_out: validTimeOut,
+      time_in_status: timeInStatus,
+      time_out_status: timeOutStatus,
+    };
+  };
+
+  // =====================================================
+  // ATTENDANCE DISPLAY HELPERS
+  // =====================================================
+
+  window.getTimeInDisplayText = function (evaluation = {}) {
+    const status = evaluation.time_in_status || {};
+    const actual = evaluation.actual_time_in;
+
+    if (!actual) return "No time-in yet";
+
+    switch (status.code) {
+      case "ON_TIME":
+        return status.minutes_early > 0
+          ? `On Time (${window.formatMinutesDuration(status.minutes_early)} early)`
+          : "On Time";
+
+      case "WITHIN_GRACE":
+        return `Within Grace Period (${window.formatMinutesDuration(status.minutes_late)} late)`;
+
+      case "LATE":
+        return `Late (${window.formatMinutesDuration(status.minutes_late)})`;
+
+      default:
+        return status.label || "No time-in yet";
+    }
+  };
+
+  window.getTimeOutDisplayText = function (evaluation = {}) {
+    const status = evaluation.time_out_status || {};
+    const actual = evaluation.actual_time_out;
+
+    if (!actual) return "No time-out yet";
+
+    switch (status.code) {
+      case "EARLY_OUT":
+        return `Early Out (${window.formatMinutesDuration(status.minutes_early_out)} early)`;
+
+      case "ON_SCHEDULE":
+        return "On Schedule";
+
+      case "OVERTIME":
+        return `Overtime (+${window.formatMinutesDuration(status.overtime_minutes)})`;
+
+      default:
+        return status.label || "No time-out yet";
+    }
+  };
+
+  // =====================================================
+  // DUTY PROMPT
+  // =====================================================
+
+  window.shouldPromptForDuty = function ({
+    workStatus,
+    startTime,
+    prompted = false,
+    minutesBefore = 15,
+    now = new Date(),
+  } = {}) {
+    if (prompted) return false;
+
+    if (String(workStatus || "").toUpperCase() !== "NOT_STARTED") {
+      return false;
+    }
+
+    const shiftStart = window.parseShiftTimeToDate(startTime, now);
+
+    if (!shiftStart) return false;
+
+    return window.diffMinutes(shiftStart, now) <= minutesBefore;
+  };
+
+  // =====================================================
+  // COLLECTION HELPERS
+  // =====================================================
+
+  window.dedupeTimeLogs = function (logs = []) {
+    return Array.from(
+      new Map(
+        (Array.isArray(logs) ? logs : []).map((log) => [
+          `${log?.action || ""}_${log?.timestamp || ""}`,
+          log,
+        ]),
+      ).values(),
+    );
+  };
+
+  // =====================================================
+  // LOCATION
+  // =====================================================
+
+  window.getCurrentLocation = function () {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve({
+          success: false,
+          status: "NOT_SUPPORTED",
+          message: "Geolocation is not supported by this browser.",
+          location: null,
+        });
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            success: true,
+            status: "OK",
+            message: "Location captured successfully.",
+            location: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+              source: "browser_geolocation",
+              captured_at: new Date().toISOString(),
+            },
+          });
+        },
+        (error) => {
+          let status = "ERROR";
+          let message = "Unable to retrieve location.";
+
+          switch (error.code) {
+            case 1:
+              status = "DENIED";
+              message = "Location permission denied by user.";
+              break;
+            case 2:
+              status = "UNAVAILABLE";
+              message = "Location information is unavailable.";
+              break;
+            case 3:
+              status = "TIMEOUT";
+              message = "Location request timed out.";
+              break;
+          }
+
+          resolve({
+            success: false,
+            status,
+            message,
+            location: null,
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        },
+      );
+    });
+  };
+</script>

@@ -1,6 +1,21 @@
 <script>
   const ShiftModal = (() => {
+    function openListModal(config = {}) {
+      GlobalModal.openList({
+        title: "Shift Records",
+
+        columns: ["Shift", "Schedule", "Grace (mins)", "Status"],
+
+        onAdd: () => {
+          openCreateModal({}, config);
+        },
+
+        onMount: config.onMount || null,
+      });
+    }
+
     function openCreateModal(shift = {}, config = {}) {
+      const normalizedShift = window.normalizeShift(shift);
       const isEdit = Boolean(shift?.shift_id || config.isEdit);
       const showStatus = config.showStatus ?? isEdit;
 
@@ -8,7 +23,7 @@
         {
           name: "shift_name",
           label: "Shift Name",
-          value: shift.shift_name || "",
+          value: normalizedShift.shift_name || "",
           required: true,
         },
 
@@ -16,7 +31,7 @@
           name: "start_time",
           label: "Start Time",
           type: "time",
-          value: shift.start_time || "",
+          value: normalizedShift.start_time,
           required: true,
         },
 
@@ -24,7 +39,7 @@
           name: "end_time",
           label: "End Time",
           type: "time",
-          value: shift.end_time || "",
+          value: normalizedShift.end_time,
           required: true,
         },
 
@@ -32,7 +47,7 @@
           name: "grace_minutes",
           label: "Grace Minutes",
           type: "number",
-          value: shift.grace_minutes ?? 10,
+          value: normalizedShift.grace_minutes,
           required: false,
         },
       ];
@@ -42,7 +57,7 @@
           name: "status",
           label: "Status",
           type: "select",
-          value: shift.status || "ACTIVE",
+          value: normalizedShift.status || "ACTIVE",
           options: [
             { value: "ACTIVE", label: "Active" },
             { value: "INACTIVE", label: "Inactive" },
@@ -72,13 +87,40 @@
       });
     }
 
+    function openEditModal(shift, handlers = {}) {
+      openCreateModal(shift, handlers);
+    }
+
+    function openDeleteModal(shift, handlers = {}) {
+      GlobalModal.openDelete({
+        title: "Shift Action",
+        message: "Choose whether to deactivate or permanently delete this shift.",
+        id: shift.shift_id,
+        onDelete: handlers.onDelete,
+        onDeactivate: handlers.onDeactivate,
+      });
+    }
+
     function closeFormModal() {
       GlobalModal.hide("globalFormModal");
     }
 
+    function closeListModal() {
+      const body = document.getElementById("globalListBody");
+      if (body) {
+        body.innerHTML = "";
+      }
+
+      GlobalModal.hide("globalListModal");
+    }
+
     return {
+      openListModal,
       openCreateModal,
+      openEditModal,
+      openDeleteModal,
       closeFormModal,
+      closeListModal,
     };
   })();
 </script>

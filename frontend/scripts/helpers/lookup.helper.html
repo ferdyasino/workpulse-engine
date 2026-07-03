@@ -1,0 +1,60 @@
+<script>
+  (() => {
+    if (window.__LOOKUP_HELPER_READY__) return;
+    window.__LOOKUP_HELPER_READY__ = true;
+
+    // =====================================================
+    // APP STATE ACCESS
+    // =====================================================
+
+    function getState() {
+      return window.APP_STATE || {};
+    }
+
+    // =====================================================
+    // DEPARTMENTS
+    // =====================================================
+
+    window.getDepartment = function (id) {
+      return (getState().departments || []).find((d) => d.department_id === id);
+    };
+
+    window.getDepartmentName = function (id) {
+      return window.getDepartment(id)?.department_name || "-";
+    };
+
+    window.getSupervisorName = function (id) {
+      return window.getDepartment(id)?.supervisor_name || "-";
+    };
+
+    // =====================================================
+    // POSITIONS
+    // =====================================================
+
+    window.getPosition = function (id) {
+      return (getState().positions || []).find((p) => p.position_id === id);
+    };
+
+    window.getPositionName = function (id) {
+      return window.getPosition(id)?.position_name || "-";
+    };
+
+    // =====================================================
+    // SHIFTS
+    // =====================================================
+
+    window.getShiftObject = function (id) {
+      return (getState().shifts || []).find((s) => s.shift_id === id);
+    };
+
+    window.getShift = function (shiftOrId, options = {}) {
+      const shift = typeof shiftOrId === "object" ? shiftOrId : window.getShiftObject(shiftOrId);
+
+      return window.formatShiftLabel(shift || {}, options);
+    };
+
+    window.getShiftName = function (id) {
+      return window.getShiftObject(id)?.shift_name || "-";
+    };
+  })();
+</script>

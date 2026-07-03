@@ -75,7 +75,25 @@ function rowToObject(headers, row) {
   const obj = {};
 
   headers.forEach((h, i) => {
-    obj[h] = row[i];
+    let value = row[i];
+
+    // Restore JSON arrays/objects stored in cells
+    if (typeof value === "string") {
+      const text = value.trim();
+
+      if (
+        (text.startsWith("[") && text.endsWith("]")) ||
+        (text.startsWith("{") && text.endsWith("}"))
+      ) {
+        try {
+          value = JSON.parse(text);
+        } catch (_) {
+          // leave as string
+        }
+      }
+    }
+
+    obj[h] = value;
   });
 
   return obj;
@@ -184,6 +202,14 @@ function sanitizeTimeLogActionSuccessMessage(action, message) {
     default:
       return "Timelog action saved successfully.";
   }
+}
+
+function serializeSheetValue(value) {
+  if (Array.isArray(value) || (value && typeof value === "object")) {
+    return JSON.stringify(value);
+  }
+
+  return value;
 }
 
 function getWorkspaceSettings(workspace_id) {

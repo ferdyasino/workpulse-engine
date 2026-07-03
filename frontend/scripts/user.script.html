@@ -9,7 +9,7 @@
     init();
   }
 
-  let state = {
+  window.APP_STATE = window.APP_STATE || {
     users: [],
     departments: [],
     positions: [],
@@ -17,9 +17,7 @@
     loading: false,
   };
 
-  // =====================================================
-  // INIT
-  // =====================================================
+  let state = window.APP_STATE;
 
   function init() {
     loadReferenceData();
@@ -45,6 +43,7 @@
           (d) => `
         <option value="${escapeHtml(d.department_id || "")}">
           ${escapeHtml(DISPLAY.name(d.department_name || ""))}
+          ${escapeHtml(DISPLAY.name(d.supervisor_name || ""))}
         </option>
       `,
         )
@@ -104,6 +103,7 @@
     return new Promise((resolve, reject) => {
       UsersAPI.getDepartments((res) => {
         state.departments = Array.isArray(res) ? res : [];
+        renderDepartmentList(state.departments);
         resolve(state.departments);
       }, reject);
     });
@@ -113,6 +113,7 @@
     return new Promise((resolve, reject) => {
       UsersAPI.getPositions((res) => {
         state.positions = Array.isArray(res) ? res : [];
+        renderPositionList(state.positions);
         resolve(state.positions);
       }, reject);
     });
@@ -122,9 +123,25 @@
     return new Promise((resolve, reject) => {
       UsersAPI.getShifts((res) => {
         state.shifts = Array.isArray(res) ? res : [];
+        renderShiftList(state.shifts);
         resolve(state.shifts);
       }, reject);
     });
+  }
+
+  function loadReferenceData() {
+    return Promise.all([loadDepartments(), loadPositions(), loadShifts()])
+      .then(([deps, pos, shift]) => {
+        state.departments = deps || [];
+        state.positions = pos || [];
+        state.shifts = shift || [];
+
+        hydrateDropdowns();
+      })
+      .catch((err) => {
+        console.error("Reference load failed:", err);
+        throw err;
+      });
   }
 
   // =====================================================
@@ -156,11 +173,12 @@
         .trim()
         .toLowerCase();
       const role = DISPLAY.label(user.role || "");
-      const departmentName = DISPLAY.name(
-        getDepartmentName(user.department_id),
-      );
+      const departmentName = DISPLAY.name(getDepartmentName(user.department_id));
+      const supervisorName = DISPLAY.name(getSupervisorName(user.department_id));
       const positionName = DISPLAY.name(getPositionName(user.position_id));
-      const shift = getShift(user.shift_id);
+      const shiftName = DISPLAY.name(getShiftName(user.shift_id));
+      const shift = getShiftObject(user.shift_id);
+      const userSched = getShift(shift, { timeOnly: true });
       const status = DISPLAY.status(user.status || "UNKNOWN");
       const isOwner =
         String(user.role || "")
@@ -170,9 +188,14 @@
       row.innerHTML = `
       <td>${escapeHtml(name)}</td>
       <td>${escapeHtml(email)}</td>
-      <td>${escapeHtml(departmentName)}</td>
+      <td>${escapeHtml(departmentName)} - ${escapeHtml(supervisorName)}</td>
       <td>${escapeHtml(positionName)}</td>
-      <td>${escapeHtml(shift)}</td>
+      <td>
+        ${escapeHtml(shiftName)}
+        <small class="text-muted d-block">
+          ${escapeHtml(userSched)}
+        </small>
+      </td>
       <td>
         <span class="badge ${getStatusClass(status)}">
           ${escapeHtml(status)}
@@ -254,58 +277,11 @@
     };
 
     if (isEdit) {
-      UsersAPI.updateUser(
-        payload.user_id,
-        payload,
-        successHandler,
-        failHandler,
-      );
+      UsersAPI.updateUser(payload.user_id, payload, successHandler, failHandler);
     } else {
       UsersAPI.createUser(payload, successHandler, failHandler);
     }
   }
-
-  // =====================================================
-  // REFERENCE LOOKUPS
-  // =====================================================
-
-  function getDepartmentName(id) {
-    const found = state.departments.find((d) => d.department_id === id);
-    return found?.department_name || "-";
-  }
-
-  function getPositionName(id) {
-    const found = state.positions.find((p) => p.position_id === id);
-    return found?.position_name || "-";
-  }
-
-  function getShift(id) {
-    return window.formatShiftLabel(state.shifts.find((s) => s.shift_id === id));
-  }
-
-  function getShiftName(id) {
-    const found = state.shifts.find((s) => s.shift_id === id);
-    return found?.shift_name || "-";
-  }
-
-  function loadReferenceData() {
-    return Promise.all([loadDepartments(), loadPositions(), loadShifts()])
-      .then(([deps, pos, shift]) => {
-        state.departments = deps || [];
-        state.positions = pos || [];
-        state.shifts = shift || [];
-
-        hydrateDropdowns();
-      })
-      .catch((err) => {
-        console.error("Reference load failed:", err);
-        throw err;
-      });
-  }
-
-  // =====================================================
-  // HELPERS
-  // =====================================================
 
   function setLoading(isLoading) {
     state.loading = isLoading;
@@ -315,52 +291,5 @@
 
     btn.disabled = isLoading;
     btn.innerText = isLoading ? "Loading..." : "Add User";
-  }
-
-  function populateSelect(id, items, valueKey, labelKey) {
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    el.innerHTML = `<option value="">Select</option>`;
-
-    (items || []).forEach((item) => {
-      const opt = document.createElement("option");
-      opt.value = item[valueKey] || "";
-      opt.textContent = DISPLAY.name(item[labelKey] || "");
-      el.appendChild(opt);
-    });
-  }
-
-  function setText(selector, value) {
-    const el = document.querySelector(selector);
-    if (el) el.innerText = value;
-  }
-
-  function getStatusClass(status) {
-    switch (
-      String(status || "")
-        .trim()
-        .toUpperCase()
-    ) {
-      case "ACTIVE":
-        return "badge-success";
-
-      case "PENDING":
-        return "badge-warning";
-
-      case "INACTIVE":
-        return "badge-danger";
-
-      default:
-        return "badge-secondary";
-    }
-  }
-
-  function showToast(message, type) {
-    if (window.Toast) {
-      window.Toast.show(message, type);
-    } else {
-      console.log(`[${type}] ${message}`);
-    }
   }
 </script>

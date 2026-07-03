@@ -1,0 +1,50 @@
+<script>
+  (() => {
+    if (window.__DOM_HELPER_READY__) return;
+    window.__DOM_HELPER_READY__ = true;
+
+    // =====================================================
+    // SELECT HELPERS
+    // =====================================================
+
+    window.populateSelect = function (id, items = [], valueKey, labelKey, placeholder = "Select") {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      el.innerHTML = `<option value="">${placeholder}</option>`;
+
+      (items || []).forEach((item) => {
+        const option = document.createElement("option");
+
+        option.value = item?.[valueKey] ?? "";
+        option.textContent = DISPLAY.name(item?.[labelKey] ?? "");
+
+        el.appendChild(option);
+      });
+    };
+
+    // =====================================================
+    // TEXT HELPERS
+    // =====================================================
+
+    window.setText = function (selector, value = "") {
+      const el = document.querySelector(selector);
+      if (!el) return;
+
+      el.textContent = value;
+    };
+
+    // =====================================================
+    // TOAST HELPERS
+    // =====================================================
+
+    window.showToast = function (message = "", type = "info") {
+      if (window.Toast?.show) {
+        window.Toast.show(message, type);
+        return;
+      }
+
+      console.log(`[${type}] ${message}`);
+    };
+  })();
+</script>

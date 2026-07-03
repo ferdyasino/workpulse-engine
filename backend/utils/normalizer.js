@@ -187,11 +187,34 @@ function normalizeTimeString(value) {
   return String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
 }
 
-/**
- * Generic ID normalizer
- * - trim only
- * - preserve case
- */
+function normalizeStringArray(value) {
+  if (value == null || value === "") {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return [...new Set(value.map(normalizeTrimmedString).filter(Boolean))];
+  }
+
+  if (typeof value === "string") {
+    const text = value.trim();
+
+    if (text.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(text);
+
+        if (Array.isArray(parsed)) {
+          return [...new Set(parsed.map(normalizeTrimmedString).filter(Boolean))];
+        }
+      } catch (_) {}
+    }
+
+    return [...new Set(text.split(",").map(normalizeTrimmedString).filter(Boolean))];
+  }
+
+  return [];
+}
+
 function normalizeId(value) {
   return normalizeTrimmedString(value);
 }
@@ -272,6 +295,10 @@ const NORMALIZERS = {
     return normalizeId(value);
   },
 
+  employee_no(value) {
+    return normalizeTrimmedString(value);
+  },
+
   email(value) {
     return normalizeLowerString(value);
   },
@@ -324,6 +351,21 @@ const NORMALIZERS = {
   },
 
   dept_name(value) {
+    return normalizeSingleLineText(value);
+  },
+
+  department_ids(value) {
+    return normalizeStringArray(value).map(normalizeId);
+  },
+
+  /* ---------------------------------
+   * POSITION
+  --------------------------------- */
+  position_id(value) {
+    return normalizeId(value);
+  },
+
+  position_name(value) {
     return normalizeSingleLineText(value);
   },
 

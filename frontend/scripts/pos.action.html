@@ -1,0 +1,107 @@
+<script>
+  function openPositionListModal() {
+    PositionModal.openListModal({
+      departments: state.departments || [],
+      onMount() {
+        loadPositions()
+          .then((positions) => {
+            renderPositionListModal(positions);
+          })
+          .catch((err) => {
+            showToast(err?.message || "Failed to load positions", "error");
+
+            renderPositionListModal([]);
+          });
+      },
+    });
+  }
+
+  function openCreatePosition(prefill = {}) {
+    PositionModal.openCreateModal(
+      {
+        position_name: prefill.position_name || "",
+
+        department_ids:
+          prefill.department_ids || (prefill.department_id ? [prefill.department_id] : []),
+
+        description: prefill.description || "",
+      },
+      {
+        departments: state.departments || [],
+
+        onSubmit(formData) {
+          UsersAPI.createPosition(
+            formData,
+            () => {
+              showToast("Position created", "success");
+              PositionModal.closeFormModal?.();
+              PositionModal.closeListModal?.();
+              GlobalModal.refreshList();
+              loadPositions();
+            },
+            (err) => {
+              showToast(err.message, "error");
+            },
+          );
+        },
+      },
+    );
+  }
+
+  function editPosition(positionId) {
+    const position = state.positions.find((p) => p.position_id === positionId);
+
+    if (!position) return;
+
+    PositionModal.openEditModal(position, {
+      departments: state.departments || [],
+
+      onSubmit(formData) {
+        UsersAPI.updatePosition(
+          positionId,
+          formData,
+          () => {
+            showToast("Position updated", "success");
+            PositionModal.closeFormModal?.();
+            PositionModal.closeListModal?.();
+            GlobalModal.refreshList();
+            loadPositions();
+          },
+          (err) => {
+            showToast(err.message, "error");
+          },
+        );
+      },
+    });
+  }
+
+  function deletePosition(positionId) {
+    const position = state.positions.find((p) => p.position_id === positionId);
+
+    if (!position) return;
+
+    PositionModal.openDeleteModal(position, {
+      onConfirm() {
+        setLoading(true);
+
+        UsersAPI.deletePosition(
+          position.position_id,
+          () => {
+            showToast("Position deleted", "success");
+            PositionModal.closeDeleteModal?.();
+            PositionModal.closeListModal?.();
+            GlobalModal.refreshList();
+            loadPositions();
+          },
+          (err) => {
+            console.error(err);
+
+            showToast(err.message || "Delete failed", "error");
+
+            setLoading(false);
+          },
+        );
+      },
+    });
+  }
+</script>

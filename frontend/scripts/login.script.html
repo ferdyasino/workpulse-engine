@@ -51,9 +51,7 @@
       DISPLAY.email(APP.serverEmail || "");
 
     const workspaceSlug =
-      APP.workspaceSlug ||
-      localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) ||
-      "";
+      APP.workspaceSlug || localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) || "";
 
     if (!email) {
       showToast?.("Email is required", "warning");
@@ -62,9 +60,7 @@
 
     document.activeElement?.blur();
 
-    form
-      .querySelectorAll("input, button, select, textarea")
-      .forEach((el) => (el.disabled = true));
+    form.querySelectorAll("input, button, select, textarea").forEach((el) => (el.disabled = true));
 
     // Hide the login page immediately
     hideAllPages();
@@ -177,9 +173,7 @@
 
   async function logout() {
     const workspaceSlug =
-      localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) ||
-      APP.workspaceSlug ||
-      "";
+      localStorage.getItem(STORAGE_KEYS.WORKSPACE_SLUG) || APP.workspaceSlug || "";
 
     localStorage.clear();
 
@@ -301,14 +295,10 @@
         role: DISPLAY.lower(localStorage.getItem(STORAGE_KEYS.ROLE) || "guest"),
 
         workspace_id: localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "",
-        dept_name: DISPLAY.label(
-          localStorage.getItem(STORAGE_KEYS.DEPT_NAME) || "",
-        ),
+        dept_name: DISPLAY.label(localStorage.getItem(STORAGE_KEYS.DEPT_NAME) || ""),
 
         shift_id: localStorage.getItem(STORAGE_KEYS.SHIFT_ID) || "",
-        shift_name: DISPLAY.label(
-          localStorage.getItem(STORAGE_KEYS.SHIFT_NAME) || "",
-        ),
+        shift_name: DISPLAY.label(localStorage.getItem(STORAGE_KEYS.SHIFT_NAME) || ""),
         start_time: localStorage.getItem(STORAGE_KEYS.START_TIME) || "",
         end_time: localStorage.getItem(STORAGE_KEYS.END_TIME) || "",
         grace: Number(localStorage.getItem(STORAGE_KEYS.GRACE) || 0),
@@ -396,11 +386,7 @@
       UserInit?.();
     }
 
-    APP.currentPage = allowedPages.includes(lastPage)
-      ? lastPage
-      : isAdmin
-        ? "admin"
-        : "dashboard";
+    APP.currentPage = allowedPages.includes(lastPage) ? lastPage : isAdmin ? "admin" : "dashboard";
   }
 
   // =====================================================

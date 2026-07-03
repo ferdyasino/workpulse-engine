@@ -2,76 +2,62 @@
  * =====================================================
  * DATE NORMALIZATION UTIL
  * =====================================================
- * Returns YYYY-MM-DD (Asia/Manila safe)
+ * Returns YYYY-MM-DD using shared normalizer.
  * =====================================================
  */
 function formatDateKey(date = new Date()) {
-  const d = new Date(date);
-
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return normalizeDateKey(date);
 }
 
 /**
  * Timelog filter normalizer
  */
 function normalizeTimeLogFilters(filters = {}) {
-  /** @type {{[key: string]: any}} */
   const normalized = { ...filters };
 
-  if (Object.prototype.hasOwnProperty.call(normalized, "log_id")) {
-    normalized.log_id = normalize("log_id", normalized.log_id);
-  }
-
-  if (Object.prototype.hasOwnProperty.call(normalized, "workspace_id")) {
-    normalized.workspace_id = normalize("workspace_id", normalized.workspace_id);
-  }
-
-  if (Object.prototype.hasOwnProperty.call(normalized, "user_id")) {
-    normalized.user_id = normalize("user_id", normalized.user_id);
-  }
-
-  if (Object.prototype.hasOwnProperty.call(normalized, "email")) {
-    normalized.email = normalize("email", normalized.email);
-  }
-
-  if (Object.prototype.hasOwnProperty.call(normalized, "action")) {
-    normalized.action = normalize("action", normalized.action);
-  }
-
-  if (Object.prototype.hasOwnProperty.call(normalized, "date")) {
-    normalized.date = normalize("date", normalized.date);
-  }
-
-  if (Object.prototype.hasOwnProperty.call(normalized, "shift_id")) {
-    normalized.shift_id = normalize("shift_id", normalized.shift_id);
-  }
+  ["log_id", "workspace_id", "user_id", "email", "action", "date", "shift_id"].forEach(
+    function (field) {
+      if (Object.prototype.hasOwnProperty.call(normalized, field)) {
+        normalized[field] = normalize(field, normalized[field]);
+      }
+    },
+  );
 
   return normalized;
 }
 
+/**
+ * Normalize incoming timelog payload
+ */
 function normalizeTimeLogActionPayload(payload = {}) {
   return {
     ...payload,
+
     log_id: normalize("log_id", payload.log_id),
     workspace_id: normalize("workspace_id", payload.workspace_id),
     user_id: normalize("user_id", payload.user_id),
     email: normalize("email", payload.email),
+
     action: normalize("action", payload.action),
+
     timestamp: normalize("timestamp", payload.timestamp),
     date: normalize("date", payload.date),
+
     shift_id: normalize("shift_id", payload.shift_id),
+
     device_info: normalize("device_info", payload.device_info),
+
     location: normalize("location", payload.location),
     location_status: normalize("location_status", payload.location_status),
     location_message: normalize("location_message", payload.location_message),
+
     remarks: normalize("remarks", payload.remarks),
   };
 }
 
+/**
+ * Builds a normalized timelog record
+ */
 function normalizeTimeLog(data, workspace_id) {
   const payload = normalizeTimeLogActionPayload(data || {});
   const now = new Date();
@@ -85,7 +71,7 @@ function normalizeTimeLog(data, workspace_id) {
 
   const finalTimestamp = timestampDate.toISOString();
 
-  let finalDate = normalize("date", payload.date);
+  let finalDate = payload.date;
 
   if (!finalDate) {
     const shift = payload.shift_id
@@ -116,6 +102,8 @@ function normalizeTimeLog(data, workspace_id) {
     device_info: normalize("device_info", payload.device_info),
 
     location: normalize("location", payload.location),
+    location_status: normalize("location_status", payload.location_status),
+    location_message: normalize("location_message", payload.location_message),
 
     remarks: normalize("remarks", payload.remarks),
 
@@ -123,29 +111,55 @@ function normalizeTimeLog(data, workspace_id) {
   };
 }
 
-/* =========================
-   FILTER HELPERS
-========================= */
-function normalizeTimeLogRecord(record) {
-  const normalized = { ...(record || {}) };
+/* =====================================================
+ * RECORD NORMALIZER
+ * ===================================================== */
+function normalizeTimeLogRecord(record = {}) {
+  const normalized = { ...record };
 
+  // @ts-ignore
   if (normalized.date instanceof Date) {
+    // @ts-ignore
     normalized.date = formatDateKey(normalized.date);
   }
 
   return normalizeRecord({
     ...normalized,
+
+    // @ts-ignore
     log_id: normalized.log_id,
+    // @ts-ignore
     workspace_id: normalized.workspace_id,
+    // @ts-ignore
     user_id: normalized.user_id,
+    // @ts-ignore
     email: normalized.email,
+
+    // @ts-ignore
     action: normalized.action,
+
+    // @ts-ignore
     timestamp: normalized.timestamp,
+    // @ts-ignore
     date: normalized.date,
+
+    // @ts-ignore
     shift_id: normalized.shift_id,
+
+    // @ts-ignore
     device_info: normalized.device_info,
+
+    // @ts-ignore
     location: normalized.location,
+    // @ts-ignore
+    location_status: normalized.location_status,
+    // @ts-ignore
+    location_message: normalized.location_message,
+
+    // @ts-ignore
     remarks: normalized.remarks,
+
+    // @ts-ignore
     created_at: normalized.created_at,
   });
 }

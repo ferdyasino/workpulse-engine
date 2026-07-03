@@ -1,66 +1,109 @@
 <script>
-const PositionModal = (() => {
+  const PositionModal = (() => {
+    function getDepartments(config) {
+      return Array.isArray(config.departments) ? config.departments : [];
+    }
 
-function getDepartments(config) {
-  return Array.isArray(config.departments)
-    ? config.departments
-    : [];
-}
+    function openListModal(config = {}) {
+      GlobalModal.openList({
+        title: "Position Records",
 
-  function openCreateModal(position = {}, config = {}) {
+        columns: ["Position", "Department(s)", "Description"],
 
-    const departments = getDepartments(config);
-
-    GlobalModal.openForm({
-      title: position.position_id ? "Edit Position" : "Create Position",
-
-      fields: [
-        {
-          name: "position_name",
-          label: "Position Name",
-          value: position.position_name || "",
-          required: true,
-          col: "col-md-12"
+        onAdd: () => {
+          openCreateModal({}, config);
         },
 
-        {
-          name: "department_id",
-          label: "Department",
-          type: "select",
-          required: true,
+        onMount: config.onMount || null,
+      });
+    }
 
-          options: departments.map(d => ({
-            value: d.department_id,
-            label: d.department_name
-          })),
+    function openCreateModal(position = {}, config = {}) {
+      const departments = getDepartments(config);
 
-          value: position.department_id || ""
+      GlobalModal.openForm({
+        title: position.position_id ? "Edit Position" : "Create Position",
+
+        fields: [
+          {
+            name: "position_name",
+            label: "Position Name",
+            value: position.position_name || "",
+            required: true,
+            col: "col-md-12",
+          },
+
+          {
+            name: "department_ids",
+            label: "Departments",
+            type: "tagselect",
+            required: true,
+            col: "col-md-12",
+
+            options: departments.map((d) => ({
+              value: d.department_id,
+              label: d.department_name,
+            })),
+
+            value:
+              position.department_ids || (position.department_id ? [position.department_id] : []),
+
+            placeholder: "Select Department",
+          },
+
+          {
+            name: "description",
+            label: "Description",
+            type: "textarea",
+            value: position.description || "",
+            col: "col-md-12",
+          },
+        ],
+
+        onSubmit: (formData) => {
+          formData.department_ids = Array.isArray(formData.department_ids)
+            ? formData.department_ids
+            : [];
+
+          config.onSubmit?.(formData, position);
         },
+      });
+    }
 
-        {
-          name: "description",
-          label: "Description",
-          type: "textarea",
-          value: position.description || "",
-          col: "col-md-12"
-        }
-      ],
+    function openEditModal(position, handlers = {}) {
+      openCreateModal(position, handlers);
+    }
 
-      onSubmit: (formData) => {
-        config.onSubmit?.(formData, position);
+    function openDeleteModal(position, handlers = {}) {
+      GlobalModal.openConfirm({
+        title: "Delete Position",
+        message: `Are you sure you want to delete the position "${position.position_name}"? This action cannot be undone.`,
+
+        onConfirm: () => {
+          handlers.onConfirm?.(position);
+        },
+      });
+    }
+
+    function closeFormModal() {
+      GlobalModal.hide("globalFormModal");
+    }
+    function closeListModal() {
+      const body = document.getElementById("globalListBody");
+      if (body) {
+        body.innerHTML = "";
       }
-    });
 
-  }
+      GlobalModal.hide("globalListModal");
+    }
 
-  function closeFormModal() {
-    GlobalModal.hide("globalFormModal");
-  }
-
-  return {
-    openCreateModal,
-    closeFormModal
-  };
-
-})();
+    return {
+      openListModal,
+      openCreateModal,
+      openEditModal,
+      openDeleteModal,
+      closeFormModal,
+      closeListModal,
+    };
+  })();
 </script>
