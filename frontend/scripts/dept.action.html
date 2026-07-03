@@ -67,12 +67,13 @@
   }
 
   function deleteDepartment(departmentId) {
-    DepartmentModal.openDeleteModal(departmentId, {
-      onDelete(id) {
+    const department = state.departments.find((d) => d.department_id === departmentId);
+    DepartmentModal.openDeleteModal(department, {
+      onConfirm() {
         setLoading(true);
 
         UsersAPI.deleteDepartment(
-          id,
+          departmentId,
           () => {
             showToast("Department deleted", "success");
             DepartmentModal.closeDeleteModal?.();
@@ -81,7 +82,9 @@
           },
           (err) => {
             console.error(err);
+
             showToast(err.message || "Delete failed", "error");
+
             setLoading(false);
           },
         );

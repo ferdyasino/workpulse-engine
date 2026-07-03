@@ -81,70 +81,6 @@
 
       form.reset();
       container.innerHTML = "";
-      setTimeout(() => {
-        container.querySelectorAll("[data-tagselect]").forEach((wrapper) => {
-          const hidden = wrapper.querySelector("input[type=hidden]");
-          const dropdown = wrapper.querySelector("[data-tag-dropdown]");
-          const chipContainer = wrapper.querySelector("[data-tag-container]");
-
-          let values = [];
-
-          try {
-            values = JSON.parse(hidden.value || "[]");
-          } catch {
-            values = [];
-          }
-
-          function render() {
-            chipContainer.innerHTML = "";
-
-            values.forEach((value) => {
-              const option = dropdown.querySelector(`option[value="${CSS.escape(value)}"]`);
-
-              const label = option ? option.textContent : value;
-
-              const chip = document.createElement("span");
-
-              chip.className = "badge bg-primary d-inline-flex align-items-center gap-2";
-
-              chip.innerHTML = `
-          ${escapeHtml(label)}
-          <button
-            type="button"
-            class="btn-close btn-close-white"
-            style="font-size:.55rem"
-          ></button>
-        `;
-
-              chip.querySelector("button").onclick = () => {
-                values = values.filter((v) => v !== value);
-
-                hidden.value = JSON.stringify(values);
-
-                render();
-              };
-
-              chipContainer.appendChild(chip);
-            });
-
-            hidden.value = JSON.stringify(values);
-          }
-
-          dropdown.onchange = () => {
-            if (!dropdown.value) return;
-
-            if (!values.includes(dropdown.value)) {
-              values.push(dropdown.value);
-            }
-
-            dropdown.value = "";
-
-            render();
-          };
-
-          render();
-        });
-      });
 
       (config.fields || []).forEach((field) => {
         const colClass = field.col || "col-md-6";
@@ -152,102 +88,102 @@
 
         if (field.type === "select") {
           html = `
-          <div class="${colClass}">
-            <label class="form-label">${field.label || ""}</label>
+        <div class="${colClass}">
+          <label class="form-label">${field.label || ""}</label>
 
-            <div class="d-flex gap-2 align-items-center">
-              <select
-                class="form-select flex-grow-1"
-                name="${field.name}"
-                ${field.required ? "required" : ""}
-              >
-                ${
-                  field.placeholderOption
-                    ? `<option value="">${field.placeholderOption}</option>`
-                    : ""
-                }
-
-                ${(field.options || [])
-                  .map(
-                    (option) => `
-                    <option
-                    value="${option.value}"
-                    ${String(option.value) === String(field.value) ? "selected" : ""}
-                  >
-                    ${escapeHtml(option.label || option.value)}
-                  </option>
-                  `,
-                  )
-                  .join("")}
-              </select>
-
+          <div class="d-flex gap-2 align-items-center">
+            <select
+              class="form-select flex-grow-1"
+              name="${field.name}"
+              ${field.required ? "required" : ""}
+            >
               ${
-                field.onAdd
-                  ? `
-                    <button
-                      type="button"
-                      class="btn btn-glass btn-glass-icon"
-                      data-add-field="${field.name}"
-                      title="Add ${field.label}"
-                    >
-                      +
-                    </button>
-                  `
+                field.placeholderOption
+                  ? `<option value="">${field.placeholderOption}</option>`
                   : ""
               }
-            </div>
+
+              ${(field.options || [])
+                .map(
+                  (option) => `
+                    <option
+                      value="${option.value}"
+                      ${String(option.value) === String(field.value) ? "selected" : ""}
+                    >
+                      ${escapeHtml(option.label || option.value)}
+                    </option>
+                  `,
+                )
+                .join("")}
+            </select>
+
+            ${
+              field.onAdd
+                ? `
+                  <button
+                    type="button"
+                    class="btn btn-glass btn-glass-icon"
+                    data-add-field="${field.name}"
+                    title="Add ${field.label}"
+                  >
+                    +
+                  </button>
+                `
+                : ""
+            }
           </div>
-        `;
+        </div>
+      `;
         } else if (field.type === "multiselect") {
           const selectedValues = Array.isArray(field.value) ? field.value.map(String) : [];
 
           html = `
-            <div class="${colClass}">
-              <label class="form-label">${field.label || ""}</label>
+        <div class="${colClass}">
+          <label class="form-label">${field.label || ""}</label>
 
-              <div class="d-flex gap-2 align-items-start">
-                <select
-                  class="form-select flex-grow-1"
-                  name="${field.name}"
-                  multiple
-                  ${field.required ? "required" : ""}
-                  style="min-height: 140px;"
-                >
-                  ${(field.options || [])
-                    .map(
-                      (option) => `
-                      <option
-                        value="${option.value}"
-                        ${selectedValues.includes(String(option.value)) ? "selected" : ""}
-                      >
-                        ${escapeHtml(option.label || option.value)}
-                      </option>
-                    `,
-                    )
-                    .join("")}
-                </select>
+          <div class="d-flex gap-2 align-items-start">
+            <select
+              class="form-select flex-grow-1"
+              name="${field.name}"
+              multiple
+              ${field.required ? "required" : ""}
+              style="min-height:140px;"
+            >
+              ${(field.options || [])
+                .map(
+                  (option) => `
+                    <option
+                      value="${option.value}"
+                      ${selectedValues.includes(String(option.value)) ? "selected" : ""}
+                    >
+                      ${escapeHtml(option.label || option.value)}
+                    </option>
+                  `,
+                )
+                .join("")}
+            </select>
 
-                ${
-                  field.onAdd
-                    ? `
-                      <button
-                        type="button"
-                        class="btn btn-glass btn-glass-icon"
-                        data-add-field="${field.name}"
-                        title="Add ${field.label}"
-                      >
-                        +
-                      </button>
-                    `
-                    : ""
-                }
-              </div>
+            ${
+              field.onAdd
+                ? `
+                  <button
+                    type="button"
+                    class="btn btn-glass btn-glass-icon"
+                    data-add-field="${field.name}"
+                    title="Add ${field.label}"
+                  >
+                    +
+                  </button>
+                `
+                : ""
+            }
+          </div>
 
-              <div class="form-text">
-                Hold Ctrl (Windows) or Cmd (Mac) to select multiple.
-              </div>
-            </div>
-          `;
+          <div class="form-text">
+            Hold Ctrl (Windows) or Cmd (Mac) to select multiple.
+          </div>
+        </div>
+      `;
         } else if (field.type === "tagselect") {
           const selectedValues = Array.isArray(field.value)
             ? [...new Set(field.value.map(String))]
@@ -295,35 +231,99 @@
       `;
         } else if (field.type === "textarea") {
           html = `
-          <div class="${colClass}">
-            <label class="form-label">${field.label || ""}</label>
+        <div class="${colClass}">
+          <label class="form-label">${field.label || ""}</label>
 
-            <textarea
-              class="form-control"
-              name="${field.name}"
-              rows="${field.rows || 3}"
-              ${field.required ? "required" : ""}
-            >${field.value || ""}</textarea>
-          </div>
-        `;
+          <textarea
+            class="form-control"
+            name="${field.name}"
+            rows="${field.rows || 3}"
+            ${field.required ? "required" : ""}
+          >${field.value || ""}</textarea>
+        </div>
+      `;
         } else {
           html = `
-          <div class="${colClass}">
-            <label class="form-label">${field.label || ""}</label>
+        <div class="${colClass}">
+          <label class="form-label">${field.label || ""}</label>
 
-            <input
-              class="form-control"
-              type="${field.type || "text"}"
-              name="${field.name}"
-              value="${field.value || ""}"
-              placeholder="${field.placeholder || ""}"
-              ${field.required ? "required" : ""}
-            >
-          </div>
-        `;
+          <input
+            class="form-control"
+            type="${field.type || "text"}"
+            name="${field.name}"
+            value="${field.value || ""}"
+            placeholder="${field.placeholder || ""}"
+            ${field.required ? "required" : ""}
+          >
+        </div>
+      `;
         }
 
         container.insertAdjacentHTML("beforeend", html);
+      });
+
+      // =====================================================
+      // Initialize tag selectors immediately (no setTimeout)
+      // =====================================================
+
+      container.querySelectorAll("[data-tagselect]").forEach((wrapper) => {
+        const hidden = wrapper.querySelector("input[type=hidden]");
+        const dropdown = wrapper.querySelector("[data-tag-dropdown]");
+        const chipContainer = wrapper.querySelector("[data-tag-container]");
+
+        let values = [];
+
+        try {
+          values = JSON.parse(hidden.value || "[]");
+        } catch {
+          values = [];
+        }
+
+        function render() {
+          chipContainer.innerHTML = "";
+
+          values.forEach((value) => {
+            const option = dropdown.querySelector(`option[value="${CSS.escape(value)}"]`);
+
+            const label = option ? option.textContent : value;
+
+            const chip = document.createElement("span");
+
+            chip.className = "badge bg-primary d-inline-flex align-items-center gap-2";
+
+            chip.innerHTML = `
+          ${escapeHtml(label)}
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            style="font-size:.55rem"
+          ></button>
+        `;
+
+            chip.querySelector("button").onclick = () => {
+              values = values.filter((v) => v !== value);
+              hidden.value = JSON.stringify(values);
+              render();
+            };
+
+            chipContainer.appendChild(chip);
+          });
+
+          hidden.value = JSON.stringify(values);
+        }
+
+        dropdown.onchange = () => {
+          if (!dropdown.value) return;
+
+          if (!values.includes(dropdown.value)) {
+            values.push(dropdown.value);
+          }
+
+          dropdown.value = "";
+          render();
+        };
+
+        render();
       });
 
       container.onclick = (e) => {

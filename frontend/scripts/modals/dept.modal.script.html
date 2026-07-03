@@ -72,12 +72,14 @@
     // DELETE MODAL
     // =====================================================
 
-    function openDeleteModal(id, handlers = {}) {
-      GlobalModal.openDelete({
-        title: "Department Action",
-        message: "Choose whether to deactivate or permanently delete this department.",
-        id,
-        onDelete: handlers.onDelete,
+    function openDeleteModal(dept, handlers = {}) {
+      GlobalModal.openConfirm({
+        title: "Delete Department",
+        message: `Are you sure you want to delete the department "${dept.department_name}"? This action cannot be undone.`,
+
+        onConfirm: () => {
+          handlers.onConfirm?.(dept);
+        },
       });
     }
 

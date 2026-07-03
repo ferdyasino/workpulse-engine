@@ -41,34 +41,23 @@
       return cleaned
         .split(" ")
         .map((word) => {
-          const raw = word.trim();
-          if (!raw) return "";
+          return word
+            .split("/")
+            .map((segment) => {
+              const match = segment.match(/^([A-Za-z]+)([^A-Za-z]*)$/);
 
-          const lower = raw.toLowerCase();
+              if (!match) return segment;
 
-          if (DISPLAY_ACRONYMS.has(lower)) {
-            return raw.toUpperCase();
-          }
+              const [, letters, suffix] = match;
+              const lower = letters.toLowerCase();
 
-          if (raw.includes("/")) {
-            return raw
-              .split("/")
-              .map((part) => {
-                const p = part.trim();
-                if (!p) return "";
+              if (DISPLAY_ACRONYMS.has(lower)) {
+                return letters.toUpperCase() + suffix;
+              }
 
-                const pl = p.toLowerCase();
-
-                if (DISPLAY_ACRONYMS.has(pl)) {
-                  return p.toUpperCase();
-                }
-
-                return pl.charAt(0).toUpperCase() + pl.slice(1);
-              })
-              .join("/");
-          }
-
-          return lower.charAt(0).toUpperCase() + lower.slice(1);
+              return lower.charAt(0).toUpperCase() + lower.slice(1) + suffix;
+            })
+            .join("/");
         })
         .join(" ");
     }

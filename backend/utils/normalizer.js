@@ -192,9 +192,27 @@ function normalizeStringArray(value) {
     return [];
   }
 
-  const values = Array.isArray(value) ? value : String(value).split(",");
+  if (Array.isArray(value)) {
+    return [...new Set(value.map(normalizeTrimmedString).filter(Boolean))];
+  }
 
-  return [...new Set(values.map(normalizeTrimmedString).filter(Boolean))];
+  if (typeof value === "string") {
+    const text = value.trim();
+
+    if (text.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(text);
+
+        if (Array.isArray(parsed)) {
+          return [...new Set(parsed.map(normalizeTrimmedString).filter(Boolean))];
+        }
+      } catch (_) {}
+    }
+
+    return [...new Set(text.split(",").map(normalizeTrimmedString).filter(Boolean))];
+  }
+
+  return [];
 }
 
 function normalizeId(value) {
