@@ -3,7 +3,6 @@
     PositionModal.openListModal({
       departments: state.departments || [],
       onMount() {
-        console.log("Loading positions...");
         loadPositions()
           .then((positions) => {
             renderPositionListModal(positions);
@@ -35,10 +34,9 @@
             formData,
             () => {
               showToast("Position created", "success");
-
               PositionModal.closeFormModal?.();
+              PositionModal.closeListModal?.();
               GlobalModal.refreshList();
-
               loadPositions();
             },
             (err) => {
@@ -64,8 +62,8 @@
           formData,
           () => {
             showToast("Position updated", "success");
-
             PositionModal.closeFormModal?.();
+            PositionModal.closeListModal?.();
             GlobalModal.refreshList();
             loadPositions();
           },
@@ -91,6 +89,7 @@
           () => {
             showToast("Position deleted", "success");
             PositionModal.closeDeleteModal?.();
+            PositionModal.closeListModal?.();
             GlobalModal.refreshList();
             loadPositions();
           },

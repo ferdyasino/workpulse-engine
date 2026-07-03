@@ -83,6 +83,15 @@
       });
     }
 
+    function closeListModal() {
+      const body = document.getElementById("globalListBody");
+      if (body) {
+        body.innerHTML = "";
+      }
+
+      GlobalModal.hide("globalListModal");
+    }
+
     // =====================================================
     // PUBLIC API
     // =====================================================
@@ -93,6 +102,7 @@
       openEditModal,
       openDeleteModal,
       closeFormModal,
+      closeListModal,
     };
   })();
 </script>

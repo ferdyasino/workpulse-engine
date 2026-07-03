@@ -2,7 +2,6 @@
   function openDepartmentListModal() {
     DepartmentModal.openListModal({
       onMount() {
-        console.log("Loading departments...");
         loadDepartments()
           .then((departments) => {
             renderDepartmentListModal(departments);
@@ -30,6 +29,7 @@
             () => {
               showToast("Department created", "success");
               DepartmentModal.closeFormModal?.();
+              DepartmentModal.closeListModal?.();
               GlobalModal.refreshList();
               loadDepartments();
             },
@@ -55,6 +55,7 @@
           () => {
             showToast("Department updated", "success");
             DepartmentModal.closeFormModal?.();
+            DepartmentModal.closeListModal?.();
             GlobalModal.refreshList();
             loadDepartments();
           },
@@ -77,6 +78,7 @@
           () => {
             showToast("Department deleted", "success");
             DepartmentModal.closeDeleteModal?.();
+            DepartmentModal.closeListModal?.();
             GlobalModal.refreshList();
             loadDepartments();
           },

@@ -88,6 +88,14 @@
     function closeFormModal() {
       GlobalModal.hide("globalFormModal");
     }
+    function closeListModal() {
+      const body = document.getElementById("globalListBody");
+      if (body) {
+        body.innerHTML = "";
+      }
+
+      GlobalModal.hide("globalListModal");
+    }
 
     return {
       openListModal,
@@ -95,6 +103,7 @@
       openEditModal,
       openDeleteModal,
       closeFormModal,
+      closeListModal,
     };
   })();
 </script>

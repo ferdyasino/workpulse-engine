@@ -15,7 +15,7 @@ function mapShift(row) {
     end_time: row.end_time || "",
     grace_minutes: Number(row.grace_minutes ?? 10),
     status: row.status || "ACTIVE",
-    created_at: row.created_at || ""
+    created_at: row.created_at || "",
   };
 }
 
@@ -44,14 +44,14 @@ function createShift(workspace_id, payload) {
   const existingShifts = find(workspace_id, SHIFT_TABLE).map(mapShift);
 
   const existingShift = existingShifts.find(
-    s => normalize("shift_name", s.shift_name) === shiftName
+    (s) => normalize("shift_name", s.shift_name) === shiftName,
   );
 
   if (existingShift) {
     return {
       success: false,
       message: `Shift '${shiftName}' already exists`,
-      data: existingShift
+      data: existingShift,
     };
   }
 
@@ -73,14 +73,14 @@ function createShift(workspace_id, payload) {
     end_time: endTime,
     grace_minutes: Number(payload.grace_minutes ?? 10),
     status: "ACTIVE",
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
   };
 
   insert(workspace_id, SHIFT_TABLE, shift);
 
   return {
     success: true,
-    data: mapShift(shift)
+    data: mapShift(shift),
   };
 }
 
@@ -132,16 +132,14 @@ function updateShift(workspace_id, shiftId, updates) {
     const existingShifts = find(workspace_id, SHIFT_TABLE).map(mapShift);
 
     const duplicate = existingShifts.find(
-      s =>
-        s.shift_id !== shiftId &&
-        normalize("shift_name", s.shift_name) === newName
+      (s) => s.shift_id !== shiftId && normalize("shift_name", s.shift_name) === newName,
     );
 
     if (duplicate) {
       return {
         success: false,
         message: `Shift '${newName}' already exists`,
-        data: duplicate
+        data: duplicate,
       };
     }
 
@@ -151,13 +149,11 @@ function updateShift(workspace_id, shiftId, updates) {
   // =========================
   // TIME VALIDATION
   // =========================
-  const start = safeUpdates.start_time !== undefined
-    ? String(safeUpdates.start_time).trim()
-    : shift.start_time;
+  const start =
+    safeUpdates.start_time !== undefined ? String(safeUpdates.start_time).trim() : shift.start_time;
 
-  const end = safeUpdates.end_time !== undefined
-    ? String(safeUpdates.end_time).trim()
-    : shift.end_time;
+  const end =
+    safeUpdates.end_time !== undefined ? String(safeUpdates.end_time).trim() : shift.end_time;
 
   if (!start || !end) {
     throw new Error("start_time and end_time are required");
@@ -184,7 +180,7 @@ function updateShift(workspace_id, shiftId, updates) {
   // =========================
   const otherShifts = find(workspace_id, SHIFT_TABLE)
     .map(mapShift)
-    .filter(s => s.shift_id !== shiftId);
+    .filter((s) => s.shift_id !== shiftId);
 
   // const hasOverlap = otherShifts.some(s =>
   //   isTimeOverlap(start, end, s.start_time, s.end_time)
@@ -213,8 +209,13 @@ function updateShift(workspace_id, shiftId, updates) {
 
   return {
     success: true,
-    data: getShiftById(workspace_id, shiftId)
+    data: getShiftById(workspace_id, shiftId),
   };
+}
+
+function deleteShift(workspace_id, shiftId) {
+  const shift = getShiftById(workspace_id, shiftId);
+  if (!shift) throw new Error("Shift not found");
 }
 
 /**
@@ -227,12 +228,12 @@ function deactivateShift(workspace_id, shiftId) {
   if (!shift) throw new Error("Shift not found");
 
   update(workspace_id, SHIFT_TABLE, shiftId, {
-    status: "INACTIVE"
+    status: "INACTIVE",
   });
 
   return {
     success: true,
-    data: getShiftById(workspace_id, shiftId)
+    data: getShiftById(workspace_id, shiftId),
   };
 }
 

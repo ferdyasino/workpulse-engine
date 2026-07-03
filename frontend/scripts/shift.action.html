@@ -1,18 +1,16 @@
 <script>
   function openShiftListModal() {
-    ShiftModal.openListModal(state.shifts, {
+    ShiftModal.openListModal({
       onMount() {
-        UsersAPI.getShifts(
-          (shifts) => {
-            state.shifts = Array.isArray(shifts) ? shifts : [];
-
-            renderShiftListModal(state.shifts);
-          },
-          (err) => {
+        loadShifts()
+          .then((shifts) => {
+            renderShiftListModal(shifts);
+          })
+          .catch((err) => {
             showToast(err?.message || "Failed to load shifts", "error");
+
             renderShiftListModal([]);
-          },
-        );
+          });
       },
     });
   }
@@ -27,11 +25,13 @@
       },
       {
         onSubmit(formData) {
-          ShiftsAPI.createShift(
+          UsersAPI.createShift(
             formData,
             () => {
               showToast("Shift created", "success");
               ShiftModal.closeFormModal?.();
+              ShiftModal.closeListModal?.();
+              GlobalModal.refreshList();
               loadShifts();
             },
             (err) => {
@@ -45,17 +45,18 @@
 
   function editShift(shiftId) {
     const shift = state.shifts.find((s) => s.shift_id === shiftId);
-
+    console.log("editShift shift:", shift);
     if (!shift) return;
-
     ShiftModal.openEditModal(shift, {
       onSubmit(formData) {
-        ShiftsAPI.updateShift(
+        UsersAPI.updateShift(
           shiftId,
           formData,
           () => {
             showToast("Shift updated", "success");
             ShiftModal.closeFormModal?.();
+            ShiftModal.closeListModal?.();
+            GlobalModal.refreshList();
             loadShifts();
           },
           (err) => {
@@ -67,42 +68,49 @@
   }
 
   function deleteShift(shiftId) {
-    ShiftModal.openDeleteModal(shiftId, {
-      onDelete(id) {
-        setLoading(true);
+    ShiftModal.openDeleteModal(
+      { shift_id: shiftId },
+      {
+        onDelete(shiftid) {
+          setLoading(true);
 
-        ShiftsAPI.deleteShift(
-          id,
-          () => {
-            showToast("Shift deleted", "success");
-            GlobalModal.hide("globalDeleteModal");
-            loadShifts();
-          },
-          (err) => {
-            console.error(err);
-            showToast(err.message || "Delete failed", "error");
-            setLoading(false);
-          },
-        );
+          UsersAPI.deleteShift(
+            shift.shift_id,
+            () => {
+              showToast("Shift deleted", "success");
+              GlobalModal.hide("globalDeleteModal");
+              ShiftModal.closeListModal?.();
+              GlobalModal.refreshList();
+              loadShifts();
+            },
+            (err) => {
+              console.error(err);
+              showToast(err.message || "Delete failed", "error");
+              setLoading(false);
+            },
+          );
+        },
+
+        onDeactivate(shiftid) {
+          setLoading(true);
+
+          UsersAPI.deactivateShift(
+            shift.shift_id,
+            () => {
+              showToast("Shift deactivated", "success");
+              GlobalModal.hide("globalDeleteModal");
+              ShiftModal.closeListModal?.();
+              GlobalModal.refreshList();
+              loadShifts();
+            },
+            (err) => {
+              console.error(err);
+              showToast(err.message || "Deactivate failed", "error");
+              setLoading(false);
+            },
+          );
+        },
       },
-
-      onDeactivate(id) {
-        setLoading(true);
-
-        ShiftsAPI.deactivateShift(
-          id,
-          () => {
-            showToast("Shift deactivated", "success");
-            GlobalModal.hide("globalDeleteModal");
-            loadShifts();
-          },
-          (err) => {
-            console.error(err);
-            showToast(err.message || "Deactivate failed", "error");
-            setLoading(false);
-          },
-        );
-      },
-    });
+    );
   }
 </script>

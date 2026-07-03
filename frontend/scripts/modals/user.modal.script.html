@@ -8,15 +8,7 @@
       GlobalModal.openList({
         title: "Employee Records",
 
-        columns: [
-          "Employee No",
-          "Full Name",
-          "Email",
-          "Department",
-          "Position",
-          "Shift",
-          "Status",
-        ],
+        columns: ["Employee No", "Full Name", "Email", "Department", "Position", "Shift", "Status"],
 
         onAdd: () => {
           openCreateModal({}, config);
@@ -124,8 +116,7 @@
     function openDeleteModal(id, handlers = {}) {
       GlobalModal.openDelete({
         title: "Employee Action",
-        message:
-          "Choose whether to deactivate or permanently delete this employee.",
+        message: "Choose whether to deactivate or permanently delete this employee.",
         id,
         onDelete: handlers.onDelete,
         onDeactivate: handlers.onDeactivate,

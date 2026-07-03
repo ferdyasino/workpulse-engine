@@ -42,11 +42,50 @@
     };
 
     window.normalizeShift = function (shift = {}) {
+      function toTimeInput(value) {
+        if (!value) return "";
+
+        const str = String(value).trim();
+
+        // Accept 6:00 or 06:00
+        const match24 = str.match(/^(\d{1,2}):(\d{2})$/);
+
+        if (match24) {
+          return `${String(Number(match24[1])).padStart(2, "0")}:${match24[2]}`;
+        }
+
+        // Accept 6:00 AM / 6:00 PM
+        const match12 = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+
+        if (match12) {
+          let hh = Number(match12[1]);
+          const mm = match12[2];
+          const ap = match12[3].toUpperCase();
+
+          if (ap === "PM" && hh !== 12) hh += 12;
+          if (ap === "AM" && hh === 12) hh = 0;
+
+          return `${String(hh).padStart(2, "0")}:${mm}`;
+        }
+
+        const d = new Date(str);
+
+        if (!isNaN(d.getTime())) {
+          return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(
+            2,
+            "0",
+          )}`;
+        }
+
+        return "";
+      }
+
       return {
         shift_name: shift.shift_name || "",
-        start_time: shift.start_time || "",
-        end_time: shift.end_time || "",
-        grace_minutes: Number(shift.grace_minutes ?? shift.grace ?? 0),
+        start_time: toTimeInput(shift.start_time),
+        end_time: toTimeInput(shift.end_time),
+        grace_minutes: Number(shift.grace_minutes ?? shift.grace ?? 10),
+        status: shift.status || "ACTIVE",
       };
     };
 
