@@ -22,15 +22,9 @@
 
     const role = String(currentUser?.role || "").toLowerCase();
 
-    const isAdmin =
-      role === "admin" ||
-      role === "owner" ||
-      role === "hr" ||
-      role === "superadmin";
+    const isAdmin = role === "admin" || role === "owner" || role === "hr" || role === "superadmin";
 
-    document
-      .getElementById("adminReportControls")
-      ?.classList.toggle("d-none", !isAdmin);
+    document.getElementById("adminReportControls")?.classList.toggle("d-none", !isAdmin);
 
     if (__reportPageInitialized) {
       return;
@@ -42,47 +36,41 @@
     // Employee Range
     // -------------------------------------------------
 
-    document
-      .getElementById("reportRange")
-      ?.addEventListener("change", function () {
-        APP.reports.range = this.value;
+    document.getElementById("reportRange")?.addEventListener("change", function () {
+      APP.reports.range = this.value;
 
-        const adminRange = document.getElementById("adminReportRange");
+      const adminRange = document.getElementById("adminReportRange");
 
-        if (adminRange) {
-          adminRange.value = this.value;
-        }
+      if (adminRange) {
+        adminRange.value = this.value;
+      }
 
-        loadReports(this.value);
-      });
+      loadReports(this.value);
+    });
 
     // -------------------------------------------------
     // Admin Range
     // -------------------------------------------------
 
-    document
-      .getElementById("adminReportRange")
-      ?.addEventListener("change", function () {
-        APP.reports.range = this.value;
+    document.getElementById("adminReportRange")?.addEventListener("change", function () {
+      APP.reports.range = this.value;
 
-        const employeeRange = document.getElementById("reportRange");
+      const employeeRange = document.getElementById("reportRange");
 
-        if (employeeRange) {
-          employeeRange.value = this.value;
-        }
+      if (employeeRange) {
+        employeeRange.value = this.value;
+      }
 
-        loadReports(this.value);
-      });
+      loadReports(this.value);
+    });
 
     // -------------------------------------------------
     // Employee Filter
     // -------------------------------------------------
 
-    document
-      .getElementById("employeeFilter")
-      ?.addEventListener("change", function () {
-        renderReportTable();
-      });
+    document.getElementById("employeeFilter")?.addEventListener("change", function () {
+      renderReportTable();
+    });
 
     initReportExport();
   }
@@ -102,11 +90,7 @@
 
     const role = String(currentUser?.role || "").toLowerCase();
 
-    const isAdmin =
-      role === "admin" ||
-      role === "owner" ||
-      role === "hr" ||
-      role === "superadmin";
+    const isAdmin = role === "admin" || role === "owner" || role === "hr" || role === "superadmin";
 
     // -------------------------------------------------
     // Employee

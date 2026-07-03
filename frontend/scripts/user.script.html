@@ -176,7 +176,9 @@
       const departmentName = DISPLAY.name(getDepartmentName(user.department_id));
       const supervisorName = DISPLAY.name(getSupervisorName(user.department_id));
       const positionName = DISPLAY.name(getPositionName(user.position_id));
-      const shift = getShift(user.shift_id);
+      const shiftName = DISPLAY.name(getShiftName(user.shift_id));
+      const shift = getShiftObject(user.shift_id);
+      const userSched = getShift(shift, { timeOnly: true });
       const status = DISPLAY.status(user.status || "UNKNOWN");
       const isOwner =
         String(user.role || "")
@@ -188,7 +190,12 @@
       <td>${escapeHtml(email)}</td>
       <td>${escapeHtml(departmentName)} - ${escapeHtml(supervisorName)}</td>
       <td>${escapeHtml(positionName)}</td>
-      <td>${escapeHtml(shift)}</td>
+      <td>
+        ${escapeHtml(shiftName)}
+        <small class="text-muted d-block">
+          ${escapeHtml(userSched)}
+        </small>
+      </td>
       <td>
         <span class="badge ${getStatusClass(status)}">
           ${escapeHtml(status)}

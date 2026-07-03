@@ -47,8 +47,10 @@
       return (getState().shifts || []).find((s) => s.shift_id === id);
     };
 
-    window.getShift = function (id) {
-      return window.formatShiftLabel(window.getShiftObject(id) || {});
+    window.getShift = function (shiftOrId, options = {}) {
+      const shift = typeof shiftOrId === "object" ? shiftOrId : window.getShiftObject(shiftOrId);
+
+      return window.formatShiftLabel(shift || {}, options);
     };
 
     window.getShiftName = function (id) {
