@@ -8,7 +8,6 @@
  * Read workspace settings
  */
 function workspaceSettings(workspace_id) {
-
   workspace_id = normalize("workspace_id", workspace_id);
 
   if (!workspace_id) {
@@ -31,9 +30,8 @@ function workspaceSettings(workspace_id) {
   const headers = values.shift();
 
   return values
-    .filter(row => normalizeId(row[0]))
-    .map(row => {
-
+    .filter((row) => normalizeId(row[0]))
+    .map((row) => {
       const record = {};
 
       headers.forEach((header, index) => {
@@ -48,7 +46,6 @@ function workspaceSettings(workspace_id) {
  * Save workspace settings
  */
 function saveWorkspaceSettings(workspace_id, settingsRows) {
-
   workspace_id = normalize("workspace_id", workspace_id);
 
   if (!workspace_id) {
@@ -74,64 +71,56 @@ function saveWorkspaceSettings(workspace_id, settingsRows) {
     "options",
     "label",
     "description",
-    "updated_at"
+    "updated_at",
   ];
 
   const now = new Date();
 
-  const values = settingsRows
-    .map(normalizeSettingRecord)
-    .map(setting => {
+  const values = settingsRows.map(normalizeSettingRecord).map((setting) => {
+    let value;
 
-      let value;
+    // @ts-ignore
+    switch (setting.type) {
+      case "boolean":
+        // @ts-ignore
+        value = setting.value;
+        break;
 
+      case "number":
+        // @ts-ignore
+        value = setting.value;
+        break;
+
+      default:
+        // @ts-ignore
+        value = serializeSettingValue(setting.value);
+    }
+
+    return [
       // @ts-ignore
-      switch (setting.type) {
-
-        case "boolean":
-          // @ts-ignore
-          value = setting.value ? "ENABLED" : "DISABLED";
-          break;
-
-        case "number":
-          // @ts-ignore
-          value = setting.value;
-          break;
-
-        default:
-          // @ts-ignore
-          value = serializeSettingValue(setting.value);
-      }
-
-      return [
-        // @ts-ignore
-        setting.key,
-        value,
-        // @ts-ignore
-        setting.type,
-        // @ts-ignore
-        setting.group,
-        // @ts-ignore
-        setting.options.join("|"),
-        // @ts-ignore
-        setting.label,
-        // @ts-ignore
-        setting.description,
-        // @ts-ignore
-        setting.updated_at || now
-      ];
-    });
+      setting.key,
+      value,
+      // @ts-ignore
+      setting.type,
+      // @ts-ignore
+      setting.group,
+      // @ts-ignore
+      setting.options.join("|"),
+      // @ts-ignore
+      setting.label,
+      // @ts-ignore
+      setting.description,
+      // @ts-ignore
+      setting.updated_at || now,
+    ];
+  });
 
   sheet.clearContents();
 
-  sheet
-    .getRange(1, 1, 1, headers.length)
-    .setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
   if (values.length) {
-    sheet
-      .getRange(2, 1, values.length, headers.length)
-      .setValues(values);
+    sheet.getRange(2, 1, values.length, headers.length).setValues(values);
   }
 
   return workspaceSettings(workspace_id);
@@ -141,9 +130,12 @@ function saveWorkspaceSettings(workspace_id, settingsRows) {
  * Deserialize sheet value
  */
 function deserializeSettingValue(value) {
-
   if (value === null || value === undefined) {
     return "";
+  }
+
+  if (typeof value === "boolean" || typeof value === "number") {
+    return value;
   }
 
   if (typeof value !== "string") {
@@ -158,8 +150,7 @@ function deserializeSettingValue(value) {
 
   try {
     return JSON.parse(trimmed);
-  }
-  catch (_) {
+  } catch (_) {
     return trimmed;
   }
 }
@@ -168,7 +159,6 @@ function deserializeSettingValue(value) {
  * Serialize sheet value
  */
 function serializeSettingValue(value) {
-
   if (value === null || value === undefined) {
     return "";
   }

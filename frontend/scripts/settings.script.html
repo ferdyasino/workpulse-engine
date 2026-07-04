@@ -38,9 +38,7 @@
               .map((v) => v.trim())
               .filter(Boolean),
         label:
-          row.label && String(row.label).trim()
-            ? String(row.label).trim()
-            : DISPLAY.label(row.key),
+          row.label && String(row.label).trim() ? String(row.label).trim() : DISPLAY.label(row.key),
         description: String(row.description || "").trim(),
         readonly: Boolean(row.readonly),
         visible: row.visible !== false,
@@ -57,7 +55,6 @@
         return a.label.localeCompare(b.label);
       });
   }
-
   // =====================================================
   // SAVE SETTINGS
   // =====================================================
@@ -66,17 +63,15 @@
     try {
       const settings = normalizeSettings(APP.settings);
 
-      const payload = settings.map((setting) => {
+      settings.forEach((setting) => {
         if (setting.readonly) {
-          return setting;
+          return;
         }
 
-        const input = document.querySelector(
-          `.setting-input[data-key="${setting.key}"]`,
-        );
+        const input = document.querySelector(`.setting-input[data-key="${setting.key}"]`);
 
         if (!input) {
-          return setting;
+          return;
         }
 
         let value;
@@ -87,7 +82,7 @@
             break;
 
           case "number":
-            value = input.value === "" ? "" : Number(input.value);
+            value = input.value === "" ? null : Number(input.value);
             break;
 
           case "select":
@@ -98,13 +93,16 @@
             value = input.value.trim();
         }
 
-        return {
-          ...setting,
-          value,
-        };
+        const target = APP.settings.find((s) => s.key === setting.key);
+
+        if (target) {
+          target.value = value;
+        }
+
+        console.log(`[SETTING] ${setting.key} =`, value, `(${typeof value})`);
       });
 
-      APP.settings = await SettingsAPI.saveAll(payload);
+      APP.settings = await SettingsAPI.saveAll(APP.settings);
 
       renderSettingsGroup(window.currentSettingsGroup || "ALL");
 

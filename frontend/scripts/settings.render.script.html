@@ -180,11 +180,14 @@
         return `
             <div class="form-check form-switch mb-0">
               <input
-                  type="checkbox"
-                  class="form-check-input setting-input"
-                  data-key="${key}"
-                  ${value ? "checked" : ""}>
-            </div>`;
+                id="setting-${key}"
+                type="checkbox"
+                class="form-check-input setting-input"
+                data-key="${key}"
+                data-value="${value}"
+                ${value ? "checked" : ""}>
+            </div>
+          `;
       }
 
       case "number":
