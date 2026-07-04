@@ -17,27 +17,20 @@
 
   async function loadReportsPage() {
     initReportPage();
-
     if (!APP.reports.initialized) {
       APP.reports.initialized = true;
 
-      document
-        .getElementById("reportRange")
-        ?.addEventListener("change", function () {
-          loadReports(this.value);
-        });
+      document.getElementById("reportRange")?.addEventListener("change", function () {
+        loadReports(this.value);
+      });
 
-      document
-        .getElementById("adminReportRange")
-        ?.addEventListener("change", function () {
-          loadReports(this.value);
-        });
+      document.getElementById("adminReportRange")?.addEventListener("change", function () {
+        loadReports(this.value);
+      });
 
-      document
-        .getElementById("employeeFilter")
-        ?.addEventListener("change", function () {
-          renderReportTable();
-        });
+      document.getElementById("employeeFilter")?.addEventListener("change", function () {
+        renderReportTable();
+      });
     }
 
     const user = getCurrentUser();
@@ -46,6 +39,7 @@
       return;
     }
 
+    resetSettings();
     resetReportsState();
     loadReports(APP.reports.range);
   }
@@ -118,9 +112,7 @@
       kpi.total_worked_minutes,
     );
 
-    document.getElementById("repOTHours").textContent = formatMinutes(
-      kpi.total_overtime_minutes,
-    );
+    document.getElementById("repOTHours").textContent = formatMinutes(kpi.total_overtime_minutes);
 
     document.getElementById("repPresent").textContent = kpi.total_present || 0;
 
@@ -128,8 +120,7 @@
 
     document.getElementById("repLate").textContent = kpi.total_late_count || 0;
 
-    document.getElementById("repWorkdays").textContent =
-      kpi.total_workdays || 0;
+    document.getElementById("repWorkdays").textContent = kpi.total_workdays || 0;
   }
 
   // =====================================================
@@ -149,11 +140,7 @@
 
     const role = String(currentUser.role || "").toUpperCase();
 
-    const isAdmin =
-      role === "ADMIN" ||
-      role === "OWNER" ||
-      role === "HR" ||
-      role === "SUPERADMIN";
+    const isAdmin = role === "ADMIN" || role === "OWNER" || role === "HR" || role === "SUPERADMIN";
 
     // ----------------------------------------
     // Backend already filters USER records.
@@ -163,11 +150,7 @@
     if (isAdmin) {
       const employeeFilter = document.getElementById("employeeFilter");
 
-      if (
-        employeeFilter &&
-        employeeFilter.value &&
-        employeeFilter.value !== "all"
-      ) {
+      if (employeeFilter && employeeFilter.value && employeeFilter.value !== "all") {
         rows = rows.filter(function (row) {
           return String(row.user_id) === String(employeeFilter.value);
         });
@@ -208,11 +191,7 @@
 
     const role = String(currentUser.role || "").toUpperCase();
 
-    const isAdmin =
-      role === "ADMIN" ||
-      role === "OWNER" ||
-      role === "HR" ||
-      role === "SUPERADMIN";
+    const isAdmin = role === "ADMIN" || role === "OWNER" || role === "HR" || role === "SUPERADMIN";
 
     if (!isAdmin) {
       select.innerHTML = `

@@ -106,6 +106,8 @@
 
       APP.settingsLoaded = true;
 
+      await this.refresh();
+
       return APP.settings;
     },
 
@@ -124,6 +126,8 @@
       const saved = await gas("patchWorkspaceSettings", workspace_id, settingsRows);
 
       APP.settings = Array.isArray(saved) ? saved : APP.settings;
+
+      await this.refresh();
 
       return APP.settings;
     },
@@ -145,6 +149,8 @@
       APP.settings = Array.isArray(settings) ? settings : [];
 
       APP.settingsLoaded = true;
+
+      await this.refresh();
 
       return APP.settings;
     },

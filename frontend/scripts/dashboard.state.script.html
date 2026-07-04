@@ -39,10 +39,8 @@
     updateDashboardTitle(page);
     applyUIState(page);
 
-    // STEP 2: allow paint first
     await new Promise(requestAnimationFrame);
 
-    // STEP 3: defer ALL hydration safely
     setTimeout(() => {
       loadPageData(page).catch(console.error);
     }, 0);

@@ -212,23 +212,6 @@ function serializeSheetValue(value) {
   return value;
 }
 
-function getWorkspaceSettings(workspace_id) {
-  const db = getWorkspaceDb(workspace_id);
-  const sheet = db.getSheetByName("Settings");
-
-  if (!sheet) throw new Error("Settings sheet not found");
-
-  const rows = sheet.getDataRange().getValues();
-
-  const settings = {};
-
-  rows.forEach(([key, value]) => {
-    if (key) settings[key] = value;
-  });
-
-  return settings;
-}
-
 function isOvernightShift(shift) {
   if (!shift) return false;
 

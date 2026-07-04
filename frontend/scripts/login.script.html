@@ -130,13 +130,8 @@
       hideLoader?.();
       renderUserHeader();
       applyRoleUI?.();
-
-      // 🚨 SHOW SHELL FIRST
-
-      // 🚨 NAVIGATE WITHOUT WAITING FOR ANY BACKEND
       await go("dashboard");
 
-      // background only AFTER paint
       queueMicrotask(() => {
         bootstrapSettings().catch(console.error);
 
@@ -183,6 +178,7 @@
 
     resetAppSessionState();
     resetReportsState();
+    resetSettings();
     APP.workspaceSlug = workspaceSlug;
 
     resetUIAfterLogout();
@@ -318,49 +314,6 @@
     });
   }
 
-  // =====================================================
-  // SESSION RESTORE
-  // =====================================================
-
-  // function restoreSession() {
-  //   const user_id = localStorage.getItem(STORAGE_KEYS.USER_ID);
-  //   const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
-  //   const role = localStorage.getItem(STORAGE_KEYS.ROLE);
-  //   const workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID);
-
-  //   if (!user_id || !email || !role || !workspace_id) {
-  //     APP.user = null;
-  //     APP.role = "guest";
-  //     APP.currentPage = "login";
-  //     resetReportsState();
-  //     return;
-  //   }
-
-  //   const user = getCurrentUser();
-
-  //   APP.user = user;
-  //   APP.role = DISPLAY.lower(user.role || "guest");
-
-  //   resetReportsState();
-  //   renderUserHeader();
-  //   applyRoleUI?.();
-
-  //   const isAdmin = APP.role === "admin" || APP.role === "owner";
-  //   const allowedPages = ["dashboard", "admin", "reports"];
-
-  //   const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
-
-  //   if (isAdmin) {
-  //     UserInit?.();
-  //   }
-
-  //   APP.currentPage = allowedPages.includes(lastPage)
-  //     ? lastPage
-  //     : isAdmin
-  //       ? "admin"
-  //       : "dashboard";
-  // }
-
   function restoreSessionLite() {
     const user_id = localStorage.getItem(STORAGE_KEYS.USER_ID);
     const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
@@ -384,6 +337,7 @@
 
     if (isAdmin) {
       UserInit?.();
+      bootstrapSettings().catch(console.error);
     }
 
     APP.currentPage = allowedPages.includes(lastPage) ? lastPage : isAdmin ? "admin" : "dashboard";
@@ -465,5 +419,10 @@
     form.querySelectorAll("input, button, select, textarea").forEach((el) => {
       el.disabled = false;
     });
+  }
+
+  function resetSettings() {
+    APP.settings = {};
+    APP.settingsLoaded = false;
   }
 </script>

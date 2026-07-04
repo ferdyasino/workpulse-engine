@@ -14,10 +14,7 @@
     const filtered =
       group === "ALL"
         ? settings
-        : settings.filter(
-            (s) =>
-              String(s.group).toUpperCase() === String(group).toUpperCase(),
-          );
+        : settings.filter((s) => String(s.group).toUpperCase() === String(group).toUpperCase());
 
     // --------------------------------------------------
     // Workspace summary cards
@@ -181,23 +178,23 @@
     switch (type) {
       case "boolean": {
         return `
-<div class="form-check form-switch mb-0">
-  <input
-      type="checkbox"
-      class="form-check-input setting-input"
-      data-key="${key}"
-      ${value ? "checked" : ""}>
-</div>`;
+            <div class="form-check form-switch mb-0">
+              <input
+                  type="checkbox"
+                  class="form-check-input setting-input"
+                  data-key="${key}"
+                  ${value ? "checked" : ""}>
+            </div>`;
       }
 
       case "number":
         return `
-<input
-    type="number"
-    class="form-control setting-input"
-    data-key="${key}"
-    value="${escapeHtml(value ?? "")}">
-`;
+            <input
+                type="number"
+                class="form-control setting-input"
+                data-key="${key}"
+                value="${escapeHtml(value ?? "")}">
+            `;
 
       case "select": {
         const options = Array.isArray(setting.options)
@@ -208,31 +205,31 @@
               .filter(Boolean);
 
         return `
-<select
-    class="form-select setting-input"
-    data-key="${key}">
-${options
-  .map(
-    (option) => `
-  <option
-      value="${escapeHtml(option)}"
-      ${option === value ? "selected" : ""}>
-      ${DISPLAY.label(option)}
-  </option>
-`,
-  )
-  .join("")}
-</select>`;
+          <select
+              class="form-select setting-input"
+              data-key="${key}">
+          ${options
+            .map(
+              (option) => `
+            <option
+                value="${escapeHtml(option)}"
+                ${option === value ? "selected" : ""}>
+                ${DISPLAY.label(option)}
+            </option>
+          `,
+            )
+            .join("")}
+          </select>`;
       }
 
       default:
         return `
-<input
-    type="text"
-    class="form-control setting-input"
-    data-key="${key}"
-    value="${escapeHtml(value ?? "")}">
-`;
+        <input
+            type="text"
+            class="form-control setting-input"
+            data-key="${key}"
+            value="${escapeHtml(value ?? "")}">
+        `;
     }
   }
 </script>
