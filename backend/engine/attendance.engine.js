@@ -20,7 +20,7 @@ function buildAttendanceState(shift, timelogState, options) {
     // --------------------------------------------------
     // Shift
     // --------------------------------------------------
-    shift_id: shift ? shift.id : "",
+    shift_id: shift ? shift.shift_id : "",
     shift_start: window ? window.shift_start : null,
     shift_end: window ? window.shift_end : null,
     scheduled_minutes: window ? window.scheduled_minutes : 0,
@@ -80,7 +80,12 @@ function buildAttendanceState(shift, timelogState, options) {
     attendance.scheduled_minutes,
   );
 
-  attendance.attendance_status = determineAttendanceStatus(attendance);
+  attendance.attendance_status = determineAttendanceStatus(
+    attendance,
+    window,
+    settings,
+    options.timestamp || new Date(),
+  );
 
   return attendance;
 }
@@ -91,7 +96,7 @@ function buildAttendanceState(shift, timelogState, options) {
 function buildAttendanceSessions(sessions, shiftWindow, settings) {
   const list = Array.isArray(sessions) ? sessions : [];
 
-  const allowOvertime = !!settings.allow_overtime;
+  const allowOvertime = !!settings.OVERTIME_ENABLED;
 
   console.log("override settings", settings);
 
@@ -163,7 +168,7 @@ function calculateLateMinutes(sessions, window, settings) {
   if (!sessions.length) return 0;
 
   const first = sessions[0];
-  const grace = Number(settings.late_grace_minutes || 0);
+  const grace = Number(settings.LATE_GRACE_MINUTES_DEFAULT || 0); 
 
   const diff = Math.round((first.time_in - window.shift_start) / 60000);
 
@@ -192,22 +197,38 @@ function calculateOvertimeMinutes(worked, scheduled, settings) {
 
   const raw = Math.max(0, worked - scheduled);
 
-  const min = Number(settings.minimum_overtime_minutes || 0);
+  const min = Number(settings.MINIMUM_OVERTIME_MINUTES || 0);
 
   return raw < min ? 0 : raw;
 }
 
-/* =====================================================
-   STATUS ENGINE
-===================================================== */
-function determineAttendanceStatus(a) {
-  if (!a.time_in && !a.sessions?.length) return "ABSENT";
+function determineAttendanceStatus(attendance, window, settings, now) {
+  now = now || new Date();
 
-  if (a.overtime_minutes > 0) return "OVERTIME";
+  // Shift hasn't started yet.
+  if (now < window.shift_start) {
+    return "NOT_STARTED";
+  }
 
-  if (a.undertime_minutes > 0) return "UNDERTIME";
+  // No login after shift start.
+  if (!attendance.time_in) {
+    return "ABSENT";
+  }
 
-  if (a.late_minutes > 0) return "LATE";
+  // Logged in late.
+  if (attendance.late_minutes > 0) {
+    return "LATE";
+  }
+
+  // Worked beyond schedule.
+  if (attendance.overtime_minutes > 0) {
+    return "OVERTIME";
+  }
+
+  // Left before completing scheduled work.
+  if (attendance.undertime_minutes > 0) {
+    return "UNDERTIME";
+  }
 
   return "PRESENT";
 }

@@ -9,19 +9,23 @@ function formatDateKey(date = new Date()) {
   return normalizeDateKey(date);
 }
 
-/**
- * Timelog filter normalizer
- */
+
 function normalizeTimeLogFilters(filters = {}) {
   const normalized = { ...filters };
 
-  ["log_id", "workspace_id", "user_id", "email", "action", "date", "shift_id"].forEach(
-    function (field) {
-      if (Object.prototype.hasOwnProperty.call(normalized, field)) {
-        normalized[field] = normalize(field, normalized[field]);
-      }
-    },
-  );
+  [
+    "log_id",
+    "workspace_id",
+    "user_id",
+    "email",
+    "action",
+    "date",
+    "shift_id",
+  ].forEach(function (field) {
+    if (Object.prototype.hasOwnProperty.call(normalized, field)) {
+      normalized[field] = normalize(field, normalized[field]);
+    }
+  });
 
   return normalized;
 }
@@ -56,7 +60,8 @@ function normalizeTimeLogActionPayload(payload = {}) {
 }
 
 /**
- * Builds a normalized timelog record
+ * Builds a normalized timelog record.
+ * Work date is always derived from the timestamp.
  */
 function normalizeTimeLog(data, workspace_id) {
   const payload = normalizeTimeLogActionPayload(data || {});
@@ -78,23 +83,25 @@ function normalizeTimeLog(data, workspace_id) {
       ? getShiftById(workspace_id || payload.workspace_id, payload.shift_id)
       : null;
 
-    finalDate = shift ? resolveShiftWorkDate(shift, timestampDate) : formatDateKey(timestampDate);
+    finalDate = shift
+      ? resolveShiftWorkDate(shift, timestampDate)
+      : formatDateKey(timestampDate);
   }
 
   return {
     log_id: normalize("log_id", payload.log_id || generateId("LOG")),
 
-    workspace_id: normalize("workspace_id", workspace_id || payload.workspace_id),
+    workspace_id: normalize(
+      "workspace_id",
+      workspace_id || payload.workspace_id
+    ),
 
     user_id: normalize("user_id", payload.user_id),
-
     email: normalize("email", payload.email),
 
     action: normalize("action", payload.action),
 
     timestamp: finalTimestamp,
-
-    // Shift-aware work date
     date: finalDate,
 
     shift_id: normalize("shift_id", payload.shift_id),
@@ -117,49 +124,33 @@ function normalizeTimeLog(data, workspace_id) {
 function normalizeTimeLogRecord(record = {}) {
   const normalized = { ...record };
 
-  // @ts-ignore
   if (normalized.date instanceof Date) {
-    // @ts-ignore
     normalized.date = formatDateKey(normalized.date);
   }
 
   return normalizeRecord({
     ...normalized,
 
-    // @ts-ignore
     log_id: normalized.log_id,
-    // @ts-ignore
     workspace_id: normalized.workspace_id,
-    // @ts-ignore
     user_id: normalized.user_id,
-    // @ts-ignore
     email: normalized.email,
 
-    // @ts-ignore
     action: normalized.action,
 
-    // @ts-ignore
     timestamp: normalized.timestamp,
-    // @ts-ignore
     date: normalized.date,
 
-    // @ts-ignore
     shift_id: normalized.shift_id,
 
-    // @ts-ignore
     device_info: normalized.device_info,
 
-    // @ts-ignore
     location: normalized.location,
-    // @ts-ignore
     location_status: normalized.location_status,
-    // @ts-ignore
     location_message: normalized.location_message,
 
-    // @ts-ignore
     remarks: normalized.remarks,
 
-    // @ts-ignore
     created_at: normalized.created_at,
   });
 }

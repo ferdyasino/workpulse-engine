@@ -62,7 +62,7 @@
     google.script.run
       .withSuccessHandler(handleReportsSuccess)
       .withFailureHandler(handleReportsFailure)
-      .api_getReports(user.workspace_id, user.email, user.shift_id, user.role);
+      .api_getReports(user.workspace_id, user.email, user.shift_id, user.role, range);
   }
 
   // =====================================================

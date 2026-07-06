@@ -169,3 +169,29 @@ function serializeSettingValue(value) {
 
   return String(value);
 }
+
+/**
+ * =====================================================
+ * SETTINGS LOOKUP
+ * =====================================================
+ * Returns:
+ *
+ * {
+ *   OVERTIME_ENABLED: true,
+ *   LATE_GRACE_MINUTES_DEFAULT: 5,
+ *   BREAK_MINUTES_PER_DAY: 30,
+ *   COMPANY_NAME: "LT Outsourcing",
+ *   ...
+ * }
+ */
+function getWorkspaceSettings(workspace_id) {
+  const rows = workspaceSettings(workspace_id);
+
+  const settings = {};
+
+  rows.forEach(function (row) {
+    settings[row.key] = row.value;
+  });
+
+  return settings;
+}

@@ -99,14 +99,11 @@ function assertTimeLogHeaders(headers) {
   });
 
   if (missing.length) {
-    throw new Error(
-      `TIME_LOGS sheet missing required headers: ${missing.join(", ")}`
-    );
+    throw new Error(`TIME_LOGS sheet missing required headers: ${missing.join(", ")}`);
   }
 
   return true;
 }
-
 
 function insertTimeLog(workspace_id, payload) {
   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
@@ -142,18 +139,18 @@ function insertTimeLog(workspace_id, payload) {
   sheet.appendRow(row);
 
   return {
-      success: true,
-      message: buildActionMessage(log.action),
+    success: true,
+    message: buildActionMessage(log.action),
 
-      log_id: log.log_id,
+    log_id: log.log_id,
 
-      workspace_id: normalizedWorkspaceId,
+    workspace_id: normalizedWorkspaceId,
 
-      timestamp: log.timestamp,
+    timestamp: log.timestamp,
 
-      shift_id: log.shift_id,
+    shift_id: log.shift_id,
 
-      work_date: log.date
+    work_date: log.date,
   };
 }
 
@@ -183,7 +180,7 @@ function insertManyTimeLogs(workspace_id, logs) {
     normalized.date = getShiftWorkDate(
       normalizedWorkspaceId,
       normalized.shift_id,
-      normalized.timestamp
+      normalized.timestamp,
     );
 
     assertInsertableTimeLog(normalized);
@@ -202,7 +199,7 @@ function insertManyTimeLogs(workspace_id, logs) {
     success: true,
     message: "Batch insert completed",
     inserted: rows.length,
-    workspace_id: normalizedWorkspaceId
+    workspace_id: normalizedWorkspaceId,
   };
 }
 
@@ -211,9 +208,7 @@ function insertManyTimeLogs(workspace_id, logs) {
 ========================= */
 function buildTimeLogRow(headers, log) {
   return headers.map(function (header) {
-    return log[header] !== undefined && log[header] !== null
-      ? log[header]
-      : "";
+    return log[header] !== undefined && log[header] !== null ? log[header] : "";
   });
 }
 
@@ -243,24 +238,19 @@ function findTimeLogs(workspace_id, filters) {
 
   const normalizedFilters = normalizeTimeLogFilters(filters || {});
 
-const records = values.map(function (row) {
-  return normalizeTimeLogRecord(
-    rowToObject(headers, row)
-  );
+  const records = values.map(function (row) {
+    return normalizeTimeLogRecord(rowToObject(headers, row));
   });
 
   const filtered = records.filter(function (record) {
-  return matchesTimeLogFilters(
-    record,
-    normalizedFilters
-  );
+    return matchesTimeLogFilters(record, normalizedFilters);
   });
 
   filtered.sort(function (a, b) {
-  const aTime = new Date(a.timestamp).getTime();
-  const bTime = new Date(b.timestamp).getTime();
+    const aTime = new Date(a.timestamp).getTime();
+    const bTime = new Date(b.timestamp).getTime();
 
-  return aTime - bTime;
+    return aTime - bTime;
   });
 
   return filtered;
@@ -272,4 +262,3 @@ const records = values.map(function (row) {
 function findOneTimeLog(workspace_id, filters) {
   return findTimeLogs(workspace_id, filters || {})[0] || null;
 }
-

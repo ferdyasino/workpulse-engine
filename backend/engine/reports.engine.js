@@ -1,132 +1,154 @@
-function buildEmployeeReport(workspace_id, email) {
-  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
+function buildEmployeeReport(workspace_id, email, range, settings) {
+  workspace_id = normalize("workspace_id", workspace_id);
+  email = normalize("email", email);
 
-  const normalizedEmail = normalize("email", email);
-
-  if (!normalizedWorkspaceId) {
+  if (!workspace_id) {
     throw new Error("workspace_id is required");
   }
 
-  // --------------------------------------------------
-  // Get logs
-  // If email is provided -> single employee
-  // Otherwise -> all employees (Admin)
-  // --------------------------------------------------
+  range = range || "today";
 
-  const logs = normalizedEmail
-    ? getTimeLogsByEmail(normalizedWorkspaceId, normalizedEmail)
-    : findTimeLogs(normalizedWorkspaceId, {});
+  const reportRange = resolveReportRange(range, settings);
 
-  if (!logs.length) {
-    return [];
+  // -----------------------------------------
+  // Employees
+  // -----------------------------------------
+
+  let users;
+
+  if (email) {
+    const user = getUserByEmail(workspace_id, email);
+
+    users = user ? [user] : [];
+  } else {
+    users = getUsers(workspace_id);
   }
 
-  // --------------------------------------------------
-  // Group by Employee + Shift + Work Date
-  // --------------------------------------------------
+  const rows = [];
 
-  const groups = {};
+  users.forEach(function (user) {
 
-  logs.forEach(function (log) {
-    const key = [log.user_id || "", log.shift_id || "", log.date || ""].join(
-      "|",
-    );
+    eachDate(reportRange.startDate, reportRange.endDate, function (workDate) {
 
-    if (!groups[key]) {
-      groups[key] = [];
+      const attendance = getAttendanceStateByWorkDate(
+        workspace_id,
+        user.email,
+        user.shift_id,
+        workDate,
+      );
+
+      rows.push({
+        user_id: user.user_id,
+        employee_no: user.employee_no,
+        fullname: user.fullname,
+        email: user.email,
+        department_id: user.department_id,
+
+        work_date: workDate,
+
+        shift_id: user.shift_id,
+
+        ...attendance
+      });
+
+    });
+  });
+
+  return rows;
+}
+
+function resolveReportRange(range, settings) {
+  settings = settings || {};
+
+  const today = new Date();
+
+  const start = new Date(today);
+  const end = new Date(today);
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
+
+  const weekdayMap = {
+    SUNDAY: 0,
+    MONDAY: 1,
+    TUESDAY: 2,
+    WEDNESDAY: 3,
+    THURSDAY: 4,
+    FRIDAY: 5,
+    SATURDAY: 6,
+  };
+
+  const weekStart = weekdayMap[
+    String(settings.WEEKLY_START_DAY || "MONDAY").toUpperCase()
+  ];
+
+  function moveToWeekStart(date) {
+    const current = date.getDay();
+
+    let diff = current - weekStart;
+
+    if (diff < 0) {
+      diff += 7;
     }
 
-    groups[key].push(log);
-  });
+    date.setDate(date.getDate() - diff);
+  }
 
-  // --------------------------------------------------
-  // Build Daily Report
-  // --------------------------------------------------
+  switch (range) {
+    case "today":
+      break;
 
-  return Object.values(groups).map(function (sessionLogs) {
-    sessionLogs.sort(function (a, b) {
-      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
-    });
+    case "yesterday":
+      start.setDate(start.getDate() - 1);
+      end.setDate(end.getDate() - 1);
+      break;
 
-    const first = sessionLogs[0];
+    case "this_week":
+      moveToWeekStart(start);
+      end.setTime(Date.now());
+      break;
 
-    const state = buildTimeLogState(sessionLogs);
+    case "last_week":
+      moveToWeekStart(start);
 
-    const shift = getShiftById(normalizedWorkspaceId, first.shift_id);
+      start.setDate(start.getDate() - 7);
 
-    const attendance = shift
-      ? calculateShiftAttendance(shift, state)
-      : {
-          scheduled_minutes: 0,
+      end.setTime(start.getTime());
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      break;
 
-          worked_minutes: 0,
-          worked_hours: 0,
+    case "this_month":
+      start.setDate(1);
+      end.setTime(Date.now());
+      break;
 
-          paid_minutes: 0,
-          paid_hours: 0,
+    case "last_month":
+      start.setMonth(start.getMonth() - 1, 1);
 
-          regular_minutes: 0,
-          regular_hours: 0,
+      end.setTime(start.getTime());
+      end.setMonth(start.getMonth() + 1, 0);
+      end.setHours(23, 59, 59, 999);
+      break;
 
-          overtime_minutes: 0,
-          overtime_hours: 0,
+    default:
+      throw new Error("Unknown report range");
+  }
 
-          break_minutes: 0,
-          lunch_minutes: 0,
+  return {
+    startDate: formatDateKey(start),
+    endDate: formatDateKey(end),
+  };
+}
 
-          late_minutes: 0,
-          undertime_minutes: 0,
-        };
+function eachDate(startDate, endDate, callback) {
+  const current = new Date(startDate);
 
-    return {
-      // ------------------------------------
-      // Identity
-      // ------------------------------------
+  const end = new Date(endDate);
 
-      user_id: first.user_id,
-      email: first.email,
+  while (current <= end) {
+    callback(formatDateKey(current));
 
-      date: first.date,
-      shift_id: first.shift_id,
-
-      // ------------------------------------
-      // Attendance State
-      // ------------------------------------
-
-      status: state.status,
-
-      time_in: state.time_in,
-      time_out: state.time_out,
-
-      breaks: state.breaks,
-      lunch: state.lunch,
-      state: state,
-
-      // ------------------------------------
-      // Calculated Metrics
-      // ------------------------------------
-
-      scheduled_minutes: attendance.scheduled_minutes,
-
-      worked_minutes: attendance.worked_minutes,
-      worked_hours: attendance.worked_hours,
-
-      paid_minutes: attendance.paid_minutes,
-      paid_hours: attendance.paid_hours,
-
-      regular_minutes: attendance.regular_minutes,
-      regular_hours: attendance.regular_hours,
-
-      overtime_minutes: attendance.overtime_minutes,
-      overtime_hours: attendance.overtime_hours,
-
-      break_minutes: attendance.break_minutes,
-
-      lunch_minutes: attendance.lunch_minutes,
-
-      late_minutes: attendance.late_minutes,
-
-      undertime_minutes: attendance.undertime_minutes,
-    };
-  });
+    current.setDate(current.getDate() + 1); 
+  }
 }

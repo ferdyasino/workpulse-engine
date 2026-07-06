@@ -1,10 +1,3 @@
-/* =========================
-   SHIFT WINDOW
-========================= */
-
-/* =========================
-   SHIFT WINDOW
-========================= */
 
 function resolveShiftWindow(shift, timestamp) {
   if (!shift) {
@@ -63,10 +56,6 @@ function resolveShiftWindow(shift, timestamp) {
   };
 }
 
-/* =========================
-   SHIFT TIMING
-========================= */
-
 function buildShiftTimingState(shift, timestamp) {
   if (!shift) {
     return null;
@@ -102,5 +91,44 @@ function buildShiftTimingState(shift, timestamp) {
     shift_end: window.shift_end,
 
     scheduled_minutes: window.scheduled_minutes,
+  };
+}
+
+function resolveShiftWorkDate(shift, timestamp) {
+  return resolveShiftWindow(shift, timestamp).work_date;
+}
+
+function resolveShiftWindowByWorkDate(shift, workDate) {
+  if (!shift) {
+    throw new Error("Shift is required.");
+  }
+
+  const normalizedWorkDate = formatDateKey(workDate);
+
+  const shiftStart = new Date(normalizedWorkDate);
+  const shiftEnd = new Date(normalizedWorkDate);
+
+  const [startHour, startMinute] = String(shift.start_time || "00:00")
+    .split(":")
+    .map(Number);
+
+  const [endHour, endMinute] = String(shift.end_time || "00:00")
+    .split(":")
+    .map(Number);
+
+  shiftStart.setHours(startHour, startMinute, 0, 0);
+  shiftEnd.setHours(endHour, endMinute, 0, 0);
+
+  if (isOvernightShift(shift) && shiftEnd <= shiftStart) {
+    shiftEnd.setDate(shiftEnd.getDate() + 1);
+  }
+
+  return {
+    shift_start: shiftStart,
+    shift_end: shiftEnd,
+    work_date: normalizedWorkDate,
+    scheduled_minutes: Math.round(
+      (shiftEnd.getTime() - shiftStart.getTime()) / 60000
+    ),
   };
 }

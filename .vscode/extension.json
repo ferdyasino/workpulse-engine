@@ -1,9 +1,0 @@
-{
-  "recommendations": [
-    "esbenp.prettier-vscode",
-    "dbaeumer.vscode-eslint",
-    "usernamehw.errorlens",
-    "EditorConfig.EditorConfig",
-    "christian-kohler.path-intellisense"
-  ]
-}

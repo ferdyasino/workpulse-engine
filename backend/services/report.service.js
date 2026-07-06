@@ -1,179 +1,79 @@
+function enrichReportRows(workspace_id, rows) {
+  rows = Array.isArray(rows) ? rows : [];
 
-function enrichReportRows(
-  workspace_id,
-  email,
-  reportRows = []
-) {
+  return rows.map(function (row) {
+    const user = getUserByEmail(workspace_id, row.email) || {};
 
-  return reportRows.map(function (row) {
-
-    const user = getUserByEmail(
-      workspace_id,
-      row.email
-    ) || {};
-
-    const shift = Object.assign(
-      {
-        shift_name: "",
-        start_time: "",
-        end_time: ""
-      },
-      getShiftById(
-        workspace_id,
-        row.shift_id || user.shift_id
-      )
-    );
+    const shift =
+      getShiftById(workspace_id, row.shift_id || user.shift_id) || {};
 
     return {
-
       ...row,
-
-      // -------------------------------------------------
-      // USER
-      // -------------------------------------------------
 
       fullname: user.fullname || "",
       employee_no: user.employee_no || "",
       department_id: user.department_id || "",
       role: user.role || "",
 
-      // -------------------------------------------------
-      // SHIFT
-      // -------------------------------------------------
-
       shift_name: shift.shift_name || "",
       shift_start: shift.start_time || "",
-      shift_end: shift.end_time || ""
-
+      shift_end: shift.end_time || "",
     };
-
   });
-
 }
+function api_getReports(workspace_id, email, shift_id, role, range) {
+  workspace_id = normalize("workspace_id", workspace_id);
+  email = normalize("email", email);
+  shift_id = normalize("shift_id", shift_id);
 
-// =====================================================
-// REPORT API
-// =====================================================
-
-function api_getReports(
-  workspace_id,
-  email,
-  shift_id,
-  role
-) {
-
-  const normalizedWorkspaceId = normalize(
-    "workspace_id",
-    workspace_id
-  );
-
-  const normalizedEmail = normalize(
-    "email",
-    email
-  );
-
-  const normalizedShiftId = normalize(
-    "shift_id",
-    shift_id
-  );
-
-  if (!normalizedWorkspaceId) {
+  if (!workspace_id) {
     throw new Error("workspace_id is required");
   }
 
-  if (!normalizedEmail) {
+  if (!email) {
     throw new Error("email is required");
   }
 
-  const normalizedRole = String(
-    role || ""
-  ).toUpperCase();
-
-
-  // -------------------------------------------------
-  // Validate authenticated user
-  // -------------------------------------------------
-
-  const authUser = findAuthUserByEmail(
-    normalizedEmail
-  );
+  const authUser = findAuthUserByEmail(email);
 
   if (!authUser) {
-    throw new Error(
-      "Authentication user not found"
-    );
+    throw new Error("Authentication user not found");
   }
 
-  if (!normalizedShiftId) {
-        throw new Error(
-      "Shift_id required"
-    );
-  }
-
-  const shift = getShiftById(
-    normalizedWorkspaceId,
-    normalizedShiftId
+  const isAdmin = ["ADMIN", "OWNER", "HR", "SUPERADMIN"].includes(
+    String(role || "").toUpperCase(),
   );
 
-  if (!shift) {
-    throw new Error("Shift not found");
-  }
-
-    const isAdmin =
-    normalizedRole === "ADMIN" ||
-    normalizedRole === "OWNER" ||
-    normalizedRole === "HR" ||
-    normalizedRole === "SUPERADMIN";
-
-
-  // -------------------------------------------------
-  // Build report
-  // -------------------------------------------------
+  const settings = getWorkspaceSettings(workspace_id);
 
   let rows = buildEmployeeReport(
-    normalizedWorkspaceId,
-    (isAdmin)?null:normalizedEmail
+    workspace_id,
+    isAdmin ? null : email,
+    range,
+    settings
   );
-
-  // -------------------------------------------------
-  // Enrich report rows
-  // -------------------------------------------------
-
-  rows = enrichReportRows(
-    normalizedWorkspaceId,
-    (isAdmin)?null:normalizedEmail,
-    rows
-  );
-
-  // -------------------------------------------------
-  // Build KPIs
-  // -------------------------------------------------
-
-  const kpis = buildReportKPIs(rows, shift);
-
-  // -------------------------------------------------
-  // Response
-  // -------------------------------------------------
+  
+  return rows;
+  
+  rows = enrichReportRows(workspace_id, rows);
 
   return {
     success: true,
     data: {
-      rows: rows,
-      kpis: kpis,
-      total_rows: rows.length
-    }
+      rows,
+      kpis: buildReportKPIs(rows),
+      total_rows: rows.length,
+    },
   };
-
 }
 
-
-function buildReportKPIs(rows = [], shift) {
+function buildReportKPIs(rows) {
+  rows = Array.isArray(rows) ? rows : [];
 
   const kpi = {
+    total_records: rows.length,
 
     total_worked_minutes: 0,
-    total_paid_minutes: 0,
-
     total_regular_minutes: 0,
     total_overtime_minutes: 0,
 
@@ -187,23 +87,13 @@ function buildReportKPIs(rows = [], shift) {
     total_absent: 0,
     total_late_count: 0,
     total_workdays: 0,
-
-    total_records: rows.length
-
   };
 
-  const presentSet = new Set();
-  const workdaySet = new Set();
+  const present = new Set();
+  const workdays = new Set();
 
   rows.forEach(function (row) {
-
-    //---------------------------------------
-    // Totals
-    //---------------------------------------
-
     kpi.total_worked_minutes += Number(row.worked_minutes || 0);
-    kpi.total_paid_minutes += Number(row.paid_minutes || 0);
-
     kpi.total_regular_minutes += Number(row.regular_minutes || 0);
     kpi.total_overtime_minutes += Number(row.overtime_minutes || 0);
 
@@ -213,305 +103,37 @@ function buildReportKPIs(rows = [], shift) {
     kpi.total_late_minutes += Number(row.late_minutes || 0);
     kpi.total_undertime_minutes += Number(row.undertime_minutes || 0);
 
-    //---------------------------------------
-    // Attendance counts
-    //---------------------------------------
+    const status = String(row.attendance_status || "").toUpperCase();
 
-    const status = String(
-      row.status || ""
-    ).toUpperCase();
-
-    const workDate =
-      row.work_date ||
-      row.date ||
-      "";
+    const workDate = row.work_date || row.date || "";
 
     if (workDate) {
-      workdaySet.add(workDate);
+      workdays.add(workDate);
     }
 
     if (status === "ABSENT") {
-
       kpi.total_absent++;
-
     } else if (row.user_id && workDate) {
-
-      presentSet.add(
-        row.user_id + "_" + workDate
-      );
-
+      present.add(row.user_id + "|" + workDate);
     }
 
-    if (Number(row.late_minutes || 0) > 0) {
+    if (row.late_minutes > 0) {
       kpi.total_late_count++;
     }
-
   });
 
-  //---------------------------------------
-  // Counts
-  //---------------------------------------
+  kpi.total_present = present.size;
+  kpi.total_workdays = workdays.size;
 
-  kpi.total_present = presentSet.size;
-  kpi.total_workdays = workdaySet.size;
-
-  //---------------------------------------
-  // Hours
-  //---------------------------------------
-
-  function minutesToHours(minutes) {
+  function hours(minutes) {
     return +(minutes / 60).toFixed(2);
   }
 
-  kpi.total_worked_hours =
-    minutesToHours(kpi.total_worked_minutes);
-
-  kpi.total_paid_hours =
-    minutesToHours(kpi.total_paid_minutes);
-
-  kpi.total_regular_hours =
-    minutesToHours(kpi.total_regular_minutes);
-
-  kpi.total_overtime_hours =
-    minutesToHours(kpi.total_overtime_minutes);
-
-  kpi.total_break_hours =
-    minutesToHours(kpi.total_break_minutes);
-
-  kpi.total_lunch_hours =
-    minutesToHours(kpi.total_lunch_minutes);
+  kpi.total_worked_hours = hours(kpi.total_worked_minutes);
+  kpi.total_regular_hours = hours(kpi.total_regular_minutes);
+  kpi.total_overtime_hours = hours(kpi.total_overtime_minutes);
+  kpi.total_break_hours = hours(kpi.total_break_minutes);
+  kpi.total_lunch_hours = hours(kpi.total_lunch_minutes);
 
   return kpi;
-
-}
-function calculateShiftAttendance(shift, state) {
-
-  if (!shift) {
-    throw new Error("Shift is required.");
-  }
-
-  state = state || {};
-
-  const result = {
-    scheduled_minutes: 0,
-
-    worked_minutes: 0,
-    paid_minutes: 0,
-
-    break_minutes: 0,
-    lunch_minutes: 0,
-
-    regular_minutes: 0,
-
-    before_shift_minutes: 0,
-    after_shift_minutes: 0,
-    overtime_minutes: 0,
-
-    late_minutes: 0,
-    undertime_minutes: 0,
-
-    worked_hours: 0,
-    paid_hours: 0,
-    regular_hours: 0,
-    overtime_hours: 0
-  };
-
-  if (!state.time_in || !state.time_out) {
-    return result;
-  }
-
-  const timeIn = new Date(state.time_in);
-  const timeOut = new Date(state.time_out);
-
-  if (
-    isNaN(timeIn.getTime()) ||
-    isNaN(timeOut.getTime())
-  ) {
-    return result;
-  }
-
-  // --------------------------------------------------
-  // Shift Window
-  // --------------------------------------------------
-
-  const window = resolveShiftWindow(
-    shift,
-    timeIn
-  );
-
-  const shiftStart = window.shift_start;
-  const shiftEnd = window.shift_end;
-
-  result.scheduled_minutes =
-    window.scheduled_minutes;
-
-  // --------------------------------------------------
-  // Late / Undertime
-  // --------------------------------------------------
-
-  result.late_minutes = Math.max(
-    0,
-    Math.round(
-      (timeIn.getTime() -
-        shiftStart.getTime()) / 60000
-    )
-  );
-
-  result.undertime_minutes = Math.max(
-    0,
-    Math.round(
-      (shiftEnd.getTime() -
-        timeOut.getTime()) / 60000
-    )
-  );
-
-  // --------------------------------------------------
-  // Breaks
-  // --------------------------------------------------
-
-  (state.breaks || []).forEach(function (item) {
-
-    if (!item?.in || !item?.out) {
-      return;
-    }
-
-    const breakIn = new Date(item.in);
-    const breakOut = new Date(item.out);
-
-    if (
-      isNaN(breakIn.getTime()) ||
-      isNaN(breakOut.getTime())
-    ) {
-      return;
-    }
-
-    result.break_minutes += Math.max(
-      0,
-      Math.round(
-        (breakOut.getTime() -
-          breakIn.getTime()) / 60000
-      )
-    );
-
-  });
-
-  // --------------------------------------------------
-  // Lunch
-  // --------------------------------------------------
-
-  if (
-    state.lunch?.in &&
-    state.lunch?.out
-  ) {
-
-    const lunchIn = new Date(state.lunch.in);
-    const lunchOut = new Date(state.lunch.out);
-
-    if (
-      !isNaN(lunchIn.getTime()) &&
-      !isNaN(lunchOut.getTime())
-    ) {
-
-      result.lunch_minutes += Math.max(
-        0,
-        Math.round(
-          (lunchOut.getTime() -
-            lunchIn.getTime()) / 60000
-        )
-      );
-
-    }
-
-  }
-
-  // --------------------------------------------------
-  // Worked / Paid
-  // --------------------------------------------------
-
-  result.worked_minutes = Math.max(
-    0,
-    Math.round(
-      (timeOut.getTime() -
-        timeIn.getTime()) / 60000
-    )
-  );
-
-  result.paid_minutes = Math.max(
-    0,
-    result.worked_minutes -
-      result.break_minutes -
-      result.lunch_minutes
-  );
-
-  // --------------------------------------------------
-  // Before Shift OT
-  // --------------------------------------------------
-
-  if (timeIn < shiftStart) {
-
-    result.before_shift_minutes =
-      Math.round(
-        (shiftStart.getTime() -
-          timeIn.getTime()) / 60000
-      );
-
-  }
-
-  // --------------------------------------------------
-  // After Shift OT
-  // --------------------------------------------------
-
-  if (timeOut > shiftEnd) {
-
-    result.after_shift_minutes =
-      Math.round(
-        (timeOut.getTime() -
-          shiftEnd.getTime()) / 60000
-      );
-
-  }
-
-  // --------------------------------------------------
-  // Total OT
-  // --------------------------------------------------
-
-  result.overtime_minutes =
-    result.before_shift_minutes +
-    result.after_shift_minutes;
-
-  // --------------------------------------------------
-  // Regular Minutes
-  // --------------------------------------------------
-
-  result.regular_minutes = Math.max(
-    0,
-    result.paid_minutes -
-      result.overtime_minutes
-  );
-
-  // Never exceed scheduled shift
-
-  result.regular_minutes = Math.min(
-    result.regular_minutes,
-    result.scheduled_minutes
-  );
-
-  // --------------------------------------------------
-  // Hours
-  // --------------------------------------------------
-
-  result.worked_hours =
-    +(result.worked_minutes / 60).toFixed(2);
-
-  result.paid_hours =
-    +(result.paid_minutes / 60).toFixed(2);
-
-  result.regular_hours =
-    +(result.regular_minutes / 60).toFixed(2);
-
-  result.overtime_hours =
-    +(result.overtime_minutes / 60).toFixed(2);
-
-  return result;
-
 }
