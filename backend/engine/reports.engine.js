@@ -48,6 +48,7 @@ function buildEmployeeReport(workspace_id, email, range, settings) {
 
         shift_id: user.shift_id,
 
+        // @ts-ignore
         ...attendance
       });
 

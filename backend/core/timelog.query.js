@@ -23,21 +23,16 @@ function getCurrentState(workspace_id, email, shift_id, timestamp) {
     ? getShiftWorkDate(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, targetTime)
     : formatDateKey(targetTime);
 
+  const settings = getWorkspaceSettings(normalizedWorkspaceId);
+
   return buildAttendanceSnapshot(
     logs,
     normalizedShiftId ? "shift" : "day",
     normalizedShiftId,
     workDate,
+    settings,
+    workDate,
   );
-
-  // const settings = getWorkspaceSettings(normalizedWorkspaceId);
-
-  // return buildAttendanceState(
-  //   attendance,
-  //   normalizedWorkspaceId,
-  //   normalizedShiftId,
-  //   settings
-  // );
 }
 
 function getTodayTimeLogsByEmail(workspace_id, email, timestamp, shift) {
@@ -179,34 +174,49 @@ function getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date) 
     date: normalizedWorkDate,
   });
 
-  // const timelogState = buildTimeLogState(logs);
+  const settings = getWorkspaceSettings(normalizedWorkspaceId);
 
-  // const settings = getWorkspaceSettings(workspace_id);
+    const workDate = normalizedShiftId
+    ? getShiftWorkDate(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, normalizedWorkDate)
+    : formatDateKey(normalizedWorkDate);
 
-  // const window = resolveShiftWindowByWorkDate(
-  //   shift,
-  //   work_date,
-  // );
 
-  const attendance = buildAttendanceSnapshot(
+  return buildAttendanceSnapshot(
     logs,
     "shift",
     normalizedShiftId,
-    normalizedWorkDate,
+    workDate,
+    settings,
+    workDate,
   );
 
-  // const settings = getWorkspaceSettings(normalizedWorkspaceId);
 
 
 }
 
-function buildAttendanceSnapshot(logs, scope, shift_id, work_date) {
-  const state = buildTimeLogState(logs);
+function buildAttendanceSnapshot(
+  logs,
+  scope,
+  shift,
+  work_date,
+  settings,
+  timestamp
+) {
+  const timelogState = buildTimeLogState(logs);
+
+  const attendance = buildAttendanceState(
+    shift,
+    timelogState,
+    {
+      settings,
+      timestamp,
+    }
+  );
 
   return {
-    ...state,
+    ...attendance,
+
     scope,
-    shift_id: shift_id || "",
     work_date,
     raw_logs: logs,
   };

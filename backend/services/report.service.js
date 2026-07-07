@@ -15,8 +15,11 @@ function enrichReportRows(workspace_id, rows) {
       department_id: user.department_id || "",
       role: user.role || "",
 
+      // @ts-ignore
       shift_name: shift.shift_name || "",
+      // @ts-ignore
       shift_start: shift.start_time || "",
+      // @ts-ignore
       shift_end: shift.end_time || "",
     };
   });
@@ -53,7 +56,7 @@ function api_getReports(workspace_id, email, shift_id, role, range) {
     settings
   );
   
-  return rows;
+  // return rows;
   
   rows = enrichReportRows(workspace_id, rows);
 
