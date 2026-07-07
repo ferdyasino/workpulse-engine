@@ -198,15 +198,6 @@ function buildAttendanceSnapshot(
 ) {
   const state = buildTimeLogState(logs);
 
-  // const attendance = buildAttendanceState(
-  //   shift,
-  //   timelogState,
-  //   {
-  //     settings,
-  //     timestamp,
-  //   }
-  // );
-
   return {
     ...state,
     scope,
