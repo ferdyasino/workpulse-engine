@@ -1,6 +1,7 @@
 function buildEmployeeReport(workspace_id, email, range, settings) {
   workspace_id = normalize("workspace_id", workspace_id);
   email = normalize("email", email);
+  range = normalize("range", range);
 
   if (!workspace_id) {
     throw new Error("workspace_id is required");
@@ -48,6 +49,7 @@ function buildEmployeeReport(workspace_id, email, range, settings) {
 
         shift_id: user.shift_id,
 
+        // @ts-ignore
         ...attendance
       });
 

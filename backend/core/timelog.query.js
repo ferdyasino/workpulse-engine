@@ -23,21 +23,14 @@ function getCurrentState(workspace_id, email, shift_id, timestamp) {
     ? getShiftWorkDate(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, targetTime)
     : formatDateKey(targetTime);
 
+
   return buildAttendanceSnapshot(
     logs,
     normalizedShiftId ? "shift" : "day",
     normalizedShiftId,
     workDate,
+    normalizedWorkspaceId
   );
-
-  // const settings = getWorkspaceSettings(normalizedWorkspaceId);
-
-  // return buildAttendanceState(
-  //   attendance,
-  //   normalizedWorkspaceId,
-  //   normalizedShiftId,
-  //   settings
-  // );
 }
 
 function getTodayTimeLogsByEmail(workspace_id, email, timestamp, shift) {
@@ -179,34 +172,44 @@ function getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date) 
     date: normalizedWorkDate,
   });
 
-  // const timelogState = buildTimeLogState(logs);
+  const settings = getWorkspaceSettings(normalizedWorkspaceId);
 
-  // const settings = getWorkspaceSettings(workspace_id);
+    const workDate = normalizedShiftId
+    ? getShiftWorkDate(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, normalizedWorkDate)
+    : formatDateKey(normalizedWorkDate);
 
-  // const window = resolveShiftWindowByWorkDate(
-  //   shift,
-  //   work_date,
-  // );
 
-  const attendance = buildAttendanceSnapshot(
+  return buildAttendanceSnapshot(
     logs,
     "shift",
     normalizedShiftId,
-    normalizedWorkDate,
+    workDate,
+    normalizedWorkspaceId
   );
-
-  // const settings = getWorkspaceSettings(normalizedWorkspaceId);
-
 
 }
 
-function buildAttendanceSnapshot(logs, scope, shift_id, work_date) {
+function buildAttendanceSnapshot(
+  logs,
+  scope,
+  shift,
+  work_date,
+  workspace_id
+) {
   const state = buildTimeLogState(logs);
+
+  // const attendance = buildAttendanceState(
+  //   shift,
+  //   timelogState,
+  //   {
+  //     settings,
+  //     timestamp,
+  //   }
+  // );
 
   return {
     ...state,
     scope,
-    shift_id: shift_id || "",
     work_date,
     raw_logs: logs,
   };

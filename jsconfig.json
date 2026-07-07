@@ -1,8 +1,24 @@
 {
   "compilerOptions": {
-    "checkJs": true,
+    "target": "ES2022",
+
     "allowJs": true,
-    "noEmit": true
+    "checkJs": true,
+    "noEmit": true,
+
+    "strict": false,
+
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+
+    "moduleResolution": "Bundler",
+    "skipLibCheck": true,
+
+    "maxNodeModuleJsDepth": 0
   },
-  "include": ["**/*.js"]
+  "include": ["**/*.js"],
+  "exclude": [
+    "node_modules"
+  ]
 }
