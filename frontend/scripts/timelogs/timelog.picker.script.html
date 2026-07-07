@@ -24,6 +24,7 @@
 
     google.script.run
       .withSuccessHandler((state) => {
+        console.log("state", state);
         APP.attendanceState = state;
         APP.timeLogs = state.raw_logs || [];
         APP.sessions = state.sessions || [];
@@ -34,11 +35,6 @@
       .withFailureHandler((err) => {
         showToast(err.message, "error");
       })
-      .getAttendanceStateByWorkDate(
-        user.workspace_id,
-        user.email,
-        user.shift_id,
-        workDate,
-      );
+      .getAttendanceStateByWorkDate(user.workspace_id, user.email, user.shift_id, workDate);
   }
 </script>
