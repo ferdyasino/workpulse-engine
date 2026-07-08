@@ -1,0 +1,113 @@
+<script>
+  const AttendanceDebugger = {
+    storageKey: "attendance_debugger",
+
+    state: {
+      workspace_id: "",
+      email: "",
+      shift_id: "",
+      work_date: "",
+      result: null,
+    },
+
+    init() {
+      if (this.initialized) return;
+      this.initialized = true;
+
+      document.getElementById("attendanceRun")?.addEventListener("click", AttendanceDebugger.run);
+
+      AttendanceDebugger.restore();
+
+      document.getElementById("attendanceDate").value =
+        AttendanceDebugger.state.work_date || new Date().toISOString().substring(0, 10);
+
+      document.getElementById("attendanceEmail").value = AttendanceDebugger.state.email || "";
+
+      AttendanceDebugger.loadShifts();
+    },
+
+    loadShifts() {
+      google.script.run
+        .withSuccessHandler(function (shifts) {
+          const select = document.getElementById("attendanceShift");
+
+          select.innerHTML = "";
+
+          shifts.forEach(function (shift) {
+            const option = document.createElement("option");
+
+            option.value = shift.shift_id;
+            option.textContent = shift.shift_name;
+
+            if (shift.shift_id === AttendanceDebugger.state.shift_id) {
+              option.selected = true;
+            }
+
+            select.appendChild(option);
+          });
+        })
+        .api_getShifts();
+    },
+
+    run() {
+      AttendanceDebugger.state.workspace_id =
+        APP.workspace_id || localStorage.getItem("workspace_id") || "";
+
+      AttendanceDebugger.state.email = document.getElementById("attendanceEmail").value.trim();
+
+      AttendanceDebugger.state.shift_id = document.getElementById("attendanceShift").value;
+
+      AttendanceDebugger.state.work_date = document.getElementById("attendanceDate").value;
+
+      AttendanceDebugger.save();
+
+      google.script.run
+        .withSuccessHandler(function (result) {
+          AttendanceDebugger.state.result = result;
+          AttendanceDebugger.render();
+        })
+        .withFailureHandler(function (err) {
+          document.getElementById("attendanceResult").textContent = err.message || String(err);
+        })
+        .api_debugAttendanceEngine(
+          AttendanceDebugger.state.workspace_id,
+          AttendanceDebugger.state.email,
+          AttendanceDebugger.state.shift_id,
+          AttendanceDebugger.state.work_date,
+        );
+    },
+
+    render() {
+      document.getElementById("attendanceResult").textContent = JSON.stringify(
+        AttendanceDebugger.state.result,
+        null,
+        2,
+      );
+    },
+
+    save() {
+      localStorage.setItem(
+        AttendanceDebugger.storageKey,
+        JSON.stringify({
+          email: AttendanceDebugger.state.email,
+          shift_id: AttendanceDebugger.state.shift_id,
+          work_date: AttendanceDebugger.state.work_date,
+        }),
+      );
+    },
+
+    restore() {
+      const raw = localStorage.getItem(AttendanceDebugger.storageKey);
+
+      if (!raw) return;
+
+      try {
+        Object.assign(AttendanceDebugger.state, JSON.parse(raw));
+      } catch (e) {
+        console.error(e);
+      }
+    },
+  };
+
+  document.addEventListener("DOMContentLoaded", AttendanceDebugger.init);
+</script>

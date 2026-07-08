@@ -82,6 +82,7 @@ function workspaceExists(workspace_id) {
 
 function getWorkspaceDb(workspace_id) {
   if (!workspace_id) throw new Error("workspace_id is required");
+  // @ts-ignore
   return SpreadsheetApp.openById(workspace_id);
 }
 
@@ -145,6 +146,7 @@ function getTimelogDb(workspace_id) {
     throw new Error(`Missing timelog DB: ${workspace_id}`);
   }
 
+  // @ts-ignore
   return SpreadsheetApp.openById(workspace.timelog_spreadsheet_id);
 }
 

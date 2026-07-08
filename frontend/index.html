@@ -110,6 +110,14 @@
 
   </section>
 
+    <section
+    id="page-debug"
+    class="app-page d-none">
+
+    <?!= include("frontend/pages/attendance.debug"); ?>
+
+  </section>
+
   <!-- ERROR -->
   <section
   id="page-error"
@@ -117,7 +125,7 @@
 
         <?!= include("frontend/pages/error"); ?>
 
-      </section>
+  </section>
 
     </main>
 
@@ -145,6 +153,7 @@
     <?!= include("frontend/scripts/helpers/shift.helper"); ?>
 
     <?!= include("frontend/scripts/login.script"); ?>
+    <?!= include("frontend/scripts/attendance.debug.script"); ?>
     <?!= include("frontend/scripts/settings.script"); ?>
     <?!= include("frontend/scripts/settings.api.script"); ?>
     <?!= include("frontend/scripts/settings.render.script"); ?>

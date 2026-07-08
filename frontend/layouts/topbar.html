@@ -14,12 +14,7 @@
     <span>Online</span>
 
     <div class="dropdown">
-      <button
-        class="btn btn-glass btn-sm dropdown-toggle"
-        data-bs-toggle="dropdown"
-      >
-        ⚙
-      </button>
+      <button class="btn btn-glass btn-sm dropdown-toggle" data-bs-toggle="dropdown">⚙</button>
 
       <ul class="dropdown-menu dropdown-menu-end">
         <li id="dashDropId">
@@ -35,7 +30,12 @@
             Admin Dashboard
           </button>
         </li>
-
+        <li id="adminDebugger" class="d-none">
+          <button class="dropdown-item" onclick="go('debug')">
+            <i class="bi bi-bug me-2"></i>
+            Attendance Debugger
+          </button>
+        </li>
         <li id="reportsId">
           <button class="dropdown-item" onclick="go('reports')">
             <i class="bi bi-file-earmark-bar-graph me-2"></i>
