@@ -244,21 +244,121 @@ function api_debugAttendanceEngine(
   workspace_id,
   email,
   shift_id,
-  work_date
+  start_date,
+  end_date,
 ) {
-  const normalizedWorkspaceId = normalize(
-    "workspace_id",
-    workspace_id
-  );
+  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
+  const normalizedEmail = normalize("email", email);
+  const normalizedShiftId = normalize("shift_id", shift_id);
 
   if (!normalizedWorkspaceId) {
     throw new Error("workspace_id is required");
   }
 
-  return getAttendanceStateByWorkDate(
-    normalizedWorkspaceId,
-    email,
-    shift_id,
-    work_date
-  );
+  if (!normalizedEmail) {
+    throw new Error("email is required");
+  }
+
+  if (!normalizedShiftId) {
+    throw new Error("shift_id is required");
+  }
+
+  start_date = normalize("date", start_date);
+  end_date = normalize("date", end_date) || start_date;
+
+  if (!start_date) {
+    throw new Error("start_date is required");
+  }
+
+  const start = new Date(start_date);
+  const end = new Date(end_date);
+
+  if (start > end) {
+    throw new Error("start_date cannot be after end_date");
+  }
+
+  const days = [];
+  const summary = {
+    total_days: 0,
+    present: 0,
+    absent: 0,
+    late: 0,
+    undertime: 0,
+    overtime: 0,
+    worked_minutes: 0,
+    regular_minutes: 0,
+    overtime_minutes: 0,
+    late_minutes: 0,
+    undertime_minutes: 0,
+    break_minutes: 0,
+    lunch_minutes: 0,
+  };
+
+  const cursor = new Date(start);
+
+  while (cursor <= end) {
+    const workDate = formatDateKey(cursor);
+
+    const attendance = getAttendanceStateByWorkDate(
+      normalizedWorkspaceId,
+      normalizedEmail,
+      normalizedShiftId,
+      workDate,
+    );
+
+    days.push(attendance);
+
+    summary.total_days++;
+
+    summary.worked_minutes += Number(attendance.worked_minutes || 0);
+    summary.regular_minutes += Number(attendance.regular_minutes || 0);
+    summary.overtime_minutes += Number(attendance.overtime_minutes || 0);
+    summary.late_minutes += Number(attendance.late_minutes || 0);
+    summary.undertime_minutes += Number(attendance.undertime_minutes || 0);
+    summary.break_minutes += Number(attendance.break_minutes || 0);
+    summary.lunch_minutes += Number(attendance.lunch_minutes || 0);
+
+    switch (attendance.attendance_status) {
+      case "PRESENT":
+        summary.present++;
+        break;
+
+      case "LATE":
+        summary.present++;
+        summary.late++;
+        break;
+
+      case "UNDERTIME":
+        summary.present++;
+        summary.undertime++;
+        break;
+
+      case "OVERTIME":
+        summary.present++;
+        summary.overtime++;
+        break;
+
+      case "ABSENT":
+        summary.absent++;
+        break;
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return {
+    employee: {
+      email: normalizedEmail,
+      shift_id: normalizedShiftId,
+    },
+
+    range: {
+      start_date: start_date,
+      end_date: end_date,
+    },
+
+    summary: summary,
+
+    days: days,
+  };
 }

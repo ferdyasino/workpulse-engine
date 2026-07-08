@@ -1,85 +1,165 @@
 <script>
   const AttendanceDebugger = {
+    initialized: false,
+
     storageKey: "attendance_debugger",
 
     state: {
       workspace_id: "",
+
+      users: [],
+      shifts: [],
+
       email: "",
       shift_id: "",
-      work_date: "",
+
+      start_date: "",
+      end_date: "",
+
       result: null,
     },
 
     init() {
       if (this.initialized) return;
+
       this.initialized = true;
 
-      document.getElementById("attendanceRun")?.addEventListener("click", AttendanceDebugger.run);
+      this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
 
-      AttendanceDebugger.restore();
+      this.restore();
 
-      document.getElementById("attendanceDate").value =
-        AttendanceDebugger.state.work_date || new Date().toISOString().substring(0, 10);
+      const today = new Date().toISOString().substring(0, 10);
 
-      document.getElementById("attendanceEmail").value = AttendanceDebugger.state.email || "";
+      document.getElementById("attendanceStartDate").value = this.state.start_date || today;
 
-      AttendanceDebugger.loadShifts();
+      document.getElementById("attendanceEndDate").value = this.state.end_date || today;
+
+      document.getElementById("attendanceRun")?.addEventListener("click", () => this.run());
+
+      document
+        .getElementById("attendanceUser")
+        ?.addEventListener("change", () => this.onUserChange());
+
+      this.loadReferenceData();
     },
 
-    loadShifts() {
+    loadReferenceData() {
       google.script.run
-        .withSuccessHandler(function (shifts) {
-          const select = document.getElementById("attendanceShift");
+        .withSuccessHandler((users) => {
+          this.state.users = Array.isArray(users) ? users : [];
 
-          select.innerHTML = "";
+          this.renderUsers();
 
-          shifts.forEach(function (shift) {
-            const option = document.createElement("option");
+          google.script.run
+            .withSuccessHandler((shifts) => {
+              this.state.shifts = Array.isArray(shifts) ? shifts : [];
 
-            option.value = shift.shift_id;
-            option.textContent = shift.shift_name;
+              this.renderShifts();
 
-            if (shift.shift_id === AttendanceDebugger.state.shift_id) {
-              option.selected = true;
-            }
+              if (this.state.email) {
+                document.getElementById("attendanceUser").value = this.state.email;
 
-            select.appendChild(option);
-          });
+                this.onUserChange();
+              }
+            })
+            .withFailureHandler(console.error)
+            .getAllShifts(this.state.workspace_id);
         })
-        .api_getShifts();
+        .withFailureHandler(console.error)
+        .getUsers(this.state.workspace_id);
+    },
+
+    renderUsers() {
+      const select = document.getElementById("attendanceUser");
+
+      if (!select) return;
+
+      select.innerHTML = "";
+
+      this.state.users.forEach((user) => {
+        const option = document.createElement("option");
+
+        option.value = user.email;
+
+        option.textContent = `${user.fullname || user.name} (${user.email})`;
+
+        option.dataset.shiftId = user.shift_id || "";
+
+        select.appendChild(option);
+      });
+    },
+
+    renderShifts() {
+      const select = document.getElementById("attendanceShift");
+
+      if (!select) return;
+
+      select.innerHTML = "";
+
+      this.state.shifts.forEach((shift) => {
+        const option = document.createElement("option");
+
+        option.value = shift.shift_id;
+
+        option.textContent = shift.shift_name;
+
+        select.appendChild(option);
+      });
+
+      if (this.state.shift_id) {
+        select.value = this.state.shift_id;
+      }
+    },
+
+    onUserChange() {
+      const userSelect = document.getElementById("attendanceUser");
+
+      const option = userSelect.options[userSelect.selectedIndex];
+
+      if (!option) return;
+
+      this.state.email = option.value;
+
+      this.state.shift_id = option.dataset.shiftId || "";
+
+      document.getElementById("attendanceShift").value = this.state.shift_id;
     },
 
     run() {
-      AttendanceDebugger.state.workspace_id =
-        APP.workspace_id || localStorage.getItem("workspace_id") || "";
+      this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
 
-      AttendanceDebugger.state.email = document.getElementById("attendanceEmail").value.trim();
+      this.state.email = document.getElementById("attendanceUser").value;
 
-      AttendanceDebugger.state.shift_id = document.getElementById("attendanceShift").value;
+      this.state.shift_id = document.getElementById("attendanceShift").value;
 
-      AttendanceDebugger.state.work_date = document.getElementById("attendanceDate").value;
+      this.state.start_date = document.getElementById("attendanceStartDate").value;
 
-      AttendanceDebugger.save();
+      this.state.end_date = document.getElementById("attendanceEndDate").value;
+
+      this.save();
+
+      document.getElementById("attendanceResult").textContent = "Loading...";
 
       google.script.run
-        .withSuccessHandler(function (result) {
-          AttendanceDebugger.state.result = result;
-          AttendanceDebugger.render();
+        .withSuccessHandler((result) => {
+          this.state.result = result;
+          this.render();
         })
-        .withFailureHandler(function (err) {
+        .withFailureHandler((err) => {
           document.getElementById("attendanceResult").textContent = err.message || String(err);
         })
         .api_debugAttendanceEngine(
-          AttendanceDebugger.state.workspace_id,
-          AttendanceDebugger.state.email,
-          AttendanceDebugger.state.shift_id,
-          AttendanceDebugger.state.work_date,
+          this.state.workspace_id,
+          this.state.email,
+          this.state.shift_id,
+          this.state.start_date,
+          this.state.end_date,
         );
     },
 
     render() {
       document.getElementById("attendanceResult").textContent = JSON.stringify(
-        AttendanceDebugger.state.result,
+        this.state.result,
         null,
         2,
       );
@@ -87,27 +167,28 @@
 
     save() {
       localStorage.setItem(
-        AttendanceDebugger.storageKey,
+        this.storageKey,
         JSON.stringify({
-          email: AttendanceDebugger.state.email,
-          shift_id: AttendanceDebugger.state.shift_id,
-          work_date: AttendanceDebugger.state.work_date,
+          email: this.state.email,
+          shift_id: this.state.shift_id,
+          start_date: this.state.start_date,
+          end_date: this.state.end_date,
         }),
       );
     },
 
     restore() {
-      const raw = localStorage.getItem(AttendanceDebugger.storageKey);
+      const raw = localStorage.getItem(this.storageKey);
 
       if (!raw) return;
 
       try {
-        Object.assign(AttendanceDebugger.state, JSON.parse(raw));
-      } catch (e) {
-        console.error(e);
+        Object.assign(this.state, JSON.parse(raw));
+      } catch (err) {
+        console.error(err);
       }
     },
   };
 
-  document.addEventListener("DOMContentLoaded", AttendanceDebugger.init);
+  document.addEventListener("DOMContentLoaded", () => AttendanceDebugger.init());
 </script>
