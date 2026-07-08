@@ -1,0 +1,31 @@
+<div class="container py-3">
+  <h3>Attendance Engine Debugger</h3>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Employee Email</label>
+      <input id="attendanceEmail" class="form-control" type="email" />
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Shift</label>
+      <select id="attendanceShift" class="form-select"></select>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Work Date</label>
+      <input id="attendanceDate" class="form-control" type="date" />
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <button id="attendanceRun" class="btn btn-primary">Run Attendance Engine</button>
+  </div>
+
+  <hr />
+
+  <pre
+    id="attendanceResult"
+    style="min-height: 500px; background: #111; color: #0f0; padding: 20px; overflow: auto"
+  ></pre>
+</div>

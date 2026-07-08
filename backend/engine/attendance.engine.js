@@ -8,8 +8,15 @@
 function buildAttendanceState(shift, timelogState, options) {
   options = options || {};
 
-  const settings = options.settings;
-  const window = shift ? resolveShiftWindow(shift, options.timestamp) : null;
+  const settings = options.settings || {};
+
+  const window = shift
+    ? resolveAttendanceWindow(
+        shift,
+        options.timestamp,
+        settings
+      )
+    : null;
 
   const attendance = {
     // --------------------------------------------------
@@ -231,4 +238,27 @@ function determineAttendanceStatus(attendance, window, settings, now) {
   }
 
   return "PRESENT";
+}
+
+function api_debugAttendanceEngine(
+  workspace_id,
+  email,
+  shift_id,
+  work_date
+) {
+  const normalizedWorkspaceId = normalize(
+    "workspace_id",
+    workspace_id
+  );
+
+  if (!normalizedWorkspaceId) {
+    throw new Error("workspace_id is required");
+  }
+
+  return getAttendanceStateByWorkDate(
+    normalizedWorkspaceId,
+    email,
+    shift_id,
+    work_date
+  );
 }

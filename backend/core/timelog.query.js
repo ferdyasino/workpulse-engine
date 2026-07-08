@@ -189,6 +189,8 @@ function getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date) 
 
 }
 
+
+
 function buildAttendanceSnapshot(
   logs,
   scope,
