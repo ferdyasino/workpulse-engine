@@ -128,7 +128,7 @@
 
       if (!select) return;
 
-      select.innerHTML = `<option value="">All Employees</option>`;
+      select.innerHTML = "";
 
       this.state.users.forEach((user) => {
         const option = document.createElement("option");
@@ -142,8 +142,21 @@
         select.appendChild(option);
       });
 
-      if (this.state.email) {
-        select.value = this.state.email;
+      /*
+       * Always default to logged-in user
+       */
+      const currentEmail = APP.user?.email || this.state.email;
+
+      if (currentEmail) {
+        this.state.email = currentEmail;
+
+        select.value = currentEmail;
+
+        const currentUser = this.state.users.find((user) => user.email === currentEmail);
+
+        if (currentUser) {
+          this.state.shift_id = currentUser.shift_id || "";
+        }
       }
     },
 
@@ -295,7 +308,7 @@
         })
 
         .withFailureHandler((err) => {
-          alert(err.message || err);
+          show(err.message || err);
         })
 
         .api_getReports(
@@ -350,11 +363,11 @@
 
       if (!rows.length) {
         tbody.innerHTML = `<tr>
-        <td colspan="11"
-        class="text-center text-muted py-5">
-        No reports found.
-        </td>
-      </tr>`;
+          <td colspan="11"
+          class="text-center text-muted py-5">
+          No reports found.
+          </td>
+        </tr>`;
 
         return;
       }
@@ -363,37 +376,37 @@
         .map(
           (row) => `
 
-      <tr>
+        <tr>
 
-      <td>${row.date || "-"}</td>
+        <td>${row.date || "-"}</td>
 
-      <td>${row.fullname || row.email || "-"}</td>
+        <td>${row.fullname || row.email || "-"}</td>
 
-      <td>${row.shift_name || "-"}</td>
+        <td>${row.shift_name || "-"}</td>
 
-      <td>${this.formatDateTime(row.time_in)}</td>
+        <td>${this.formatDateTime(row.time_in)}</td>
 
-      <td>${this.formatDateTime(row.time_out)}</td>
+        <td>${this.formatDateTime(row.time_out)}</td>
 
-      <td>${formatMinutes(row.worked_minutes || 0)}</td>
+        <td>${formatMinutes(row.worked_minutes || 0)}</td>
 
-      <td>${formatMinutes(row.regular_minutes || 0)}</td>
+        <td>${formatMinutes(row.regular_minutes || 0)}</td>
 
-      <td>${formatMinutes(row.overtime_minutes || 0)}</td>
+        <td>${formatMinutes(row.overtime_minutes || 0)}</td>
 
-      <td>${formatMinutes(row.late_minutes || 0)}</td>
+        <td>${formatMinutes(row.late_minutes || 0)}</td>
 
-      <td>${formatMinutes(row.undertime_minutes || 0)}</td>
+        <td>${formatMinutes(row.undertime_minutes || 0)}</td>
 
-      <td>
-      <span class="badge ${statusBadgeClass(row.status)}">
-      ${DISPLAY.status(row.status)}
-      </span>
-      </td>
+        <td>
+        <span class="badge ${statusBadgeClass(row.status)}">
+        ${DISPLAY.status(row.status)}
+        </span>
+        </td>
 
-      </tr>
+        </tr>
 
-      `,
+        `,
         )
         .join("");
     },
