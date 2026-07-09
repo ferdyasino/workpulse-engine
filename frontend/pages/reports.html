@@ -4,12 +4,28 @@
     <div class="d-flex justify-content-between align-items-center">
       <div>
         <h4 class="mb-0">Reports</h4>
-        <small class="text-muted">Attendance & Payroll Summary</small>
+
+        <small class="text-muted"> Attendance & Payroll Summary </small>
       </div>
 
-      <div class="text-end">
-        <div class="text-muted small">Timezone</div>
-        <div class="fw-semibold" id="reportTimezone">Asia/Manila</div>
+      <div class="col-lg-3">
+        <label class="form-label mb-1"> Timezone </label>
+
+        <select id="reportTimezoneSelect" class="form-select">
+          <option value="Asia/Manila">Asia/Manila</option>
+
+          <option value="UTC">UTC</option>
+
+          <option value="America/New_York">America/New_York</option>
+
+          <option value="Europe/London">Europe/London</option>
+
+          <option value="Asia/Tokyo">Asia/Tokyo</option>
+
+          <option value="Asia/Singapore">Asia/Singapore</option>
+
+          <option value="Australia/Sydney">Australia/Sydney</option>
+        </select>
       </div>
     </div>
   </div>
@@ -18,7 +34,7 @@
   <div class="glass glass-card mb-3">
     <div class="row g-3">
       <div class="col-lg-4">
-        <label class="form-label">Employee</label>
+        <label class="form-label"> Employee </label>
 
         <select id="reportEmployee" class="form-select">
           <option value="">All Employees</option>
@@ -26,7 +42,7 @@
       </div>
 
       <div class="col-lg-3">
-        <label class="form-label">Shift</label>
+        <label class="form-label"> Shift </label>
 
         <select id="reportShift" class="form-select">
           <option value="">Assigned Shift</option>
@@ -34,19 +50,19 @@
       </div>
 
       <div class="col-lg-2">
-        <label class="form-label">Start Date</label>
+        <label class="form-label"> Start Date </label>
 
         <input id="reportStartDate" type="date" class="form-control" />
       </div>
 
       <div class="col-lg-2">
-        <label class="form-label">End Date</label>
+        <label class="form-label"> End Date </label>
 
         <input id="reportEndDate" type="date" class="form-control" />
       </div>
 
       <div class="col-lg-1 d-grid">
-        <label class="form-label">&nbsp;</label>
+        <label class="form-label"> &nbsp; </label>
 
         <button id="reportRun" class="btn btn-primary">Run</button>
       </div>
@@ -154,7 +170,6 @@
   </div>
 
   <!-- TABLE -->
-
   <div class="glass glass-card mt-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div>
@@ -169,25 +184,15 @@
         <thead>
           <tr>
             <th>Date</th>
-
             <th>Employee</th>
-
             <th>Shift</th>
-
             <th>Time In</th>
-
             <th>Time Out</th>
-
             <th>Worked</th>
-
             <th>Regular</th>
-
             <th>OT</th>
-
             <th>Late</th>
-
             <th>Undertime</th>
-
             <th>Status</th>
           </tr>
         </thead>

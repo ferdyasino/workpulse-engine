@@ -32,22 +32,40 @@
 
       this.restore();
 
-      const today = this.formatDateTZ(this.now());
+      this.bindEvents();
 
-      document.getElementById("reportStartDate").value = this.state.start_date || today;
+      this.loadSettings().then(() => {
+        this.applyTimezone();
 
-      document.getElementById("reportEndDate").value = this.state.end_date || today;
+        const today = this.formatDateTZ(this.now());
 
+        document.getElementById("reportStartDate").value = this.state.start_date || today;
+
+        document.getElementById("reportEndDate").value = this.state.end_date || today;
+
+        this.bindRangeButtons();
+      });
+
+      this.loadReferenceData();
+    },
+
+    bindEvents() {
       document.getElementById("reportRun")?.addEventListener("click", () => this.run());
 
       document
         .getElementById("reportEmployee")
         ?.addEventListener("change", () => this.onUserChange());
 
-      this.loadReferenceData();
+      document.getElementById("reportTimezoneSelect")?.addEventListener("change", (e) => {
+        this.state.timezone = e.target.value || "Asia/Manila";
 
-      this.loadSettings().finally(() => {
-        this.bindRangeButtons();
+        this.save();
+
+        const today = this.formatDateTZ(this.now());
+
+        document.getElementById("reportStartDate").value = today;
+
+        document.getElementById("reportEndDate").value = today;
       });
     },
 
@@ -65,18 +83,24 @@
         .then((settings) => {
           this.state.settings = settings || {};
 
-          this.state.timezone =
-            this.state.settings.TIMEZONE || this.state.settings.timezone || "Asia/Manila";
+          if (!this.state.timezone || this.state.timezone === "Asia/Manila") {
+            this.state.timezone =
+              this.state.settings.TIMEZONE || this.state.settings.timezone || "Asia/Manila";
+          }
 
-          document.getElementById("reportTimezone").textContent = this.state.timezone;
-
-          console.log("REPORT SETTINGS", this.state.settings);
-          console.log("TIMEZONE", this.state.timezone);
+          this.applyTimezone();
         })
         .catch((err) => {
           console.error(err);
-          this.state.settings = {};
         });
+    },
+
+    applyTimezone() {
+      const select = document.getElementById("reportTimezoneSelect");
+
+      if (select) {
+        select.value = this.state.timezone;
+      }
     },
 
     loadReferenceData() {
@@ -94,12 +118,6 @@
           this.state.shifts = Array.isArray(shifts) ? shifts : [];
 
           this.renderShifts();
-
-          if (this.state.email) {
-            document.getElementById("reportEmployee").value = this.state.email;
-
-            this.onUserChange();
-          }
         })
 
         .catch(console.error);
@@ -187,15 +205,15 @@
       });
 
       document.getElementById("reportThisWeek")?.addEventListener("click", () => {
-        const range = this.getWeekRange();
+        const r = this.getWeekRange();
 
-        this.setRange(range.start, range.end);
+        this.setRange(r.start, r.end);
       });
 
       document.getElementById("reportLastWeek")?.addEventListener("click", () => {
-        const range = this.getLastWeekRange();
+        const r = this.getWeekRange(-1);
 
-        this.setRange(range.start, range.end);
+        this.setRange(r.start, r.end);
       });
 
       document.getElementById("reportThisMonth")?.addEventListener("click", () => {
@@ -210,12 +228,6 @@
     getWeekStartDay() {
       const raw = this.state.settings?.WEEKLY_START_DAY ?? "Monday";
 
-      if (typeof raw === "number" && !isNaN(raw)) {
-        return raw;
-      }
-
-      const value = String(raw).trim().toLowerCase();
-
       const map = {
         sunday: 0,
         monday: 1,
@@ -226,7 +238,7 @@
         saturday: 6,
       };
 
-      return map[value] ?? 1;
+      return map[String(raw).toLowerCase()] ?? 1;
     },
 
     getWeekRange(offset = 0) {
@@ -236,9 +248,7 @@
 
       const startDay = this.getWeekStartDay();
 
-      const currentDay = now.getDay();
-
-      const diff = (currentDay - startDay + 7) % 7;
+      const diff = (now.getDay() - startDay + 7) % 7;
 
       const start = new Date(now);
 
@@ -250,12 +260,9 @@
 
       return {
         start: this.formatDateTZ(start),
+
         end: this.formatDateTZ(end),
       };
-    },
-
-    getLastWeekRange() {
-      return this.getWeekRange(-1);
     },
 
     setRange(start, end) {
@@ -265,8 +272,6 @@
     },
 
     run() {
-      this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
-
       this.state.email = document.getElementById("reportEmployee").value;
 
       this.state.shift_id = document.getElementById("reportShift").value;
@@ -277,16 +282,9 @@
 
       this.save();
 
-      const btn = document.getElementById("reportRun");
-
-      btn.disabled = true;
-
-      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>`;
-
       google.script.run
 
         .withSuccessHandler((result) => {
-          console.log("result", result);
           if (typeof result === "string") {
             result = JSON.parse(result);
           }
@@ -294,28 +292,23 @@
           this.state.report = result;
 
           this.render();
-
-          btn.disabled = false;
-
-          btn.innerHTML = "Run";
         })
 
         .withFailureHandler((err) => {
-          console.error(err);
-
-          btn.disabled = false;
-
-          btn.innerHTML = "Run";
-
-          alert(err.message || String(err));
+          alert(err.message || err);
         })
 
         .api_getReports(
           this.state.workspace_id,
+
           this.state.email,
+
           this.state.shift_id,
+
           APP.role,
+
           this.state.start_date,
+
           this.state.end_date,
         );
     },
@@ -327,57 +320,41 @@
     },
 
     renderSummary() {
-      const summary = this.state.report?.summary || {};
+      const s = this.state.report?.summary || {};
 
-      document.getElementById("repRunningHours").textContent = formatMinutes(
-        summary.worked_minutes || 0,
-      );
+      repRunningHours.textContent = formatMinutes(s.worked_minutes || 0);
 
-      document.getElementById("repRegularHours").textContent = formatMinutes(
-        summary.regular_minutes || 0,
-      );
+      repRegularHours.textContent = formatMinutes(s.regular_minutes || 0);
 
-      document.getElementById("repOTHours").textContent = formatMinutes(
-        summary.overtime_minutes || 0,
-      );
+      repOTHours.textContent = formatMinutes(s.overtime_minutes || 0);
 
-      document.getElementById("repUndertimeHours").textContent = formatMinutes(
-        summary.undertime_minutes || 0,
-      );
+      repUndertimeHours.textContent = formatMinutes(s.undertime_minutes || 0);
 
-      document.getElementById("repBreakHours").textContent = formatMinutes(
-        summary.break_minutes || 0,
-      );
+      repBreakHours.textContent = formatMinutes(s.break_minutes || 0);
 
-      document.getElementById("repLunchHours").textContent = formatMinutes(
-        summary.lunch_minutes || 0,
-      );
+      repLunchHours.textContent = formatMinutes(s.lunch_minutes || 0);
 
-      document.getElementById("repPresent").textContent = summary.present || 0;
+      repPresent.textContent = s.present || 0;
 
-      document.getElementById("repAbsent").textContent = summary.absent || 0;
+      repAbsent.textContent = s.absent || 0;
 
-      document.getElementById("repLate").textContent = summary.late || 0;
+      repLate.textContent = s.late || 0;
 
-      document.getElementById("repWorkdays").textContent = summary.workdays || 0;
+      repWorkdays.textContent = s.workdays || 0;
     },
 
     renderTable() {
       const tbody = document.getElementById("reportTableBody");
 
-      if (!tbody) return;
-
       const rows = this.state.report?.rows || [];
 
       if (!rows.length) {
-        tbody.innerHTML = `
-            <tr>
-              <td colspan="11"
-                  class="text-center text-muted py-5">
-                No reports found.
-              </td>
-            </tr>
-            `;
+        tbody.innerHTML = `<tr>
+        <td colspan="11"
+        class="text-center text-muted py-5">
+        No reports found.
+        </td>
+      </tr>`;
 
         return;
       }
@@ -386,50 +363,92 @@
         .map(
           (row) => `
 
-          <tr>
+      <tr>
 
-            <td>${row.date || "-"}</td>
+      <td>${row.date || "-"}</td>
 
-            <td>${row.fullname || row.email || "-"}</td>
+      <td>${row.fullname || row.email || "-"}</td>
 
-            <td>${row.shift_name || "-"}</td>
+      <td>${row.shift_name || "-"}</td>
 
+      <td>${this.formatDateTime(row.time_in)}</td>
 
-            <td>${row.time_in || "-"}</td>
+      <td>${this.formatDateTime(row.time_out)}</td>
 
-            <td>${row.time_out || "-"}</td>
+      <td>${formatMinutes(row.worked_minutes || 0)}</td>
 
+      <td>${formatMinutes(row.regular_minutes || 0)}</td>
 
-            <td>${formatMinutes(row.worked_minutes || 0)}</td>
+      <td>${formatMinutes(row.overtime_minutes || 0)}</td>
 
-            <td>${formatMinutes(row.regular_minutes || 0)}</td>
+      <td>${formatMinutes(row.late_minutes || 0)}</td>
 
-            <td>${formatMinutes(row.overtime_minutes || 0)}</td>
+      <td>${formatMinutes(row.undertime_minutes || 0)}</td>
 
+      <td>
+      <span class="badge ${statusBadgeClass(row.status)}">
+      ${DISPLAY.status(row.status)}
+      </span>
+      </td>
 
-            <td>${formatMinutes(row.late_minutes || 0)}</td>
+      </tr>
 
-            <td>${formatMinutes(row.undertime_minutes || 0)}</td>
-
-
-            <td>
-              <span class="badge ${statusBadgeClass(row.status)}">
-                ${DISPLAY.status(row.status)}
-              </span>
-            </td>
-
-
-          </tr>
-
-          `,
+      `,
         )
         .join("");
+    },
+
+    now() {
+      return new Date(
+        new Date().toLocaleString("en-US", {
+          timeZone: this.state.timezone,
+        }),
+      );
+    },
+
+    formatDateTZ(date) {
+      return new Intl.DateTimeFormat("en-CA", {
+        timeZone: this.state.timezone,
+
+        year: "numeric",
+
+        month: "2-digit",
+
+        day: "2-digit",
+      }).format(date);
+    },
+
+    formatDateTime(value) {
+      if (!value) {
+        return "-";
+      }
+
+      const date = new Date(value);
+
+      if (isNaN(date.getTime())) {
+        return "-";
+      }
+
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: this.state.timezone || "Asia/Manila",
+
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+
+        hour: "2-digit",
+        minute: "2-digit",
+
+        hour12: true,
+      }).format(date);
     },
 
     save() {
       localStorage.setItem(
         this.storageKey,
         JSON.stringify({
+          timezone: this.state.timezone,
+
           email: this.state.email,
 
           shift_id: this.state.shift_id,
@@ -444,41 +463,9 @@
     restore() {
       try {
         Object.assign(this.state, JSON.parse(localStorage.getItem(this.storageKey) || "{}"));
-      } catch (err) {
-        console.error(err);
+      } catch (e) {
+        console.error(e);
       }
-    },
-
-    formatDate(date) {
-      if (!(date instanceof Date) || isNaN(date.getTime())) {
-        console.error("Invalid date:", date);
-        return "";
-      }
-
-      const year = date.getFullYear();
-
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-
-      const day = String(date.getDate()).padStart(2, "0");
-
-      return `${year}-${month}-${day}`;
-    },
-
-    now() {
-      return new Date(
-        new Date().toLocaleString("en-US", {
-          timeZone: this.state.timezone || "Asia/Manila",
-        }),
-      );
-    },
-
-    formatDateTZ(date) {
-      return new Intl.DateTimeFormat("en-CA", {
-        timeZone: this.state.timezone || "Asia/Manila",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).format(date);
     },
   };
 
