@@ -16,6 +16,7 @@
 
       email: "",
       shift_id: "",
+      role: "",
 
       start_date: "",
       end_date: "",
@@ -30,7 +31,7 @@
 
       this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
 
-      this.restore();
+      // this.restore();
 
       this.bindEvents();
 
@@ -128,36 +129,47 @@
 
       if (!select) return;
 
+      const isAdmin = ["ADMIN", "OWNER", "HR", "SUPERADMIN"].includes(
+        String(APP.role || "").toUpperCase(),
+      );
+
       select.innerHTML = "";
+
+      if (isAdmin) {
+        const all = document.createElement("option");
+        all.value = "";
+        all.textContent = "All Employees";
+        select.appendChild(all);
+      }
 
       this.state.users.forEach((user) => {
         const option = document.createElement("option");
 
         option.value = user.email;
-
         option.textContent = `${user.fullname || user.name} (${user.email})`;
-
         option.dataset.shiftId = user.shift_id || "";
 
         select.appendChild(option);
       });
 
-      /*
-       * Always default to logged-in user
-       */
-      const currentEmail = APP.user?.email || this.state.email;
+      const currentEmail = APP.user?.email || "";
 
-      if (currentEmail) {
-        this.state.email = currentEmail;
+      this.state.email = currentEmail;
 
-        select.value = currentEmail;
-
-        const currentUser = this.state.users.find((user) => user.email === currentEmail);
-
-        if (currentUser) {
-          this.state.shift_id = currentUser.shift_id || "";
+      if (isAdmin) {
+        if (select.querySelector(`option[value="${currentEmail}"]`)) {
+          select.value = currentEmail;
         }
+      } else {
+        select.value = currentEmail;
+        select.disabled = true;
       }
+
+      const currentUser = this.state.users.find((u) => u.email === currentEmail);
+
+      this.state.shift_id = currentUser?.shift_id || "";
+
+      this.applyPermissions();
     },
 
     renderShifts() {
@@ -171,15 +183,14 @@
         const option = document.createElement("option");
 
         option.value = shift.shift_id;
-
         option.textContent = shift.shift_name;
 
         select.appendChild(option);
       });
 
-      if (this.state.shift_id) {
-        select.value = this.state.shift_id;
-      }
+      select.value = this.state.shift_id || "";
+
+      this.applyPermissions();
     },
 
     onUserChange() {
@@ -191,13 +202,9 @@
 
       this.state.email = option.value;
 
-      const shift = document.getElementById("reportShift");
+      this.state.shift_id = option.dataset.shiftId || "";
 
-      if (!shift.value) {
-        this.state.shift_id = option.dataset.shiftId || "";
-
-        shift.value = this.state.shift_id;
-      }
+      document.getElementById("reportShift").value = this.state.shift_id;
     },
 
     bindRangeButtons() {
@@ -308,22 +315,39 @@
         })
 
         .withFailureHandler((err) => {
-          show(err.message || err);
+          showToast?.(err.message || err);
         })
 
         .api_getReports(
           this.state.workspace_id,
-
           this.state.email,
-
           this.state.shift_id,
-
           APP.role,
-
           this.state.start_date,
-
           this.state.end_date,
         );
+    },
+
+    applyPermissions() {
+      const isAdmin = ["ADMIN", "OWNER", "HR", "SUPERADMIN"].includes(
+        String(APP.role || "").toUpperCase(),
+      );
+
+      const employee = document.getElementById("reportEmployee");
+      const shift = document.getElementById("reportShift");
+      const timezone = document.getElementById("reportTimezoneSelect");
+
+      if (employee) {
+        employee.disabled = !isAdmin;
+      }
+
+      if (shift) {
+        shift.disabled = !isAdmin;
+      }
+
+      if (timezone) {
+        timezone.disabled = !isAdmin;
+      }
     },
 
     render() {
@@ -363,11 +387,11 @@
 
       if (!rows.length) {
         tbody.innerHTML = `<tr>
-          <td colspan="11"
-          class="text-center text-muted py-5">
-          No reports found.
-          </td>
-        </tr>`;
+                      <td colspan="11"
+                      class="text-center text-muted py-5">
+                      No reports found.
+                      </td>
+                    </tr>`;
 
         return;
       }
@@ -376,37 +400,37 @@
         .map(
           (row) => `
 
-        <tr>
+                    <tr>
 
-        <td>${row.date || "-"}</td>
+                    <td>${row.date || "-"}</td>
 
-        <td>${row.fullname || row.email || "-"}</td>
+                    <td>${row.fullname || row.email || "-"}</td>
 
-        <td>${row.shift_name || "-"}</td>
+                    <td>${row.shift_name || "-"}</td>
 
-        <td>${this.formatDateTime(row.time_in)}</td>
+                    <td>${this.formatDateTime(row.time_in)}</td>
 
-        <td>${this.formatDateTime(row.time_out)}</td>
+                    <td>${this.formatDateTime(row.time_out)}</td>
 
-        <td>${formatMinutes(row.worked_minutes || 0)}</td>
+                    <td>${formatMinutes(row.worked_minutes || 0)}</td>
 
-        <td>${formatMinutes(row.regular_minutes || 0)}</td>
+                    <td>${formatMinutes(row.regular_minutes || 0)}</td>
 
-        <td>${formatMinutes(row.overtime_minutes || 0)}</td>
+                    <td>${formatMinutes(row.overtime_minutes || 0)}</td>
 
-        <td>${formatMinutes(row.late_minutes || 0)}</td>
+                    <td>${formatMinutes(row.late_minutes || 0)}</td>
 
-        <td>${formatMinutes(row.undertime_minutes || 0)}</td>
+                    <td>${formatMinutes(row.undertime_minutes || 0)}</td>
 
-        <td>
-        <span class="badge ${statusBadgeClass(row.status)}">
-        ${DISPLAY.status(row.status)}
-        </span>
-        </td>
+                    <td>
+                    <span class="badge ${statusBadgeClass(row.status)}">
+                    ${DISPLAY.status(row.status)}
+                    </span>
+                    </td>
 
-        </tr>
+                    </tr>
 
-        `,
+                    `,
         )
         .join("");
     },
@@ -414,19 +438,17 @@
     now() {
       return new Date(
         new Date().toLocaleString("en-US", {
-          timeZone: this.state.timezone,
+          timeZone: this.getShiftTimezone(),
         }),
       );
     },
 
     formatDateTZ(date) {
       return new Intl.DateTimeFormat("en-CA", {
-        timeZone: this.state.timezone,
+        timeZone: this.getShiftTimezone(),
 
         year: "numeric",
-
         month: "2-digit",
-
         day: "2-digit",
       }).format(date);
     },
@@ -471,6 +493,10 @@
           end_date: this.state.end_date,
         }),
       );
+    },
+
+    getShiftTimezone() {
+      return "Asia/Manila";
     },
 
     restore() {

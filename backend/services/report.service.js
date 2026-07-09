@@ -84,6 +84,7 @@ function api_getReports(
 
 
   return JSON.stringify({
+    role,
     success:true,
 
     rows,
