@@ -1,45 +1,27 @@
-/**
- * =====================================================
- * ATTENDANCE ENGINE (v2)
- * =====================================================
- * Converts timelog state + shift into attendance state
- * =====================================================
- */
 function buildAttendanceState(shift, timelogState, options) {
   options = options || {};
 
   const settings = options.settings || {};
 
-  const window = shift
-    ? resolveAttendanceWindow(
-        shift,
-        options.timestamp,
-        settings
-      )
-    : null;
+
+  const window = resolveAttendanceSchedule(
+    shift,
+    options.timestamp,
+    settings
+  );
+
+  // return window;
 
   const attendance = {
-    // --------------------------------------------------
-    // Timelog (raw)
-    // --------------------------------------------------
     ...timelogState,
 
-    // --------------------------------------------------
-    // Shift
-    // --------------------------------------------------
     shift_id: shift ? shift.shift_id : "",
     shift_start: window ? window.shift_start : null,
     shift_end: window ? window.shift_end : null,
     scheduled_minutes: window ? window.scheduled_minutes : 0,
 
-    // --------------------------------------------------
-    // Computed sessions
-    // --------------------------------------------------
     attendance_sessions: [],
 
-    // --------------------------------------------------
-    // Metrics
-    // --------------------------------------------------
     worked_minutes: 0,
     regular_minutes: 0,
     overtime_minutes: 0,
@@ -55,21 +37,29 @@ function buildAttendanceState(shift, timelogState, options) {
     return attendance;
   }
 
-  // --------------------------------------------------
-  // Normalize sessions
-  // --------------------------------------------------
-  attendance.attendance_sessions = buildAttendanceSessions(timelogState.sessions, window, settings);
+  attendance.attendance_sessions = buildAttendanceSessions(
+    timelogState.sessions,
+    window,
+    settings,
+  );
 
-  // --------------------------------------------------
-  // Core calculations
-  // --------------------------------------------------
-  attendance.worked_minutes = calculateWorkedMinutes(attendance.attendance_sessions);
+  attendance.worked_minutes = calculateWorkedMinutes(
+    attendance.attendance_sessions,
+  );
 
-  attendance.break_minutes = calculateBreakMinutes(timelogState.breaks);
+  attendance.break_minutes = calculateBreakMinutes(
+    timelogState.breaks,
+  );
 
-  attendance.lunch_minutes = calculateLunchMinutes(timelogState.lunch);
+  attendance.lunch_minutes = calculateLunchMinutes(
+    timelogState.lunch,
+  );
 
-  attendance.late_minutes = calculateLateMinutes(attendance.attendance_sessions, window, settings);
+  attendance.late_minutes = calculateLateMinutes(
+    attendance.attendance_sessions,
+    window,
+    settings,
+  );
 
   attendance.overtime_minutes = calculateOvertimeMinutes(
     attendance.worked_minutes,
@@ -91,53 +81,47 @@ function buildAttendanceState(shift, timelogState, options) {
     attendance,
     window,
     settings,
-    options.timestamp || new Date(),
+    options.timestamp,
   );
 
   return attendance;
 }
-
-/* =====================================================
-   SESSION NORMALIZATION
-===================================================== */
 function buildAttendanceSessions(sessions, shiftWindow, settings) {
   const list = Array.isArray(sessions) ? sessions : [];
 
   const allowOvertime = !!settings.OVERTIME_ENABLED;
 
-  console.log("override settings", settings);
-
   return list
     .map(function (session) {
-      if (!session || !session.time_in) return null;
+      if (!session || !session.time_in) {
+        return null;
+      }
 
-      const inTime = new Date(session.time_in);
-      let outTime = session.time_out ? new Date(session.time_out) : null;
+      const timeIn = new Date(session.time_in);
+      const timeOut = session.time_out ? new Date(session.time_out) : null;
 
-      // clamp to shift if overtime disabled
       if (!allowOvertime) {
-        if (inTime < shiftWindow.shift_start) {
-          inTime.setTime(shiftWindow.shift_start.getTime());
+        if (timeIn < shiftWindow.shift_start) {
+          timeIn.setTime(shiftWindow.shift_start.getTime());
         }
 
-        if (outTime && outTime > shiftWindow.shift_end) {
-          outTime.setTime(shiftWindow.shift_end.getTime());
+        if (timeOut && timeOut > shiftWindow.shift_end) {
+          timeOut.setTime(shiftWindow.shift_end.getTime());
         }
       }
 
-      if (outTime && outTime <= inTime) return null;
+      if (timeOut && timeOut <= timeIn) {
+        return null;
+      }
 
       return {
-        time_in: inTime,
-        time_out: outTime,
+        time_in: timeIn,
+        time_out: timeOut,
       };
     })
     .filter(Boolean);
 }
 
-/* =====================================================
-   WORKED TIME
-===================================================== */
 function calculateWorkedMinutes(sessions) {
   return (sessions || []).reduce(function (total, s) {
     if (!s.time_in || !s.time_out) return total;
@@ -146,9 +130,6 @@ function calculateWorkedMinutes(sessions) {
   }, 0);
 }
 
-/* =====================================================
-   BREAK TIME
-===================================================== */
 function calculateBreakMinutes(breaks) {
   return (breaks || []).reduce(function (total, b) {
     if (!b.in || !b.out) return total;
@@ -158,9 +139,6 @@ function calculateBreakMinutes(breaks) {
   }, 0);
 }
 
-/* =====================================================
-   LUNCH TIME
-===================================================== */
 function calculateLunchMinutes(lunch) {
   if (!lunch || !lunch.in || !lunch.out) return 0;
 
@@ -168,71 +146,73 @@ function calculateLunchMinutes(lunch) {
   return Math.max(0, Math.round((new Date(lunch.out) - new Date(lunch.in)) / 60000));
 }
 
-/* =====================================================
-   LATE (GRACE-AWARE)
-===================================================== */
+
 function calculateLateMinutes(sessions, window, settings) {
-  if (!sessions.length) return 0;
+  if (!sessions || !sessions.length) {
+    return 0;
+  }
 
-  const first = sessions[0];
-  const grace = Number(settings.LATE_GRACE_MINUTES_DEFAULT || 0); 
+  const firstSession = sessions[0];
 
-  const diff = Math.round((first.time_in - window.shift_start) / 60000);
+  const grace = Number(settings.LATE_GRACE_MINUTES_DEFAULT || 0);
 
-  return Math.max(0, diff - grace);
+  const minutesLate = Math.round(
+    (firstSession.time_in.getTime() - window.shift_start.getTime()) / 60000
+  );
+
+  return Math.max(0, minutesLate - grace);
 }
 
-/* =====================================================
-   REGULAR TIME
-===================================================== */
 function calculateRegularMinutes(worked, scheduled) {
   return Math.min(Number(worked) || 0, Number(scheduled) || 0);
 }
 
-/* =====================================================
-   UNDERTIME
-===================================================== */
 function calculateUndertimeMinutes(worked, scheduled) {
   return Math.max(0, Number(scheduled || 0) - Number(worked || 0));
 }
 
-/* =====================================================
-   OVERTIME (RULE-AWARE)
-===================================================== */
 function calculateOvertimeMinutes(worked, scheduled, settings) {
-  if (!settings.allow_overtime) return 0;
+  if (!settings.OVERTIME_ENABLED) {
+    return 0;
+  }
+
+  worked = Number(worked) || 0;
+  scheduled = Number(scheduled) || 0;
 
   const raw = Math.max(0, worked - scheduled);
 
-  const min = Number(settings.MINIMUM_OVERTIME_MINUTES || 0);
+  const minimum = Number(settings.MINIMUM_OVERTIME_MINUTES || 0);
 
-  return raw < min ? 0 : raw;
+  return raw >= minimum ? raw : 0;
 }
 
 function determineAttendanceStatus(attendance, window, settings, now) {
-  now = now || new Date();
+  if (!window) {
+    return "ABSENT";
+  }
 
-  // Shift hasn't started yet.
+  if (typeof now === "string") {
+    now = window.shift_end;
+  } else if (!(now instanceof Date)) {
+    now = new Date();
+  }
+
   if (now < window.shift_start) {
     return "NOT_STARTED";
   }
 
-  // No login after shift start.
   if (!attendance.time_in) {
     return "ABSENT";
   }
 
-  // Logged in late.
   if (attendance.late_minutes > 0) {
     return "LATE";
   }
 
-  // Worked beyond schedule.
   if (attendance.overtime_minutes > 0) {
     return "OVERTIME";
   }
 
-  // Left before completing scheduled work.
   if (attendance.undertime_minutes > 0) {
     return "UNDERTIME";
   }
@@ -246,25 +226,26 @@ function api_debugAttendanceEngine(
   shift_id,
   start_date,
   end_date,
+  timezone,
 ) {
-  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
-  const normalizedEmail = normalize("email", email);
-  const normalizedShiftId = normalize("shift_id", shift_id);
 
-  if (!normalizedWorkspaceId) {
+  if (!workspace_id) {
     throw new Error("workspace_id is required");
   }
 
-  if (!normalizedEmail) {
+  if (!email) {
     throw new Error("email is required");
   }
 
-  if (!normalizedShiftId) {
+  if (!shift_id) {
     throw new Error("shift_id is required");
   }
 
-  start_date = normalize("date", start_date);
-  end_date = normalize("date", end_date) || start_date;
+  const settings = getWorkspaceSettings(workspace_id);
+
+  if (timezone) {
+    settings.TIMEZONE = timezone;
+  }
 
   if (!start_date) {
     throw new Error("start_date is required");
@@ -278,6 +259,7 @@ function api_debugAttendanceEngine(
   }
 
   const days = [];
+
   const summary = {
     total_days: 0,
     present: 0,
@@ -285,6 +267,7 @@ function api_debugAttendanceEngine(
     late: 0,
     undertime: 0,
     overtime: 0,
+
     worked_minutes: 0,
     regular_minutes: 0,
     overtime_minutes: 0,
@@ -296,17 +279,23 @@ function api_debugAttendanceEngine(
 
   const cursor = new Date(start);
 
-  while (cursor <= end) {
-    const workDate = formatDateKey(cursor);
+while (cursor <= end) {
+  if (isWeeklyDayOff(cursor, settings)) {
+    cursor.setDate(cursor.getDate() + 1);
+    continue;
+  }
 
-    const attendance = getAttendanceStateByWorkDate(
-      normalizedWorkspaceId,
-      normalizedEmail,
-      normalizedShiftId,
-      workDate,
-    );
+  const workDate = formatDateKey(cursor);
 
-    days.push(attendance);
+  const attendance = buildAttendanceByWorkDate(
+    workspace_id,
+    email,
+    shift_id,
+    workDate,
+    settings
+  );
+
+  days.push(attendance);
 
     summary.total_days++;
 
@@ -346,19 +335,24 @@ function api_debugAttendanceEngine(
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  return {
+
+  return JSON.stringify({
     employee: {
-      email: normalizedEmail,
-      shift_id: normalizedShiftId,
+      email: email,
+      shift_id: shift_id,
     },
 
     range: {
-      start_date: start_date,
-      end_date: end_date,
+      start_date,
+      end_date,
     },
 
-    summary: summary,
+    timezone: settings.TIMEZONE,
 
-    days: days,
-  };
+    settings,
+
+    summary,
+
+    days,
+  });
 }

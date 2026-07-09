@@ -1,8 +1,43 @@
-function getCurrentState(workspace_id, email, shift_id, timestamp) {
+// function getCurrentState(workspace_id, email, shift_id, timestamp) {
+//   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
+
+//   const normalizedEmail = normalize("email", email);
+
+//   const normalizedShiftId = normalize("shift_id", shift_id);
+
+//   if (!normalizedWorkspaceId) {
+//     throw new Error("workspace_id is required");
+//   }
+
+//   if (!normalizedEmail) {
+//     throw new Error("email is required");
+//   }
+
+//   const targetTime = timestamp || new Date();
+
+//   const logs = normalizedShiftId
+//     ? getShiftTimeLogsByEmail(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, targetTime)
+//     : getTodayTimeLogsByEmail(normalizedWorkspaceId, normalizedEmail, targetTime);
+
+//   const workDate = normalizedShiftId
+//     ? getShiftWorkDate(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, targetTime)
+//     : formatDateKey(targetTime);
+
+
+//   return buildAttendanceSnapshot(
+//     logs,
+//     normalizedShiftId ? "shift" : "day",
+//     normalizedShiftId,
+//     workDate,
+//     normalizedWorkspaceId
+//   );
+// }
+
+function getCurrentState(workspace_id, email, shift_id, timestamp, options) {
+  options = options || {};
+
   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
-
   const normalizedEmail = normalize("email", email);
-
   const normalizedShiftId = normalize("shift_id", shift_id);
 
   if (!normalizedWorkspaceId) {
@@ -13,23 +48,46 @@ function getCurrentState(workspace_id, email, shift_id, timestamp) {
     throw new Error("email is required");
   }
 
+  const settings = getWorkspaceSettings(normalizedWorkspaceId);
+
+  options.settings = settings;
+
+  options.timezone =
+    normalize("timezone", options.timezone) ||
+    settings.TIMEZONE ||
+    "Asia/Manila";
+
   const targetTime = timestamp || new Date();
 
   const logs = normalizedShiftId
-    ? getShiftTimeLogsByEmail(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, targetTime)
-    : getTodayTimeLogsByEmail(normalizedWorkspaceId, normalizedEmail, targetTime);
+    ? getShiftTimeLogsByEmail(
+        normalizedWorkspaceId,
+        normalizedEmail,
+        normalizedShiftId,
+        targetTime,
+      )
+    : getTodayTimeLogsByEmail(
+        normalizedWorkspaceId,
+        normalizedEmail,
+        targetTime,
+      );
 
   const workDate = normalizedShiftId
-    ? getShiftWorkDate(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, targetTime)
+    ? getShiftWorkDate(
+        normalizedWorkspaceId,
+        normalizedEmail,
+        normalizedShiftId,
+        targetTime,
+      )
     : formatDateKey(targetTime);
-
 
   return buildAttendanceSnapshot(
     logs,
     normalizedShiftId ? "shift" : "day",
     normalizedShiftId,
     workDate,
-    normalizedWorkspaceId
+    normalizedWorkspaceId,
+    options,
   );
 }
 
@@ -142,13 +200,18 @@ function resolveShiftWorkDate(shift, timestamp) {
   return resolveShiftWindow(shift, timestamp).work_date;
 }
 
-function getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date) {
+function getAttendanceStateByWorkDate(
+  workspace_id,
+  email,
+  shift_id,
+  work_date,
+  options,
+) {
+  options = options || {};
+
   const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
-
   const normalizedEmail = normalize("email", email);
-
   const normalizedShiftId = normalize("shift_id", shift_id);
-
   const normalizedWorkDate = normalize("date", work_date);
 
   if (!normalizedWorkspaceId) {
@@ -167,26 +230,35 @@ function getAttendanceStateByWorkDate(workspace_id, email, shift_id, work_date) 
     throw new Error("work_date is required");
   }
 
+  const settings = getWorkspaceSettings(normalizedWorkspaceId);
+
+  options.settings = settings;
+
+  options.timezone =
+    normalize("timezone", options.timezone) ||
+    settings.TIMEZONE ||
+    "Asia/Manila";
+
   const logs = getTimeLogsByEmail(normalizedWorkspaceId, normalizedEmail, {
     shift_id: normalizedShiftId,
     date: normalizedWorkDate,
   });
 
-  const settings = getWorkspaceSettings(normalizedWorkspaceId);
-
-    const workDate = normalizedShiftId
-    ? getShiftWorkDate(normalizedWorkspaceId, normalizedEmail, normalizedShiftId, normalizedWorkDate)
-    : formatDateKey(normalizedWorkDate);
-
+  const workDate = getShiftWorkDate(
+    normalizedWorkspaceId,
+    normalizedEmail,
+    normalizedShiftId,
+    normalizedWorkDate,
+  );
 
   return buildAttendanceSnapshot(
     logs,
     "shift",
     normalizedShiftId,
     workDate,
-    normalizedWorkspaceId
+    normalizedWorkspaceId,
+    options,
   );
-
 }
 
 
@@ -196,7 +268,8 @@ function buildAttendanceSnapshot(
   scope,
   shift,
   work_date,
-  workspace_id
+  workspace_id,
+  options
 ) {
   const state = buildTimeLogState(logs);
 
@@ -206,4 +279,99 @@ function buildAttendanceSnapshot(
     work_date,
     raw_logs: logs,
   };
+}
+
+function buildAttendanceByWorkDate(
+  workspace_id,
+  email,
+  shift_id,
+  work_date,
+  settings,
+) {
+  if (!workspace_id) {
+    throw new Error("workspace_id is required");
+  }
+
+  if (!email) {
+    throw new Error("email is required");
+  }
+
+  if (!shift_id) {
+    throw new Error("shift_id is required");
+  }
+
+  if (!work_date) {
+    throw new Error("work_date is required");
+  }
+
+  settings = settings || getWorkspaceSettings(workspace_id);
+
+  if (!shouldGenerateAttendance(work_date, settings)) {
+    return null;
+  }
+
+  const shift = getShiftById(
+    workspace_id,
+    shift_id,
+  );
+
+  if (!shift) {
+    throw new Error("Shift not found.");
+  }
+
+  const logs = getTimeLogsByEmail(
+    workspace_id,
+    email,
+    {
+      shift_id,
+      date: work_date,
+    },
+  );
+
+  const timelogState = buildTimeLogState(logs);
+
+  const attendance = buildAttendanceState(
+    shift,
+    timelogState,
+    {
+      settings,
+      timestamp: work_date,
+    },
+  );
+
+  attendance.work_date = work_date;
+  attendance.raw_logs = logs;
+  attendance.scope = "shift";
+
+  return attendance;
+}
+
+function shouldGenerateAttendance(workDate, settings) {
+  const date =
+    workDate instanceof Date
+      ? new Date(workDate)
+      : new Date(workDate);
+
+  return !isWeeklyDayOff(date, settings);
+}
+
+function isWeeklyDayOff(date, settings) {
+  const weeklyDaysOff = String(settings.WEEKLY_DAYS_OFF || "")
+    .split(",")
+    .map(function (day) {
+      return day.trim().toUpperCase();
+    })
+    .filter(Boolean);
+
+  const dayNames = [
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+  ];
+
+  return weeklyDaysOff.includes(dayNames[date.getDay()]);
 }

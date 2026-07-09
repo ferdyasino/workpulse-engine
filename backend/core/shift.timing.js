@@ -1,4 +1,3 @@
-
 function resolveShiftWindow(shift, timestamp) {
   if (!shift) {
     throw new Error("Shift is required.");
@@ -133,16 +132,25 @@ function resolveShiftWindowByWorkDate(shift, workDate) {
   };
 }
 
-function resolveAttendanceWindow(shift, timestamp, settings) {
-  const shiftWindow = resolveShiftWindow(shift, timestamp);
+function resolveAttendanceWindow(shift, value, settings) {
+  if (!shift) {
+    throw new Error("Shift is required.");
+  }
 
   settings = settings || {};
 
-  const before =
-    Number(settings.ALLOW_EARLY_TIME_IN_MINUTES || 0);
+  const shiftWindow =
+    typeof value === "string"
+      ? resolveShiftWindowByWorkDate(shift, value)
+      : resolveShiftWindow(shift, value);
 
-  const after =
-    Number(settings.ALLOW_LATE_TIME_OUT_MINUTES || 0);
+  const before = Number(
+    settings.ALLOW_EARLY_TIME_IN_MINUTES || 0
+  );
+
+  const after = Number(
+    settings.ALLOW_LATE_TIME_OUT_MINUTES || 0
+  );
 
   const attendanceStart = new Date(shiftWindow.shift_start);
   attendanceStart.setMinutes(
@@ -163,5 +171,57 @@ function resolveAttendanceWindow(shift, timestamp, settings) {
 
     work_date: shiftWindow.work_date,
     scheduled_minutes: shiftWindow.scheduled_minutes,
+  };
+}
+
+function resolveAttendanceSchedule(shift, work_date, settings) {
+  if (!shift) {
+    throw new Error("Shift is required.");
+  }
+  const baseDate =  new Date(work_date);
+
+  const shiftStart = new Date(baseDate.getTime());
+  const shiftEnd = new Date(baseDate.getTime());
+
+  const [startHour, startMinute] = String(shift.start_time)
+    .split(":")
+    .map(Number);
+
+  const [endHour, endMinute] = String(shift.end_time)
+    .split(":")
+    .map(Number);
+
+  shiftStart.setHours(startHour, startMinute, 0, 0);
+  shiftEnd.setHours(endHour, endMinute, 0, 0);
+
+  if (isOvernightShift(shift) && shiftEnd <= shiftStart) {
+    shiftEnd.setDate(shiftEnd.getDate() + 1);
+  }
+
+  const attendanceStart = new Date(shiftStart);
+  attendanceStart.setMinutes(
+    attendanceStart.getMinutes() -
+      Number(settings.ALLOW_EARLY_TIME_IN_MINUTES || 0)
+  );
+
+  const attendanceEnd = new Date(shiftEnd);
+  attendanceEnd.setMinutes(
+    attendanceEnd.getMinutes() +
+      Number(settings.ALLOW_LATE_TIME_OUT_MINUTES || 0)
+  );
+
+
+  return {
+    work_date: work_date,
+
+    shift_start: shiftStart,
+    shift_end: shiftEnd,
+
+    attendance_start: attendanceStart,
+    attendance_end: attendanceEnd,
+
+    scheduled_minutes: Math.round(
+      (shiftEnd.getTime() - shiftStart.getTime()) / 60000
+    ),
   };
 }

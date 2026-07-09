@@ -239,10 +239,6 @@ function calculateAttendanceMetrics(row, shift, settings) {
 }
 
 function api_getReports(workspace_id, email, shift_id, role, range) {
-  workspace_id = normalize("workspace_id", workspace_id);
-  email = normalize("email", email);
-  shift_id = normalize("shift_id", shift_id);
-
   if (!workspace_id) {
     throw new Error("workspace_id is required");
   }
