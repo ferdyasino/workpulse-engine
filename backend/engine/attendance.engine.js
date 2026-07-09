@@ -3,14 +3,11 @@ function buildAttendanceState(shift, timelogState, options) {
 
   const settings = options.settings || {};
 
-
   const window = resolveAttendanceSchedule(
     shift,
     options.timestamp,
     settings
   );
-
-  // return window;
 
   const attendance = {
     ...timelogState,
@@ -40,48 +37,69 @@ function buildAttendanceState(shift, timelogState, options) {
   attendance.attendance_sessions = buildAttendanceSessions(
     timelogState.sessions,
     window,
-    settings,
+    settings
   );
 
   attendance.worked_minutes = calculateWorkedMinutes(
-    attendance.attendance_sessions,
+      attendance.attendance_sessions,
+      window, 
+      options.timestamp
   );
 
   attendance.break_minutes = calculateBreakMinutes(
-    timelogState.breaks,
+    timelogState.breaks
   );
 
   attendance.lunch_minutes = calculateLunchMinutes(
-    timelogState.lunch,
+    timelogState.lunch
   );
 
   attendance.late_minutes = calculateLateMinutes(
     attendance.attendance_sessions,
     window,
-    settings,
+    settings
   );
 
-  attendance.overtime_minutes = calculateOvertimeMinutes(
-    attendance.worked_minutes,
-    attendance.scheduled_minutes,
-    settings,
-  );
+  const now = new Date();
+  const shiftFinished = now >= window.shift_end;
 
-  attendance.regular_minutes = calculateRegularMinutes(
-    attendance.worked_minutes,
-    attendance.scheduled_minutes,
-  );
+  if (shiftFinished) {
+    attendance.regular_minutes = calculateRegularMinutes(
+      attendance.worked_minutes,
+      attendance.scheduled_minutes
+    );
 
-  attendance.undertime_minutes = calculateUndertimeMinutes(
-    attendance.worked_minutes,
-    attendance.scheduled_minutes,
-  );
+    attendance.overtime_minutes = calculateOvertimeMinutes(
+      attendance.worked_minutes,
+      attendance.scheduled_minutes,
+      settings
+    );
+
+    attendance.undertime_minutes =
+        calculateUndertimeMinutes(
+            attendance.worked_minutes,
+            attendance.scheduled_minutes,
+            window,
+            options.timestamp
+        );
+  } else {
+  
+    attendance.regular_minutes = Math.min(
+      attendance.worked_minutes,
+      attendance.scheduled_minutes
+    );
+
+    attendance.overtime_minutes = 0;
+
+    
+    attendance.undertime_minutes = 0;
+  }
 
   attendance.attendance_status = determineAttendanceStatus(
     attendance,
     window,
     settings,
-    options.timestamp,
+    now
   );
 
   return attendance;
@@ -122,11 +140,33 @@ function buildAttendanceSessions(sessions, shiftWindow, settings) {
     .filter(Boolean);
 }
 
-function calculateWorkedMinutes(sessions) {
-  return (sessions || []).reduce(function (total, s) {
-    if (!s.time_in || !s.time_out) return total;
+function calculateWorkedMinutes(sessions, window, now) {
+  now = now ? new Date(now) : new Date();
 
-    return total + Math.max(0, Math.round((s.time_out - s.time_in) / 60000));
+  return (sessions || []).reduce(function (total, s) {
+    if (!s.time_in) {
+      return total;
+    }
+
+    const start = new Date(s.time_in);
+
+    let end;
+
+    if (s.time_out) {
+      end = new Date(s.time_out);
+    } else {
+      end = new Date(
+        window && now > window.shift_end
+          ? window.shift_end
+          : now
+      );
+    }
+
+    if (end <= start) {
+      return total;
+    }
+
+    return total + Math.round((end.getTime() - start.getTime()) / 60000);
   }, 0);
 }
 
@@ -134,16 +174,14 @@ function calculateBreakMinutes(breaks) {
   return (breaks || []).reduce(function (total, b) {
     if (!b.in || !b.out) return total;
 
-    // @ts-ignore
-    return total + Math.max(0, Math.round((new Date(b.out) - new Date(b.in)) / 60000));
+    return total + Math.max(0, Math.round((new Date(b.out).getTime() - new Date(b.in).getTime()) / 60000));
   }, 0);
 }
 
 function calculateLunchMinutes(lunch) {
   if (!lunch || !lunch.in || !lunch.out) return 0;
 
-  // @ts-ignore
-  return Math.max(0, Math.round((new Date(lunch.out) - new Date(lunch.in)) / 60000));
+  return Math.max(0, Math.round((new Date(lunch.out).getTime() - new Date(lunch.in).getTime()) / 60000));
 }
 
 
@@ -167,8 +205,14 @@ function calculateRegularMinutes(worked, scheduled) {
   return Math.min(Number(worked) || 0, Number(scheduled) || 0);
 }
 
-function calculateUndertimeMinutes(worked, scheduled) {
-  return Math.max(0, Number(scheduled || 0) - Number(worked || 0));
+function calculateUndertimeMinutes(worked, scheduled, window, now) {
+    now = now ? new Date(now) : new Date();
+
+    if (window && now < window.shift_end) {
+        return 0;
+    }
+
+    return Math.max(0, scheduled - worked);
 }
 
 function calculateOvertimeMinutes(worked, scheduled, settings) {
@@ -191,18 +235,37 @@ function determineAttendanceStatus(attendance, window, settings, now) {
     return "ABSENT";
   }
 
-  if (typeof now === "string") {
-    now = window.shift_end;
-  } else if (!(now instanceof Date)) {
+  const today = formatDateKey(new Date());
+  const workDate = formatDateKey(window.shift_start);
+
+  if (workDate < today) {
+  
+    now = new Date(window.shift_end);
+  } else if (workDate === today) {
+    
     now = new Date();
+  } else {
+
+    return "PENDING";
   }
 
-  if (now < window.shift_start) {
-    return "NOT_STARTED";
-  }
+  const grace = Number(settings.LATE_GRACE_MINUTES_DEFAULT || 0);
+
+  const absentTime = new Date(window.shift_start);
+  absentTime.setMinutes(absentTime.getMinutes() + grace);
+
 
   if (!attendance.time_in) {
-    return "ABSENT";
+    return now < absentTime ? "PENDING" : "ABSENT";
+  }
+
+
+  if (now < window.shift_end) {
+    if (!attendance.time_in) {
+      return now < absentTime ? "PENDING" : "ABSENT";
+    }
+
+    return "PRESENT";
   }
 
   if (attendance.late_minutes > 0) {
@@ -228,7 +291,6 @@ function api_debugAttendanceEngine(
   end_date,
   timezone,
 ) {
-
   if (!workspace_id) {
     throw new Error("workspace_id is required");
   }
@@ -262,6 +324,7 @@ function api_debugAttendanceEngine(
 
   const summary = {
     total_days: 0,
+
     present: 0,
     absent: 0,
     late: 0,
@@ -279,23 +342,28 @@ function api_debugAttendanceEngine(
 
   const cursor = new Date(start);
 
-while (cursor <= end) {
-  if (isWeeklyDayOff(cursor, settings)) {
-    cursor.setDate(cursor.getDate() + 1);
-    continue;
-  }
+  while (cursor <= end) {
+    if (isWeeklyDayOff(cursor, settings)) {
+      cursor.setDate(cursor.getDate() + 1);
+      continue;
+    }
 
-  const workDate = formatDateKey(cursor);
+    const workDate = formatDateKey(cursor);
 
-  const attendance = buildAttendanceByWorkDate(
-    workspace_id,
-    email,
-    shift_id,
-    workDate,
-    settings
-  );
+    const attendance = buildAttendanceByWorkDate(
+      workspace_id,
+      email,
+      shift_id,
+      workDate,
+      settings
+    );
 
-  days.push(attendance);
+    if (!attendance) {
+      cursor.setDate(cursor.getDate() + 1);
+      continue;
+    }
+
+    days.push(attendance);
 
     summary.total_days++;
 
@@ -335,11 +403,10 @@ while (cursor <= end) {
     cursor.setDate(cursor.getDate() + 1);
   }
 
-
   return JSON.stringify({
     employee: {
-      email: email,
-      shift_id: shift_id,
+      email,
+      shift_id,
     },
 
     range: {

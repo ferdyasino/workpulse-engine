@@ -338,6 +338,10 @@ function buildAttendanceByWorkDate(
       timestamp: work_date,
     },
   );
+  
+  if (attendance.attendance_status === "PENDING") {
+  return null;
+}
 
   attendance.work_date = work_date;
   attendance.raw_logs = logs;
