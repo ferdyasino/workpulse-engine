@@ -3,18 +3,11 @@
     "target": "ES2022",
 
     "allowJs": true,
-    "checkJs": true,
+    "checkJs": false,
     "noEmit": true,
-
-    "strict": false,
-
-    "noImplicitAny": false,
-    "strictNullChecks": false,
-    "strictFunctionTypes": false,
 
     "moduleResolution": "Bundler",
     "skipLibCheck": true,
-
     "maxNodeModuleJsDepth": 0
   },
   "include": ["**/*.js"],
