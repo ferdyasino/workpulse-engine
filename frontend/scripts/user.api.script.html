@@ -143,6 +143,13 @@
         .deactivateShift(ws(), shiftId);
     }
 
+    function getWorkspaceSettings(success, fail) {
+      google.script.run
+        .withSuccessHandler(success)
+        .withFailureHandler(fail)
+        .getWorkspaceSettings(ws());
+    }
+
     // =====================================================
     // PUBLIC API
     // =====================================================
@@ -173,6 +180,8 @@
       updateShift,
       deleteShift,
       deactivateShift,
+
+      getWorkspaceSettings,
     };
   })();
 </script>

@@ -4,7 +4,7 @@
       GlobalModal.openList({
         title: "Shift Records",
 
-        columns: ["Shift", "Schedule", "Grace (mins)", "Status"],
+        columns: ["Shift", "Timezone", "Schedule", "Grace (mins)", "Status"],
 
         onAdd: () => {
           openCreateModal({}, config);
@@ -16,8 +16,20 @@
 
     function openCreateModal(shift = {}, config = {}) {
       const normalizedShift = window.normalizeShift(shift);
+
       const isEdit = Boolean(shift?.shift_id || config.isEdit);
+
       const showStatus = config.showStatus ?? isEdit;
+
+      const settings = APP?.settings || state?.settings || {};
+      console.log(APP.settings);
+
+      const listTimezone = Array.isArray(config.listTimezone)
+        ? config.listTimezone
+        : String(settings.TIMEZONE_OPTIONS || settings.TIMEZONE || "Asia/Manila")
+            .split("|")
+            .map((tz) => tz.trim())
+            .filter(Boolean);
 
       const fields = [
         {
@@ -25,6 +37,18 @@
           label: "Shift Name",
           value: normalizedShift.shift_name || "",
           required: true,
+        },
+
+        {
+          name: "timezone",
+          label: "Timezone",
+          type: "select",
+          value: normalizedShift.timezone || getDefaultTimezone(),
+          required: true,
+          options: listTimezone.map((tz) => ({
+            value: tz,
+            label: tz,
+          })),
         },
 
         {
@@ -59,26 +83,40 @@
           type: "select",
           value: normalizedShift.status || "ACTIVE",
           options: [
-            { value: "ACTIVE", label: "Active" },
-            { value: "INACTIVE", label: "Inactive" },
+            {
+              value: "ACTIVE",
+              label: "Active",
+            },
+            {
+              value: "INACTIVE",
+              label: "Inactive",
+            },
           ],
         });
       }
 
       GlobalModal.openForm({
         title: isEdit ? "Edit Shift" : "Create Shift",
+
         fields,
 
-        onSubmit: (formData) => {
+        onSubmit(formData) {
           const payload = {
             ...formData,
+
             shift_name: String(formData.shift_name || "").trim(),
+
+            timezone: String(formData.timezone || "").trim(),
+
             start_time: String(formData.start_time || "").trim(),
+
             end_time: String(formData.end_time || "").trim(),
+
             grace_minutes:
               formData.grace_minutes === "" || formData.grace_minutes == null
                 ? 10
                 : Number(formData.grace_minutes),
+
             status: formData.status || "ACTIVE",
           };
 
@@ -94,9 +132,13 @@
     function openDeleteModal(shift, handlers = {}) {
       GlobalModal.openDelete({
         title: "Shift Action",
+
         message: "Choose whether to deactivate or permanently delete this shift.",
+
         id: shift.shift_id,
+
         onDelete: handlers.onDelete,
+
         onDeactivate: handlers.onDeactivate,
       });
     }
@@ -107,6 +149,7 @@
 
     function closeListModal() {
       const body = document.getElementById("globalListBody");
+
       if (body) {
         body.innerHTML = "";
       }

@@ -1,15 +1,43 @@
 <script>
-  // =====================================================
-  // SAFE SHIFT RESOLVER
-  // =====================================================
-
   function getShiftsSafe() {
     return Array.isArray(state?.shifts) ? state.shifts : [];
   }
 
-  // =====================================================
-  // CREATE SHIFT
-  // =====================================================
+  function getTimezoneOptions() {
+    const settings = APP?.settings || state?.settings || [];
+
+    if (!Array.isArray(settings)) {
+      return ["Asia/Manila"];
+    }
+
+    const timezoneSetting = settings.find((setting) => setting.key === "TIMEZONE");
+
+    if (
+      timezoneSetting &&
+      Array.isArray(timezoneSetting.options) &&
+      timezoneSetting.options.length
+    ) {
+      return timezoneSetting.options;
+    }
+
+    if (timezoneSetting?.value) {
+      return [timezoneSetting.value];
+    }
+
+    return ["Asia/Manila"];
+  }
+
+  function getDefaultTimezone() {
+    const settings = APP?.settings || state?.settings || [];
+
+    if (!Array.isArray(settings)) {
+      return "Asia/Manila";
+    }
+
+    const timezoneSetting = settings.find((setting) => setting.key === "TIMEZONE");
+
+    return timezoneSetting?.value || "Asia/Manila";
+  }
 
   function openCreateShiftFromUserModal() {
     UsersModal.closeFormModal?.();
@@ -17,6 +45,8 @@
     ShiftModal.openCreateModal(
       {},
       {
+        listTimezone: getTimezoneOptions(),
+
         onSubmit(formData) {
           UsersAPI.createShift(
             formData,
@@ -52,10 +82,6 @@
     );
   }
 
-  // =====================================================
-  // HELPERS
-  // =====================================================
-
   function findShiftIdByName(name) {
     const normalized = String(name || "")
       .trim()
@@ -78,11 +104,21 @@
 
     return {
       shift_id: s.shift_id || "",
+
       shift_name: DISPLAY?.label?.(s.shift_name || "UNKNOWN") || "UNKNOWN",
+
+      timezone: s.timezone || "",
+
+      timezone_label: DISPLAY?.label?.(s.timezone || "") || s.timezone || "",
+
       start_time: formatShift(s.start_time || ""),
+
       end_time: formatShift(s.end_time || ""),
-      grace_minutes: DISPLAY?.label?.(s.grace_minutes) || s.grace_minutes,
+
+      grace_minutes: Number(s.grace_minutes || 0),
+
       status_raw: rawStatus,
+
       status: DISPLAY?.status?.(rawStatus) || rawStatus,
     };
   }
@@ -95,16 +131,14 @@
     ) {
       case "ACTIVE":
         return "badge-success";
+
       case "INACTIVE":
         return "badge-danger";
+
       default:
         return "badge-secondary";
     }
   }
-
-  // =====================================================
-  // CARD LIST (SAFE)
-  // =====================================================
 
   function renderShiftList(shifts = []) {
     const el = document.getElementById("shiftList");
@@ -114,7 +148,9 @@
 
     const list = Array.isArray(shifts) ? shifts : [];
 
-    if (countEl) countEl.textContent = String(list.length);
+    if (countEl) {
+      countEl.textContent = String(list.length);
+    }
 
     if (!list.length) {
       el.innerHTML = `<div class="text-muted small">No shifts found</div>`;
@@ -128,10 +164,22 @@
         (s) => `
           <div class="d-flex justify-content-between align-items-center border-bottom py-2">
             <div>
-              <strong>${escapeHtml(s.shift_name)}</strong><br>
+              <strong>${escapeHtml(s.shift_name)}</strong>
+
+              <br>
+              
               <small class="text-muted">
-                ${escapeHtml(s.start_time)} - ${escapeHtml(s.end_time)}
+                ${escapeHtml(s.start_time)}
+                -
+                ${escapeHtml(s.end_time)}
               </small>
+
+              <br>
+              
+              <small class="text-info">
+                ${escapeHtml(s.timezone_label)}
+              </small>
+
             </div>
 
             <span class="badge ${getShiftStatusClass(s.status_raw)}">
@@ -143,10 +191,6 @@
       .join("");
   }
 
-  // =====================================================
-  // MODAL LIST (SAFE)
-  // =====================================================
-
   function renderShiftListModal(shifts = []) {
     const tbody = document.getElementById("globalListBody");
 
@@ -157,7 +201,7 @@
     if (!list.length) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="5" class="text-center text-muted py-4">
+          <td colspan="6" class="text-center text-muted py-4">
             No shifts found
           </td>
         </tr>
@@ -171,9 +215,23 @@
       .map(
         (s) => `
           <tr>
-            <td>${escapeHtml(s.shift_name)}</td>
-            <td>${escapeHtml(s.start_time)} - ${escapeHtml(s.end_time)}</td>
-            <td>${escapeHtml(DISPLAY.label(s.grace_minutes))}</td>
+            <td>
+              ${escapeHtml(s.shift_name)}
+            </td>
+
+            <td>
+              ${escapeHtml(s.timezone_label)}
+            </td>
+
+            <td>
+              ${escapeHtml(s.start_time)}
+              -
+              ${escapeHtml(s.end_time)}
+            </td>
+
+            <td>
+              ${escapeHtml(String(s.grace_minutes))}
+            </td>
 
             <td>
               <span class="badge ${getShiftStatusClass(s.status_raw)}">
@@ -185,12 +243,13 @@
               <div class="btn-group btn-group-sm">
                 <button
                   class="btn btn-outline-primary"
-                  onclick="editShift('${escapeHtml(s.shift_id || "")}')">
+                  onclick="editShift('${escapeHtml(s.shift_id)}')">
                   Edit
                 </button>
+
                 <button
                   class="btn btn-outline-danger"
-                  onclick="deleteShift('${escapeHtml(s.shift_id || "")}')">
+                  onclick="deleteShift('${escapeHtml(s.shift_id)}')">
                   Delete
                 </button>
               </div>

@@ -1,10 +1,5 @@
 const SHIFT_TABLE = TABLES.SHIFTS;
 
-/**
- * =====================================================
- * SHIFT MAPPER
- * =====================================================
- */
 function mapShift(row) {
   if (!row) return null;
 
@@ -14,16 +9,12 @@ function mapShift(row) {
     start_time: row.start_time || "",
     end_time: row.end_time || "",
     grace_minutes: Number(row.grace_minutes ?? 10),
+    timezone: row.timezone || "Asia/Manila",
     status: row.status || "ACTIVE",
     created_at: row.created_at || "",
   };
 }
 
-/**
- * =====================================================
- * CREATE SHIFT
- * =====================================================
- */
 function createShift(workspace_id, payload) {
   if (!payload?.shift_name?.trim()) {
     throw new Error("shift_name is required");
@@ -55,27 +46,16 @@ function createShift(workspace_id, payload) {
     };
   }
 
-  // const hasOverlap = existingShifts.some(s =>
-  //   isTimeOverlap(startTime, endTime, s.start_time, s.end_time)
-  // );
-
-  // if (hasOverlap) {
-  //   return {
-  //     success: false,
-  //     message: "Shift overlaps with an existing shift"
-  //   };
-  // }
-
-  const shift = {
-    shift_id: generateId("SHIFT"),
-    shift_name: shiftName,
-    start_time: startTime,
-    end_time: endTime,
-    grace_minutes: Number(payload.grace_minutes ?? 10),
-    status: "ACTIVE",
-    created_at: new Date().toISOString(),
-  };
-
+const shift = {
+  shift_id: generateId("SHIFT"),
+  shift_name: shiftName,
+  start_time: startTime,
+  end_time: endTime,
+  grace_minutes: Number(payload.grace_minutes ?? 10),
+  timezone: String(payload.timezone || workspaceSettings(workspace_id).TIMEZONE || "Asia/Manila"),
+  status: "ACTIVE",
+  created_at: new Date().toISOString(),
+};
   insert(workspace_id, SHIFT_TABLE, shift);
 
   return {
@@ -84,21 +64,12 @@ function createShift(workspace_id, payload) {
   };
 }
 
-/**
- * =====================================================
- * GET SHIFT BY ID
- * =====================================================
- */
 function getShiftById(workspace_id, shiftId) {
   const row = findOne(workspace_id, SHIFT_TABLE, { shift_id: shiftId });
   return row ? mapShift(row) : null;
 }
 
-/**
- * =====================================================
- * GET ALL SHIFTS
- * =====================================================
- */
+
 function getAllShifts(workspace_id) {
   try {
     return find(workspace_id, SHIFT_TABLE).map(mapShift);
@@ -108,20 +79,13 @@ function getAllShifts(workspace_id) {
   }
 }
 
-/**
- * =====================================================
- * UPDATE SHIFT
- * =====================================================
- */
+
 function updateShift(workspace_id, shiftId, updates) {
   const shift = getShiftById(workspace_id, shiftId);
   if (!shift) throw new Error("Shift not found");
 
   const safeUpdates = { ...updates };
 
-  // =========================
-  // NAME VALIDATION
-  // =========================
   if (safeUpdates.shift_name !== undefined) {
     const newName = normalize("shift_name", safeUpdates.shift_name);
 
@@ -146,9 +110,7 @@ function updateShift(workspace_id, shiftId, updates) {
     safeUpdates.shift_name = newName;
   }
 
-  // =========================
-  // TIME VALIDATION
-  // =========================
+
   const start =
     safeUpdates.start_time !== undefined ? String(safeUpdates.start_time).trim() : shift.start_time;
 
@@ -175,23 +137,10 @@ function updateShift(workspace_id, shiftId, updates) {
     throw new Error("Invalid time format (expected HH:mm)");
   }
 
-  // =========================
-  // OVERLAP VALIDATION
-  // =========================
   const otherShifts = find(workspace_id, SHIFT_TABLE)
     .map(mapShift)
     .filter((s) => s.shift_id !== shiftId);
 
-  // const hasOverlap = otherShifts.some(s =>
-  //   isTimeOverlap(start, end, s.start_time, s.end_time)
-  // );
-
-  // if (hasOverlap) {
-  //   return {
-  //     success: false,
-  //     message: "Shift overlaps with an existing shift"
-  //   };
-  // }
 
   if (safeUpdates.start_time !== undefined) {
     safeUpdates.start_time = start;
@@ -203,6 +152,10 @@ function updateShift(workspace_id, shiftId, updates) {
 
   if (safeUpdates.grace_minutes !== undefined) {
     safeUpdates.grace_minutes = Number(safeUpdates.grace_minutes ?? 10);
+  }
+
+  if (safeUpdates.timezone !== undefined) {
+    safeUpdates.timezone = String(safeUpdates.timezone).trim() || shift.timezone;
   }
 
   update(workspace_id, SHIFT_TABLE, shiftId, safeUpdates);
@@ -218,11 +171,7 @@ function deleteShift(workspace_id, shiftId) {
   if (!shift) throw new Error("Shift not found");
 }
 
-/**
- * =====================================================
- * DEACTIVATE SHIFT
- * =====================================================
- */
+
 function deactivateShift(workspace_id, shiftId) {
   const shift = getShiftById(workspace_id, shiftId);
   if (!shift) throw new Error("Shift not found");
@@ -237,11 +186,7 @@ function deactivateShift(workspace_id, shiftId) {
   };
 }
 
-/**
- * =====================================================
- * OVERLAP UTILITY
- * =====================================================
- */
+
 function isTimeOverlap(startA, endA, startB, endB) {
   const toMinutes = (t) => {
     const [h, m] = String(t).split(":").map(Number);
