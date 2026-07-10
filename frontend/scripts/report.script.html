@@ -293,17 +293,16 @@
 
     run() {
       this.state.email = document.getElementById("reportEmployee").value;
-
       this.state.shift_id = document.getElementById("reportShift").value;
-
       this.state.start_date = document.getElementById("reportStartDate").value;
-
       this.state.end_date = document.getElementById("reportEndDate").value;
 
       this.save();
 
-      google.script.run
+      // Show loading spinner
+      this.renderLoading();
 
+      google.script.run
         .withSuccessHandler((result) => {
           if (typeof result === "string") {
             result = JSON.parse(result);
@@ -313,11 +312,17 @@
 
           this.render();
         })
-
         .withFailureHandler((err) => {
           showToast?.(err.message || err);
-        })
 
+          document.getElementById("reportTableBody").innerHTML = `
+          <tr>
+            <td colspan="11" class="text-center text-danger py-5">
+              Failed to generate report.
+            </td>
+          </tr>
+        `;
+        })
         .api_getReports(
           this.state.workspace_id,
           this.state.email,
@@ -387,11 +392,11 @@
 
       if (!rows.length) {
         tbody.innerHTML = `<tr>
-                      <td colspan="11"
-                      class="text-center text-muted py-5">
-                      No reports found.
-                      </td>
-                    </tr>`;
+                        <td colspan="11"
+                        class="text-center text-muted py-5">
+                        No reports found.
+                        </td>
+                      </tr>`;
 
         return;
       }
@@ -400,37 +405,37 @@
         .map(
           (row) => `
 
-                    <tr>
+                      <tr>
 
-                    <td>${row.date || "-"}</td>
+                      <td>${row.date || "-"}</td>
 
-                    <td>${row.fullname || row.email || "-"}</td>
+                      <td>${row.fullname || row.email || "-"}</td>
 
-                    <td>${row.shift_name || "-"}</td>
+                      <td>${row.shift_name || "-"}</td>
 
-                    <td>${this.formatDateTime(row.time_in)}</td>
+                      <td>${this.formatDateTime(row.time_in)}</td>
 
-                    <td>${this.formatDateTime(row.time_out)}</td>
+                      <td>${this.formatDateTime(row.time_out)}</td>
 
-                    <td>${formatMinutes(row.worked_minutes || 0)}</td>
+                      <td>${formatMinutes(row.worked_minutes || 0)}</td>
 
-                    <td>${formatMinutes(row.regular_minutes || 0)}</td>
+                      <td>${formatMinutes(row.regular_minutes || 0)}</td>
 
-                    <td>${formatMinutes(row.overtime_minutes || 0)}</td>
+                      <td>${formatMinutes(row.overtime_minutes || 0)}</td>
 
-                    <td>${formatMinutes(row.late_minutes || 0)}</td>
+                      <td>${formatMinutes(row.late_minutes || 0)}</td>
 
-                    <td>${formatMinutes(row.undertime_minutes || 0)}</td>
+                      <td>${formatMinutes(row.undertime_minutes || 0)}</td>
 
-                    <td>
-                    <span class="badge ${statusBadgeClass(row.status)}">
-                    ${DISPLAY.status(row.status)}
-                    </span>
-                    </td>
+                      <td>
+                      <span class="badge ${statusBadgeClass(row.status)}">
+                      ${DISPLAY.status(row.status)}
+                      </span>
+                      </td>
 
-                    </tr>
+                      </tr>
 
-                    `,
+                      `,
         )
         .join("");
     },
@@ -497,6 +502,21 @@
 
     getShiftTimezone() {
       return "Asia/Manila";
+    },
+
+    renderLoading() {
+      const tbody = document.getElementById("reportTableBody");
+
+      if (!tbody) return;
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="11" class="text-center py-5">
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            Generating report...
+          </td>
+        </tr>
+      `;
     },
 
     restore() {
