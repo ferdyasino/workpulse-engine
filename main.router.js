@@ -3,7 +3,9 @@ const ALLOWED_PAGES = [
   "dashboard",
   "admin",
   "reports",
-  "login"
+  "login",
+  "settings",
+  "debugger"
 ];
 
 /* =====================================================
@@ -14,6 +16,10 @@ function normalizePage(page) {
   if (!page || typeof page !== "string") return "home";
   return page.toLowerCase().trim();
 }
+
+console.log("router loaded");
+
+console.log(typeof getUsers);
 
 function isAllowedPage(page) {
   return ALLOWED_PAGES.includes(page);
@@ -30,7 +36,9 @@ function getPagePath(page) {
     dashboard: "frontend/pages/dashboard",
     admin: "frontend/pages/adminDashboard",
     reports: "frontend/pages/reports",
-    login: "frontend/pages/login"
+    login: "frontend/pages/login",
+    settings: "frontend/pages/settings",
+    debugger: "frontend/pages/attendance.debug"
   };
 
   return map[page] || map.home;
@@ -143,4 +151,31 @@ function doPost(e) {
       message: err?.message || "Server error"
     });
   }
+}
+
+function doGet(e) {
+
+  const template =
+    HtmlService.createTemplateFromFile("frontend/index");
+
+  template.SERVER_DATA = {
+    workspaceSlug: e?.parameter?.w || "",
+    email: e?.parameter?.email || ""
+  };
+
+  return template
+    .evaluate()
+    .setTitle("Attendance Payroll");
+}
+
+function jsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj || {}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function include(filename) {
+  return HtmlService
+    .createHtmlOutputFromFile(filename)
+    .getContent();
 }

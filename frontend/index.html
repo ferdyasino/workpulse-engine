@@ -141,7 +141,7 @@
     <?!= include("frontend/scripts/scripts"); ?>
     <script>
       window.SERVER_DATA =
-      '<?= JSON.stringify(SERVER_DATA) ?>';
+      '<?!= JSON.stringify(SERVER_DATA) ?>';
       </script>
     <?!= include("frontend/scripts/app.core.script"); ?>
 
