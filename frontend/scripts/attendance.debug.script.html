@@ -26,7 +26,8 @@
 
       this.initialized = true;
 
-      this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
+      // this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
+      this.state.workspace_id = APP.user?.workspace_id || "";
 
       this.restore();
       this.renderTimezones();
@@ -241,5 +242,5 @@
     },
   };
 
-  document.addEventListener("DOMContentLoaded", () => AttendanceDebugger.init());
+  // document.addEventListener("DOMContentLoaded", () => AttendanceDebugger.init());
 </script>
