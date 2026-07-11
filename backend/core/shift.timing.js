@@ -132,6 +132,7 @@ function resolveShiftWindowByWorkDate(shift, workDate) {
   };
 }
 
+<<<<<<< HEAD
 function resolveAttendanceWindow(shift, value, settings) {
   if (!shift) {
     throw new Error("Shift is required.");
@@ -151,6 +152,18 @@ function resolveAttendanceWindow(shift, value, settings) {
   const after = Number(
     settings.ALLOW_LATE_TIME_OUT_MINUTES || 0
   );
+=======
+function resolveAttendanceWindow(shift, timestamp, settings) {
+  const shiftWindow = resolveShiftWindow(shift, timestamp);
+
+  settings = settings || {};
+
+  const before =
+    Number(settings.ALLOW_EARLY_TIME_IN_MINUTES || 0);
+
+  const after =
+    Number(settings.ALLOW_LATE_TIME_OUT_MINUTES || 0);
+>>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
 
   const attendanceStart = new Date(shiftWindow.shift_start);
   attendanceStart.setMinutes(
@@ -173,6 +186,7 @@ function resolveAttendanceWindow(shift, value, settings) {
     scheduled_minutes: shiftWindow.scheduled_minutes,
   };
 }
+<<<<<<< HEAD
 
 function resolveAttendanceSchedule(shift, work_date, settings) {
   if (!shift) {
@@ -225,3 +239,5 @@ function resolveAttendanceSchedule(shift, work_date, settings) {
     ),
   };
 }
+=======
+>>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
