@@ -16,11 +16,8 @@
       start_date: "",
       end_date: "",
 
-<<<<<<< HEAD
       timezone: "",
 
-=======
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
       result: null,
     },
 
@@ -29,17 +26,11 @@
 
       this.initialized = true;
 
-<<<<<<< HEAD
       // this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
       this.state.workspace_id = APP.user?.workspace_id || "";
 
       this.restore();
       this.renderTimezones();
-=======
-      this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
-
-      this.restore();
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
 
       const today = new Date().toISOString().substring(0, 10);
 
@@ -57,7 +48,6 @@
     },
 
     loadReferenceData() {
-<<<<<<< HEAD
       const runServer = (method, ...args) => {
         return new Promise((resolve, reject) => {
           google.script.run
@@ -85,31 +75,6 @@
           }
         })
         .catch(console.error);
-=======
-      google.script.run
-        .withSuccessHandler((users) => {
-          this.state.users = Array.isArray(users) ? users : [];
-
-          this.renderUsers();
-
-          google.script.run
-            .withSuccessHandler((shifts) => {
-              this.state.shifts = Array.isArray(shifts) ? shifts : [];
-
-              this.renderShifts();
-
-              if (this.state.email) {
-                document.getElementById("attendanceUser").value = this.state.email;
-
-                this.onUserChange();
-              }
-            })
-            .withFailureHandler(console.error)
-            .getAllShifts(this.state.workspace_id);
-        })
-        .withFailureHandler(console.error)
-        .getUsers(this.state.workspace_id);
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
     },
 
     renderUsers() {
@@ -154,7 +119,6 @@
       }
     },
 
-<<<<<<< HEAD
     renderTimezones() {
       const select = document.getElementById("attendanceTimezone");
 
@@ -185,8 +149,6 @@
       select.value = this.state.timezone || "Asia/Manila";
     },
 
-=======
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
     onUserChange() {
       const userSelect = document.getElementById("attendanceUser");
 
@@ -212,23 +174,16 @@
 
       this.state.end_date = document.getElementById("attendanceEndDate").value;
 
-<<<<<<< HEAD
       this.state.timezone = document.getElementById("attendanceTimezone").value;
 
-=======
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
       this.save();
 
       document.getElementById("attendanceResult").textContent = "Loading...";
 
       google.script.run
         .withSuccessHandler((result) => {
-<<<<<<< HEAD
           console.log("result", JSON.parse(result));
           this.state.result = JSON.parse(result);
-=======
-          this.state.result = result;
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
           this.render();
         })
         .withFailureHandler((err) => {
@@ -240,10 +195,7 @@
           this.state.shift_id,
           this.state.start_date,
           this.state.end_date,
-<<<<<<< HEAD
           this.state.timezone,
-=======
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
         );
     },
 
@@ -256,11 +208,8 @@
     },
 
     save() {
-<<<<<<< HEAD
       this.state.timezone = document.getElementById("attendanceTimezone")?.value || "Asia/Manila";
 
-=======
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
       localStorage.setItem(
         this.storageKey,
         JSON.stringify({
@@ -268,10 +217,7 @@
           shift_id: this.state.shift_id,
           start_date: this.state.start_date,
           end_date: this.state.end_date,
-<<<<<<< HEAD
           timezone: this.state.timezone,
-=======
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
         }),
       );
     },
@@ -279,7 +225,6 @@
     restore() {
       const raw = localStorage.getItem(this.storageKey);
 
-<<<<<<< HEAD
       if (!raw) {
         this.state.timezone = "Asia/Manila";
         return;
@@ -293,21 +238,9 @@
         console.error(err);
 
         this.state.timezone = "Asia/Manila";
-=======
-      if (!raw) return;
-
-      try {
-        Object.assign(this.state, JSON.parse(raw));
-      } catch (err) {
-        console.error(err);
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
       }
     },
   };
 
-<<<<<<< HEAD
   // document.addEventListener("DOMContentLoaded", () => AttendanceDebugger.init());
-=======
-  document.addEventListener("DOMContentLoaded", () => AttendanceDebugger.init());
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
 </script>
