@@ -3,13 +3,6 @@ function buildAttendanceState(shift, timelogState, options) {
 
   const settings = options.settings || {};
 
-<<<<<<< HEAD
-  const window = resolveAttendanceSchedule(
-    shift,
-    options.timestamp,
-    settings
-  );
-=======
   const window = shift
     ? resolveAttendanceWindow(
         shift,
@@ -17,7 +10,6 @@ function buildAttendanceState(shift, timelogState, options) {
         settings
       )
     : null;
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
 
   const attendance = {
     ...timelogState,
@@ -299,7 +291,6 @@ function api_debugAttendanceEngine(
   shift_id,
   start_date,
   end_date,
-<<<<<<< HEAD
   timezone,
 ) {
   if (!workspace_id) {
@@ -319,27 +310,6 @@ function api_debugAttendanceEngine(
   if (timezone) {
     settings.TIMEZONE = timezone;
   }
-=======
-) {
-  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
-  const normalizedEmail = normalize("email", email);
-  const normalizedShiftId = normalize("shift_id", shift_id);
-
-  if (!normalizedWorkspaceId) {
-    throw new Error("workspace_id is required");
-  }
-
-  if (!normalizedEmail) {
-    throw new Error("email is required");
-  }
-
-  if (!normalizedShiftId) {
-    throw new Error("shift_id is required");
-  }
-
-  start_date = normalize("date", start_date);
-  end_date = normalize("date", end_date) || start_date;
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
 
   if (!start_date) {
     throw new Error("start_date is required");
@@ -353,24 +323,15 @@ function api_debugAttendanceEngine(
   }
 
   const days = [];
-<<<<<<< HEAD
 
   const summary = {
     total_days: 0,
 
-=======
-  const summary = {
-    total_days: 0,
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
     present: 0,
     absent: 0,
     late: 0,
     undertime: 0,
     overtime: 0,
-<<<<<<< HEAD
-
-=======
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
     worked_minutes: 0,
     regular_minutes: 0,
     overtime_minutes: 0,
@@ -383,7 +344,6 @@ function api_debugAttendanceEngine(
   const cursor = new Date(start);
 
   while (cursor <= end) {
-<<<<<<< HEAD
     if (isWeeklyDayOff(cursor, settings)) {
       cursor.setDate(cursor.getDate() + 1);
       continue;
@@ -404,17 +364,6 @@ function api_debugAttendanceEngine(
       continue;
     }
 
-=======
-    const workDate = formatDateKey(cursor);
-
-    const attendance = getAttendanceStateByWorkDate(
-      normalizedWorkspaceId,
-      normalizedEmail,
-      normalizedShiftId,
-      workDate,
-    );
-
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
     days.push(attendance);
 
     summary.total_days++;
@@ -455,7 +404,6 @@ function api_debugAttendanceEngine(
     cursor.setDate(cursor.getDate() + 1);
   }
 
-<<<<<<< HEAD
   return JSON.stringify({
     employee: {
       email,
@@ -475,21 +423,4 @@ function api_debugAttendanceEngine(
 
     days,
   });
-=======
-  return {
-    employee: {
-      email: normalizedEmail,
-      shift_id: normalizedShiftId,
-    },
-
-    range: {
-      start_date: start_date,
-      end_date: end_date,
-    },
-
-    summary: summary,
-
-    days: days,
-  };
->>>>>>> 80faeb0b70c3411b280a3fc000b19f868019c74e
 }
