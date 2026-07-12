@@ -23,7 +23,7 @@ function getMasterUsers() {
 
 function findAuthUserByEmail(email) {
   const normalizedEmail = normalize("email", email);
-  if (!normalizedEmail) return null;
+  if (!normalizedEmail) return null;  
 
   return findOne(getMasterDatabase(), AUTH_TABLES.USERS, {
     email: normalizedEmail
@@ -581,6 +581,7 @@ function createOwnerUser(workspace_id, ownerMeta = {}) {
   // =====================================================
   // 2. RESOLVE WORKSPACE DB
   // =====================================================
+  // @ts-ignore
   const workspaceDb = SpreadsheetApp.openById(workspace_id);
 
   // =====================================================

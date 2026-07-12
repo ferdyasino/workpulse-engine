@@ -1,201 +1,533 @@
 <script>
-  // =====================================================
-  // REPORT PAGE UI
-  // =====================================================
-
-  APP.reports = APP.reports || {
+  const Reports = {
     initialized: false,
-    range: "today",
-    rows: [],
-    filteredRows: [],
-    kpis: {},
-  };
 
-  let __reportPageInitialized = false;
+    storageKey: "reports_page",
 
-  // =====================================================
-  // INIT
-  // =====================================================
+    state: {
+      workspace_id: "",
 
-  function initReportPage() {
-    const currentUser = getCurrentUser();
+      users: [],
+      shifts: [],
 
-    const role = String(currentUser?.role || "").toLowerCase();
+      settings: {},
 
-    const isAdmin = role === "admin" || role === "owner" || role === "hr" || role === "superadmin";
+      timezone: "Asia/Manila",
 
-    document.getElementById("adminReportControls")?.classList.toggle("d-none", !isAdmin);
+      email: "",
+      shift_id: "",
+      role: "",
 
-    if (__reportPageInitialized) {
-      return;
-    }
+      start_date: "",
+      end_date: "",
 
-    __reportPageInitialized = true;
+      report: null,
+    },
 
-    // -------------------------------------------------
-    // Employee Range
-    // -------------------------------------------------
+    init() {
+      if (this.initialized) return;
 
-    document.getElementById("reportRange")?.addEventListener("change", function () {
-      APP.reports.range = this.value;
+      this.initialized = true;
 
-      const adminRange = document.getElementById("adminReportRange");
+      // this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
+      this.state.workspace_id = APP.user?.workspace_id || "";
 
-      if (adminRange) {
-        adminRange.value = this.value;
-      }
+      // this.restore();
 
-      loadReports(this.value);
-    });
+      this.bindEvents();
 
-    // -------------------------------------------------
-    // Admin Range
-    // -------------------------------------------------
+      this.loadSettings().then(() => {
+        this.applyTimezone();
 
-    document.getElementById("adminReportRange")?.addEventListener("change", function () {
-      APP.reports.range = this.value;
+        const today = this.formatDateTZ(this.now());
 
-      const employeeRange = document.getElementById("reportRange");
+        document.getElementById("reportStartDate").value = this.state.start_date || today;
 
-      if (employeeRange) {
-        employeeRange.value = this.value;
-      }
+        document.getElementById("reportEndDate").value = this.state.end_date || today;
 
-      loadReports(this.value);
-    });
-
-    // -------------------------------------------------
-    // Employee Filter
-    // -------------------------------------------------
-
-    document.getElementById("employeeFilter")?.addEventListener("change", function () {
-      renderReportTable();
-    });
-
-    initReportExport();
-  }
-
-  // =====================================================
-  // EMPLOYEE FILTER
-  // =====================================================
-
-  function populateEmployeeFilter() {
-    const select = document.getElementById("employeeFilter");
-
-    if (!select) {
-      return;
-    }
-
-    const currentUser = getCurrentUser();
-
-    const role = String(currentUser?.role || "").toLowerCase();
-
-    const isAdmin = role === "admin" || role === "owner" || role === "hr" || role === "superadmin";
-
-    // -------------------------------------------------
-    // Employee
-    // -------------------------------------------------
-
-    if (!isAdmin) {
-      select.innerHTML = `
-        <option value="${currentUser.user_id}">
-          ${currentUser.fullname || currentUser.email}
-        </option>
-      `;
-
-      select.disabled = true;
-
-      return;
-    }
-
-    // -------------------------------------------------
-    // Admin
-    // -------------------------------------------------
-
-    select.disabled = false;
-
-    const previousValue = select.value || "all";
-
-    const users = new Map();
-
-    APP.reports.rows.forEach(function (row) {
-      if (!users.has(row.user_id)) {
-        users.set(row.user_id, {
-          fullname: row.fullname || row.email || row.user_id,
-        });
-      }
-    });
-
-    select.innerHTML = `<option value="all">
-          All Employees
-       </option>`;
-
-    Array.from(users.entries())
-      .sort(function (a, b) {
-        return a[1].fullname.localeCompare(b[1].fullname);
-      })
-      .forEach(function ([userId, user]) {
-        select.insertAdjacentHTML(
-          "beforeend",
-          `
-          <option value="${userId}">
-            ${user.fullname}
-          </option>
-          `,
-        );
+        this.bindRangeButtons();
       });
 
-    if (previousValue !== "all" && users.has(previousValue)) {
-      select.value = previousValue;
-    } else {
-      select.value = "all";
-    }
-  }
+      this.loadReferenceData();
+    },
 
-  // =====================================================
-  // TABLE ROW
-  // =====================================================
+    bindEvents() {
+      document.getElementById("reportRun")?.addEventListener("click", () => this.run());
 
-  function buildReportRow(row) {
-    return `
-      <tr>
+      document
+        .getElementById("reportEmployee")
+        ?.addEventListener("change", () => this.onUserChange());
 
-        <td>
-          <div class="fw-semibold">
-            ${row.fullname || "-"}
-          </div>
-        </td>
+      document.getElementById("reportTimezoneSelect")?.addEventListener("change", (e) => {
+        this.state.timezone = e.target.value || "Asia/Manila";
 
-        <td>
-          ${row.shift_name} ${formatShift(row.shift_start)} - ${formatShift(row.shift_end)}
-        </td>
+        this.save();
 
-        <td>
-          ${formatMinutes(row.worked_minutes)}
-        </td>
+        const today = this.formatDateTZ(this.now());
 
-        <td class="text-danger">
-          ${formatMinutes(row.late_minutes)}
-        </td>
+        document.getElementById("reportStartDate").value = today;
 
-        <td class="text-warning">
-          ${formatMinutes(row.overtime_minutes)}
-        </td>
+        document.getElementById("reportEndDate").value = today;
+      });
+    },
 
-        <td>
-          <span class="badge ${statusBadgeClass(row.status)}">
-            ${DISPLAY.status(row.status)}
-          </span>
-        </td>
+    server(method, ...args) {
+      return new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)
+          [method](...args);
+      });
+    },
 
-        <td>
-          ${formatShift(row.date)}
-        </td>
+    loadSettings() {
+      return this.server("getWorkspaceSettings", this.state.workspace_id)
+        .then((settings) => {
+          this.state.settings = settings || {};
 
-      </tr>
-    `;
-  }
-  // =====================================================
-  // REPORT RESET
-  // =====================================================
+          if (!this.state.timezone || this.state.timezone === "Asia/Manila") {
+            this.state.timezone =
+              this.state.settings.TIMEZONE || this.state.settings.timezone || "Asia/Manila";
+          }
+
+          this.applyTimezone();
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    },
+
+    applyTimezone() {
+      const select = document.getElementById("reportTimezoneSelect");
+
+      if (select) {
+        select.value = this.state.timezone;
+      }
+    },
+
+    loadReferenceData() {
+      this.server("getUsers", this.state.workspace_id)
+
+        .then((users) => {
+          this.state.users = Array.isArray(users) ? users : [];
+
+          this.renderUsers();
+
+          return this.server("getAllShifts", this.state.workspace_id);
+        })
+
+        .then((shifts) => {
+          this.state.shifts = Array.isArray(shifts) ? shifts : [];
+
+          this.renderShifts();
+        })
+
+        .catch(console.error);
+    },
+
+    renderUsers() {
+      const select = document.getElementById("reportEmployee");
+
+      if (!select) return;
+
+      const isAdmin = ["ADMIN", "OWNER", "HR", "SUPERADMIN"].includes(
+        String(APP.role || "").toUpperCase(),
+      );
+
+      select.innerHTML = "";
+
+      if (isAdmin) {
+        const all = document.createElement("option");
+        all.value = "";
+        all.textContent = "All Employees";
+        select.appendChild(all);
+      }
+
+      this.state.users.forEach((user) => {
+        const option = document.createElement("option");
+
+        option.value = user.email;
+        option.textContent = `${user.fullname || user.name} (${user.email})`;
+        option.dataset.shiftId = user.shift_id || "";
+
+        select.appendChild(option);
+      });
+
+      const currentEmail = APP.user?.email || "";
+
+      this.state.email = currentEmail;
+
+      if (isAdmin) {
+        if (select.querySelector(`option[value="${currentEmail}"]`)) {
+          select.value = currentEmail;
+        }
+      } else {
+        select.value = currentEmail;
+        select.disabled = true;
+      }
+
+      const currentUser = this.state.users.find((u) => u.email === currentEmail);
+
+      this.state.shift_id = currentUser?.shift_id || "";
+
+      this.applyPermissions();
+    },
+
+    renderShifts() {
+      const select = document.getElementById("reportShift");
+
+      if (!select) return;
+
+      select.innerHTML = `<option value="">Assigned Shift</option>`;
+
+      this.state.shifts.forEach((shift) => {
+        const option = document.createElement("option");
+
+        option.value = shift.shift_id;
+        option.textContent = shift.shift_name;
+
+        select.appendChild(option);
+      });
+
+      select.value = this.state.shift_id || "";
+
+      this.applyPermissions();
+    },
+
+    onUserChange() {
+      const select = document.getElementById("reportEmployee");
+
+      const option = select.options[select.selectedIndex];
+
+      if (!option) return;
+
+      this.state.email = option.value;
+
+      this.state.shift_id = option.dataset.shiftId || "";
+
+      document.getElementById("reportShift").value = this.state.shift_id;
+    },
+
+    bindRangeButtons() {
+      document.getElementById("reportToday")?.addEventListener("click", () => {
+        const today = this.formatDateTZ(this.now());
+
+        this.setRange(today, today);
+      });
+
+      document.getElementById("reportYesterday")?.addEventListener("click", () => {
+        const d = this.now();
+
+        d.setDate(d.getDate() - 1);
+
+        const date = this.formatDateTZ(d);
+
+        this.setRange(date, date);
+      });
+
+      document.getElementById("reportThisWeek")?.addEventListener("click", () => {
+        const r = this.getWeekRange();
+
+        this.setRange(r.start, r.end);
+      });
+
+      document.getElementById("reportLastWeek")?.addEventListener("click", () => {
+        const r = this.getWeekRange(-1);
+
+        this.setRange(r.start, r.end);
+      });
+
+      document.getElementById("reportThisMonth")?.addEventListener("click", () => {
+        const now = this.now();
+
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        this.setRange(this.formatDateTZ(start), this.formatDateTZ(now));
+      });
+    },
+
+    getWeekStartDay() {
+      const raw = this.state.settings?.WEEKLY_START_DAY ?? "Monday";
+
+      const map = {
+        sunday: 0,
+        monday: 1,
+        tuesday: 2,
+        wednesday: 3,
+        thursday: 4,
+        friday: 5,
+        saturday: 6,
+      };
+
+      return map[String(raw).toLowerCase()] ?? 1;
+    },
+
+    getWeekRange(offset = 0) {
+      const now = this.now();
+
+      now.setHours(0, 0, 0, 0);
+
+      const startDay = this.getWeekStartDay();
+
+      const diff = (now.getDay() - startDay + 7) % 7;
+
+      const start = new Date(now);
+
+      start.setDate(start.getDate() - diff + offset * 7);
+
+      const end = new Date(start);
+
+      end.setDate(end.getDate() + 6);
+
+      return {
+        start: this.formatDateTZ(start),
+
+        end: this.formatDateTZ(end),
+      };
+    },
+
+    setRange(start, end) {
+      document.getElementById("reportStartDate").value = start;
+
+      document.getElementById("reportEndDate").value = end;
+    },
+
+    run() {
+      this.state.email = document.getElementById("reportEmployee").value;
+      this.state.shift_id = document.getElementById("reportShift").value;
+      this.state.start_date = document.getElementById("reportStartDate").value;
+      this.state.end_date = document.getElementById("reportEndDate").value;
+
+      this.save();
+
+      // Show loading spinner
+      this.renderLoading();
+
+      google.script.run
+        .withSuccessHandler((result) => {
+          if (typeof result === "string") {
+            result = JSON.parse(result);
+          }
+
+          this.state.report = result;
+
+          this.render();
+        })
+        .withFailureHandler((err) => {
+          showToast?.(err.message || err);
+
+          document.getElementById("reportTableBody").innerHTML = `
+          <tr>
+            <td colspan="11" class="text-center text-danger py-5">
+              Failed to generate report.
+            </td>
+          </tr>
+        `;
+        })
+        .api_getReports(
+          this.state.workspace_id,
+          this.state.email,
+          this.state.shift_id,
+          APP.role,
+          this.state.start_date,
+          this.state.end_date,
+        );
+    },
+
+    applyPermissions() {
+      const isAdmin = ["ADMIN", "OWNER", "HR", "SUPERADMIN"].includes(
+        String(APP.role || "").toUpperCase(),
+      );
+
+      const employee = document.getElementById("reportEmployee");
+      const shift = document.getElementById("reportShift");
+      const timezone = document.getElementById("reportTimezoneSelect");
+
+      if (employee) {
+        employee.disabled = !isAdmin;
+      }
+
+      if (shift) {
+        shift.disabled = !isAdmin;
+      }
+
+      if (timezone) {
+        timezone.disabled = !isAdmin;
+      }
+    },
+
+    render() {
+      this.renderSummary();
+
+      this.renderTable();
+    },
+
+    renderSummary() {
+      const s = this.state.report?.summary || {};
+
+      repRunningHours.textContent = formatMinutes(s.worked_minutes || 0);
+
+      repRegularHours.textContent = formatMinutes(s.regular_minutes || 0);
+
+      repOTHours.textContent = formatMinutes(s.overtime_minutes || 0);
+
+      repUndertimeHours.textContent = formatMinutes(s.undertime_minutes || 0);
+
+      repBreakHours.textContent = formatMinutes(s.break_minutes || 0);
+
+      repLunchHours.textContent = formatMinutes(s.lunch_minutes || 0);
+
+      repPresent.textContent = s.present || 0;
+
+      repAbsent.textContent = s.absent || 0;
+
+      repLate.textContent = s.late || 0;
+
+      repWorkdays.textContent = s.workdays || 0;
+    },
+
+    renderTable() {
+      const tbody = document.getElementById("reportTableBody");
+
+      const rows = this.state.report?.rows || [];
+
+      if (!rows.length) {
+        tbody.innerHTML = `<tr>
+                        <td colspan="11"
+                        class="text-center text-muted py-5">
+                        No reports found.
+                        </td>
+                      </tr>`;
+
+        return;
+      }
+
+      tbody.innerHTML = rows
+        .map(
+          (row) => `
+
+                      <tr>
+
+                      <td>${row.date || "-"}</td>
+
+                      <td>${row.fullname || row.email || "-"}</td>
+
+                      <td>${row.shift_name || "-"}</td>
+
+                      <td>${this.formatDateTime(row.time_in)}</td>
+
+                      <td>${this.formatDateTime(row.time_out)}</td>
+
+                      <td>${formatMinutes(row.worked_minutes || 0)}</td>
+
+                      <td>${formatMinutes(row.regular_minutes || 0)}</td>
+
+                      <td>${formatMinutes(row.overtime_minutes || 0)}</td>
+
+                      <td>${formatMinutes(row.late_minutes || 0)}</td>
+
+                      <td>${formatMinutes(row.undertime_minutes || 0)}</td>
+
+                      <td>
+                      <span class="badge ${statusBadgeClass(row.status)}">
+                      ${DISPLAY.status(row.status)}
+                      </span>
+                      </td>
+
+                      </tr>
+
+                      `,
+        )
+        .join("");
+    },
+
+    now() {
+      return new Date(
+        new Date().toLocaleString("en-US", {
+          timeZone: this.getShiftTimezone(),
+        }),
+      );
+    },
+
+    formatDateTZ(date) {
+      return new Intl.DateTimeFormat("en-CA", {
+        timeZone: this.getShiftTimezone(),
+
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(date);
+    },
+
+    formatDateTime(value) {
+      if (!value) {
+        return "-";
+      }
+
+      const date = new Date(value);
+
+      if (isNaN(date.getTime())) {
+        return "-";
+      }
+
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: this.state.timezone || "Asia/Manila",
+
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+
+        hour: "2-digit",
+        minute: "2-digit",
+
+        hour12: true,
+      }).format(date);
+    },
+
+    save() {
+      localStorage.setItem(
+        this.storageKey,
+        JSON.stringify({
+          timezone: this.state.timezone,
+
+          email: this.state.email,
+
+          shift_id: this.state.shift_id,
+
+          start_date: this.state.start_date,
+
+          end_date: this.state.end_date,
+        }),
+      );
+    },
+
+    getShiftTimezone() {
+      return "Asia/Manila";
+    },
+
+    renderLoading() {
+      const tbody = document.getElementById("reportTableBody");
+
+      if (!tbody) return;
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="11" class="text-center py-5">
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            Generating report...
+          </td>
+        </tr>
+      `;
+    },
+
+    restore() {
+      try {
+        Object.assign(this.state, JSON.parse(localStorage.getItem(this.storageKey) || "{}"));
+      } catch (e) {
+        console.error(e);
+      }
+    },
+  };
+
+  // document.addEventListener("DOMContentLoaded", () => Reports.init());
 </script>

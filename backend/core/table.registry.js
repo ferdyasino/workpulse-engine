@@ -62,6 +62,7 @@ const SCHEMA = {
     "start_time",
     "end_time",
     "grace_minutes",
+    "timezone",
     "status",
     "created_at",
     "break_limit_minutes",

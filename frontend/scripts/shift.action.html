@@ -1,6 +1,22 @@
 <script>
+  function getTimezoneOptions() {
+    const settings = APP?.settings || state?.settings || {};
+
+    if (Array.isArray(settings.TIMEZONE_OPTIONS) && settings.TIMEZONE_OPTIONS.length) {
+      return settings.TIMEZONE_OPTIONS;
+    }
+
+    if (settings.TIMEZONE) {
+      return [settings.TIMEZONE];
+    }
+
+    return ["Asia/Manila"];
+  }
+
   function openShiftListModal() {
     ShiftModal.openListModal({
+      listTimezone: getTimezoneOptions(),
+
       onMount() {
         loadShifts()
           .then((shifts) => {
@@ -8,7 +24,6 @@
           })
           .catch((err) => {
             showToast(err?.message || "Failed to load shifts", "error");
-
             renderShiftListModal([]);
           });
       },
@@ -19,11 +34,14 @@
     ShiftModal.openCreateModal(
       {
         shift_name: prefill.shift_name || "",
+        timezone: prefill.timezone || "",
         start_time: prefill.start_time || "",
         end_time: prefill.end_time || "",
         status: prefill.status || "ACTIVE",
       },
       {
+        listTimezone: getTimezoneOptions(),
+
         onSubmit(formData) {
           UsersAPI.createShift(
             formData,
@@ -45,9 +63,12 @@
 
   function editShift(shiftId) {
     const shift = state.shifts.find((s) => s.shift_id === shiftId);
-    console.log("editShift shift:", shift);
+
     if (!shift) return;
+
     ShiftModal.openEditModal(shift, {
+      listTimezone: getTimezoneOptions(),
+
       onSubmit(formData) {
         UsersAPI.updateShift(
           shiftId,
@@ -69,13 +90,15 @@
 
   function deleteShift(shiftId) {
     ShiftModal.openDeleteModal(
-      { shift_id: shiftId },
       {
-        onDelete(shiftid) {
+        shift_id: shiftId,
+      },
+      {
+        onDelete() {
           setLoading(true);
 
           UsersAPI.deleteShift(
-            shift.shift_id,
+            shiftId,
             () => {
               showToast("Shift deleted", "success");
               GlobalModal.hide("globalDeleteModal");
@@ -91,11 +114,11 @@
           );
         },
 
-        onDeactivate(shiftid) {
+        onDeactivate() {
           setLoading(true);
 
           UsersAPI.deactivateShift(
-            shift.shift_id,
+            shiftId,
             () => {
               showToast("Shift deactivated", "success");
               GlobalModal.hide("globalDeleteModal");

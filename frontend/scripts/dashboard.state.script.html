@@ -81,7 +81,6 @@
   // =====================================================
   // UI STATE
   // =====================================================
-
   function applyUIState(page) {
     const topbar = document.getElementById("appTopbar");
     const clock = document.getElementById("adminClockContainer");
@@ -94,7 +93,7 @@
 
     topbar?.classList.remove("d-none");
 
-    if (page === "admin") {
+    if (page === "admin" || page === "debug") {
       clock?.classList.remove("d-none");
     } else {
       clock?.classList.add("d-none");
@@ -105,22 +104,20 @@
       initDashboardAttendanceUI?.();
     }
   }
-
   // =====================================================
   // ROLE UI
   // =====================================================
 
   function applyRoleUI() {
     const isAdmin = APP.role === "admin" || APP.role === "owner";
-    const adminMenu = document.getElementById("adminMenuItem");
-    const adminSettings = document.getElementById("adminSettings");
-    const dashDropId = document.getElementById("dashDropId");
+
     document.getElementById("adminReportControls")?.classList.toggle("d-none", !isAdmin);
 
-    if (adminMenu) {
-      adminMenu.classList.toggle("d-none", !isAdmin);
-      adminSettings.classList.toggle("d-none", !isAdmin);
-    }
+    document.getElementById("adminMenuItem")?.classList.toggle("d-none", !isAdmin);
+
+    document.getElementById("adminSettings")?.classList.toggle("d-none", !isAdmin);
+
+    document.getElementById("adminDebugger")?.classList.toggle("d-none", !isAdmin);
   }
 
   // =====================================================
@@ -156,7 +153,7 @@
           break;
 
         case "reports":
-          await loadReportsPage?.();
+          Reports?.init?.();
           break;
 
         case "settings":
@@ -169,6 +166,10 @@
 
         case "admin":
           await loadAdminHomePage?.();
+          break;
+
+        case "debug":
+          AttendanceDebugger?.init?.();
           break;
       }
     } catch (error) {

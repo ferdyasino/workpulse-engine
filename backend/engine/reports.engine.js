@@ -1,8 +1,4 @@
 function buildEmployeeReport(workspace_id, email, range, settings) {
-  workspace_id = normalize("workspace_id", workspace_id);
-  email = normalize("email", email);
-  range = normalize("range", range);
-
   if (!workspace_id) {
     throw new Error("workspace_id is required");
   }
@@ -70,34 +66,43 @@ function resolveReportRange(range, settings) {
   start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
 
-  const weekdayMap = {
-    SUNDAY: 0,
-    MONDAY: 1,
-    TUESDAY: 2,
-    WEDNESDAY: 3,
-    THURSDAY: 4,
-    FRIDAY: 5,
-    SATURDAY: 6,
-  };
+const weekdayMap = {
+  SUNDAY: 0,
+  MONDAY: 1,
+  TUESDAY: 2,
+  WEDNESDAY: 3,
+  THURSDAY: 4,
+  FRIDAY: 5,
+  SATURDAY: 6,
+};
 
-  const weekStart = weekdayMap[
-    String(settings.WEEKLY_START_DAY || "MONDAY").toUpperCase()
-  ];
+const weekStart = weekdayMap[
+  String(settings.WEEKLY_START_DAY || "MONDAY").toUpperCase()
+];
 
-  function moveToWeekStart(date) {
-    const current = date.getDay();
+// Returns a brand new date instance instead of altering the original input
+function getWeekStartDate(inputDate) {
+  // 1. Create a safe copy of the date instance
+  const newDate = new Date(inputDate.getTime());
+  
+  const current = newDate.getDay();
+  let diff = current - weekStart;
 
-    let diff = current - weekStart;
-
-    if (diff < 0) {
-      diff += 7;
-    }
-
-    date.setDate(date.getDate() - diff);
+  if (diff < 0) {
+    diff += 7;
   }
+
+  // 2. Safely mutate only the copy
+  newDate.setDate(newDate.getDate() - diff);
+  
+  return newDate;
+}
+
 
   switch (range) {
     case "today":
+      start.setDate(start.getDate());
+      end.setDate(end.getDate());
       break;
 
     case "yesterday":
@@ -106,12 +111,12 @@ function resolveReportRange(range, settings) {
       break;
 
     case "this_week":
-      moveToWeekStart(start);
+      getWeekStartDate(start);
       end.setTime(Date.now());
       break;
 
     case "last_week":
-      moveToWeekStart(start);
+      getWeekStartDate(start);
 
       start.setDate(start.getDate() - 7);
 

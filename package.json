@@ -2,7 +2,7 @@
   "name": "workpulse-engine",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "main.router.js",
   "directories": {
     "test": "test"
   },
