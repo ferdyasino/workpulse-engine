@@ -3,55 +3,89 @@ function resolveShiftWindow(shift, timestamp) {
     throw new Error("Shift is required.");
   }
 
-  const reference =
-    timestamp instanceof Date ? new Date(timestamp) : new Date(timestamp || new Date());
+  const timezone =
+    shift.timezone ||
+    Session.getScriptTimeZone();
 
-  const shiftStart = new Date(reference);
+  const referenceUtc =
+    timestamp instanceof Date
+      ? new Date(timestamp)
+      : new Date(timestamp || new Date());
 
-  const shiftEnd = new Date(reference);
+  // Current calendar date in the shift timezone
+  let workDate = workDateInTimezone(
+    referenceUtc,
+    timezone
+  );
 
-  const startParts = String(shift.start_time || "00:00")
-    .split(":")
-    .map(Number);
+  let shiftStart = zonedDateTimeToUtc(
+    workDate,
+    shift.start_time,
+    timezone
+  );
 
-  const endParts = String(shift.end_time || "00:00")
-    .split(":")
-    .map(Number);
+  let shiftEnd = zonedDateTimeToUtc(
+    workDate,
+    shift.end_time,
+    timezone
+  );
 
-  shiftStart.setHours(startParts[0], startParts[1], 0, 0);
+  if (isOvernightShift(shift) && shiftEnd <= shiftStart) {
+    shiftEnd = new Date(
+      shiftEnd.getTime() + 86400000
+    );
+  }
 
-  shiftEnd.setHours(endParts[0], endParts[1], 0, 0);
+  // Overnight adjustment
+  if (isOvernightShift(shift) && referenceUtc < shiftEnd) {
+    const yesterday = new Date(
+      shiftStart.getTime() - 86400000
+    );
 
-  if (isOvernightShift(shift)) {
-    if (shiftEnd <= shiftStart) {
-      shiftEnd.setDate(shiftEnd.getDate() + 1);
+    const yesterdayDate = workDateInTimezone(
+      yesterday,
+      timezone
+    );
+
+    const previousStart = zonedDateTimeToUtc(
+      yesterdayDate,
+      shift.start_time,
+      timezone
+    );
+
+    let previousEnd = zonedDateTimeToUtc(
+      yesterdayDate,
+      shift.end_time,
+      timezone
+    );
+
+    if (previousEnd <= previousStart) {
+      previousEnd = new Date(
+        previousEnd.getTime() + 86400000
+      );
     }
 
-    if (reference < shiftEnd) {
-      const yesterdayStart = new Date(shiftStart);
-
-      yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-
-      const yesterdayEnd = new Date(shiftEnd);
-
-      yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
-
-      if (reference >= yesterdayStart && reference <= yesterdayEnd) {
-        shiftStart.setDate(shiftStart.getDate() - 1);
-
-        shiftEnd.setDate(shiftEnd.getDate() - 1);
-      }
+    if (
+      referenceUtc >= previousStart &&
+      referenceUtc <= previousEnd
+    ) {
+      shiftStart = previousStart;
+      shiftEnd = previousEnd;
+      workDate = yesterdayDate;
     }
   }
 
   return {
-    shift_start: shiftStart,
+    timezone,
 
+    shift_start: shiftStart,
     shift_end: shiftEnd,
 
-    work_date: formatDateKey(shiftStart),
+    work_date: workDate,
 
-    scheduled_minutes: Math.round((shiftEnd.getTime() - shiftStart.getTime()) / 60000),
+    scheduled_minutes: Math.round(
+      (shiftEnd.getTime() - shiftStart.getTime()) / 60000
+    ),
   };
 }
 
@@ -174,54 +208,86 @@ function resolveAttendanceWindow(shift, value, settings) {
   };
 }
 
-function resolveAttendanceSchedule(shift, work_date, settings) {
+function resolveAttendanceSchedule(
+  shift,
+  work_date,
+  settings
+) {
+
   if (!shift) {
     throw new Error("Shift is required.");
   }
-  const baseDate =  new Date(work_date);
 
-  const shiftStart = new Date(baseDate.getTime());
-  const shiftEnd = new Date(baseDate.getTime());
+  settings = settings || {};
 
-  const [startHour, startMinute] = String(shift.start_time)
-    .split(":")
-    .map(Number);
+  const timezone = getTimezone(
+    shift,
+    settings
+  );
 
-  const [endHour, endMinute] = String(shift.end_time)
-    .split(":")
-    .map(Number);
+  const shiftStart = zonedDateTimeToUtc(
+    work_date,
+    shift.start_time,
+    timezone
+  );
 
-  shiftStart.setHours(startHour, startMinute, 0, 0);
-  shiftEnd.setHours(endHour, endMinute, 0, 0);
+  let shiftEnd = zonedDateTimeToUtc(
+    work_date,
+    shift.end_time,
+    timezone
+  );
 
-  if (isOvernightShift(shift) && shiftEnd <= shiftStart) {
-    shiftEnd.setDate(shiftEnd.getDate() + 1);
+  // Overnight shift
+  if (
+    isOvernightShift(shift) &&
+    shiftEnd <= shiftStart
+  ) {
+    shiftEnd.setUTCDate(
+      shiftEnd.getUTCDate() + 1
+    );
   }
 
-  const attendanceStart = new Date(shiftStart);
-  attendanceStart.setMinutes(
-    attendanceStart.getMinutes() -
-      Number(settings.ALLOW_EARLY_TIME_IN_MINUTES || 0)
+  const attendanceStart = new Date(
+    shiftStart.getTime()
   );
 
-  const attendanceEnd = new Date(shiftEnd);
-  attendanceEnd.setMinutes(
-    attendanceEnd.getMinutes() +
-      Number(settings.ALLOW_LATE_TIME_OUT_MINUTES || 0)
+  attendanceStart.setUTCMinutes(
+    attendanceStart.getUTCMinutes() -
+      Number(
+        settings.ALLOW_EARLY_TIME_IN_MINUTES || 0
+      )
   );
 
+  const attendanceEnd = new Date(
+    shiftEnd.getTime()
+  );
+
+  attendanceEnd.setUTCMinutes(
+    attendanceEnd.getUTCMinutes() +
+      Number(
+        settings.ALLOW_LATE_TIME_OUT_MINUTES || 0
+      )
+  );
 
   return {
-    work_date: work_date,
+
+    timezone,
+
+    work_date,
 
     shift_start: shiftStart,
+
     shift_end: shiftEnd,
 
     attendance_start: attendanceStart,
+
     attendance_end: attendanceEnd,
 
     scheduled_minutes: Math.round(
-      (shiftEnd.getTime() - shiftStart.getTime()) / 60000
+      (shiftEnd.getTime() -
+        shiftStart.getTime()) /
+        60000
     ),
+
   };
 }

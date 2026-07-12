@@ -286,7 +286,7 @@ function buildAttendanceByWorkDate(
   email,
   shift_id,
   work_date,
-  settings,
+  settings
 ) {
   if (!workspace_id) {
     throw new Error("workspace_id is required");
@@ -304,20 +304,26 @@ function buildAttendanceByWorkDate(
     throw new Error("work_date is required");
   }
 
-  settings = settings || getWorkspaceSettings(workspace_id);
+  settings =
+    settings ||
+    getWorkspaceSettings(workspace_id);
+
 
   if (!shouldGenerateAttendance(work_date, settings)) {
     return null;
   }
 
+
   const shift = getShiftById(
     workspace_id,
-    shift_id,
+    shift_id
   );
+
 
   if (!shift) {
     throw new Error("Shift not found.");
   }
+
 
   const logs = getTimeLogsByEmail(
     workspace_id,
@@ -325,47 +331,93 @@ function buildAttendanceByWorkDate(
     {
       shift_id,
       date: work_date,
-    },
+    }
   );
 
-  const timelogState = buildTimeLogState(logs);
 
-  const attendance = buildAttendanceState(
-    shift,
-    timelogState,
-    {
-      settings,
-      timestamp: work_date,
-    },
-  );
-  
-  if (attendance.attendance_status === "PENDING") {
-  return null;
-}
+  const timelogState =
+    buildTimeLogState(logs);
+
+
+  const attendance =
+    buildAttendanceState(
+      shift,
+      timelogState,
+      {
+        settings,
+        timestamp: work_date,
+      }
+    );
+
+
+  if (
+    attendance.attendance_status === "PENDING"
+  ) {
+    return null;
+  }
+
 
   attendance.work_date = work_date;
+
   attendance.raw_logs = logs;
+
   attendance.scope = "shift";
+
 
   return attendance;
 }
 
-function shouldGenerateAttendance(workDate, settings) {
-  const date =
-    workDate instanceof Date
-      ? new Date(workDate)
-      : new Date(workDate);
 
-  return !isWeeklyDayOff(date, settings);
+
+function shouldGenerateAttendance(
+  workDate,
+  settings
+) {
+  return !isWeeklyDayOff(
+    workDate,
+    settings
+  );
 }
 
-function isWeeklyDayOff(date, settings) {
-  const weeklyDaysOff = String(settings.WEEKLY_DAYS_OFF || "")
+
+
+function isWeeklyDayOff(
+  workDate,
+  settings
+) {
+
+  const dateParts = String(workDate)
+    .split("-")
+    .map(Number);
+
+
+  if (dateParts.length !== 3) {
+    throw new Error(
+      "Invalid work date: " + workDate
+    );
+  }
+
+
+  const date = new Date(
+    Date.UTC(
+      dateParts[0],
+      dateParts[1] - 1,
+      dateParts[2]
+    )
+  );
+
+
+  const weeklyDaysOff = String(
+    settings.WEEKLY_DAYS_OFF || ""
+  )
     .split(",")
-    .map(function (day) {
-      return day.trim().toUpperCase();
+    .map(function(day) {
+      return day
+        .trim()
+        .toUpperCase();
     })
     .filter(Boolean);
+
 
   const dayNames = [
     "SUNDAY",
@@ -377,5 +429,8 @@ function isWeeklyDayOff(date, settings) {
     "SATURDAY",
   ];
 
-  return weeklyDaysOff.includes(dayNames[date.getDay()]);
+
+  return weeklyDaysOff.includes(
+    dayNames[date.getUTCDay()]
+  );
 }

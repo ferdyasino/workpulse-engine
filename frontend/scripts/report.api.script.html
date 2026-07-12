@@ -44,26 +44,18 @@
     loadReports(APP.reports.range);
   }
 
-  // =====================================================
-  // LOAD REPORTS
-  // =====================================================
+  // function loadReports(range = "today") {
+  //   APP.reports.range = range;
 
-  // =====================================================
-  // LOAD REPORTS
-  // =====================================================
+  //   const user = getCurrentUser();
 
-  function loadReports(range = "today") {
-    APP.reports.range = range;
+  //   showLoader();
 
-    const user = getCurrentUser();
-
-    showLoader();
-
-    google.script.run
-      .withSuccessHandler(handleReportsSuccess)
-      .withFailureHandler(handleReportsFailure)
-      .api_getReports(user.workspace_id, user.email, user.shift_id, user.role, range);
-  }
+  //   google.script.run
+  //     .withSuccessHandler(handleReportsSuccess)
+  //     .withFailureHandler(handleReportsFailure)
+  //     .api_getReports(user.workspace_id, user.email, user.shift_id, user.role, range);
+  // }
 
   // =====================================================
   // SUCCESS

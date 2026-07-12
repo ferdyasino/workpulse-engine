@@ -4,7 +4,7 @@ function buildAttendanceState(shift, timelogState, options) {
   const settings = options.settings || {};
 
   const window = shift
-    ? resolveAttendanceWindow(
+    ? resolveAttendanceSchedule(
         shift,
         options.timestamp,
         settings
@@ -15,8 +15,10 @@ function buildAttendanceState(shift, timelogState, options) {
     ...timelogState,
 
     shift_id: shift ? shift.shift_id : "",
+
     shift_start: window ? window.shift_start : null,
     shift_end: window ? window.shift_end : null,
+
     scheduled_minutes: window ? window.scheduled_minutes : 0,
 
     attendance_sessions: [],
@@ -36,101 +38,130 @@ function buildAttendanceState(shift, timelogState, options) {
     return attendance;
   }
 
-  attendance.attendance_sessions = buildAttendanceSessions(
-    timelogState.sessions,
-    window,
-    settings
-  );
-
-  attendance.worked_minutes = calculateWorkedMinutes(
-      attendance.attendance_sessions,
-      window, 
-      options.timestamp
-  );
-
-  attendance.break_minutes = calculateBreakMinutes(
-    timelogState.breaks
-  );
-
-  attendance.lunch_minutes = calculateLunchMinutes(
-    timelogState.lunch
-  );
-
-  attendance.late_minutes = calculateLateMinutes(
-    attendance.attendance_sessions,
-    window,
-    settings
-  );
-
-  const now = new Date();
-  const shiftFinished = now >= window.shift_end;
-
-  if (shiftFinished) {
-    attendance.regular_minutes = calculateRegularMinutes(
-      attendance.worked_minutes,
-      attendance.scheduled_minutes
-    );
-
-    attendance.overtime_minutes = calculateOvertimeMinutes(
-      attendance.worked_minutes,
-      attendance.scheduled_minutes,
+  attendance.attendance_sessions =
+    buildAttendanceSessions(
+      timelogState.sessions,
+      window,
       settings
     );
 
-    attendance.undertime_minutes =
-        calculateUndertimeMinutes(
-            attendance.worked_minutes,
-            attendance.scheduled_minutes,
-            window,
-            options.timestamp
-        );
-  } else {
-  
-    attendance.regular_minutes = Math.min(
-      attendance.worked_minutes,
-      attendance.scheduled_minutes
+  attendance.worked_minutes =
+    calculateWorkedMinutes(
+      attendance.attendance_sessions,
+      window
     );
 
-    attendance.overtime_minutes = 0;
+  attendance.break_minutes =
+    calculateBreakMinutes(
+      timelogState.breaks
+    );
 
-    
+  attendance.lunch_minutes =
+    calculateLunchMinutes(
+      timelogState.lunch
+    );
+
+  attendance.late_minutes =
+    calculateLateMinutes(
+      attendance.attendance_sessions,
+      window,
+      settings
+    );
+
+  const now = new Date();
+
+  if (now >= window.shift_end) {
+
+    attendance.regular_minutes =
+      calculateRegularMinutes(
+        attendance.worked_minutes,
+        attendance.scheduled_minutes
+      );
+
+    attendance.overtime_minutes =
+      calculateOvertimeMinutes(
+        attendance.worked_minutes,
+        attendance.scheduled_minutes,
+        settings
+      );
+
+    attendance.undertime_minutes =
+      calculateUndertimeMinutes(
+          attendance.worked_minutes,
+          attendance.scheduled_minutes,
+          window,
+          attendance.attendance_sessions,
+          settings
+      );
+  } else {
+
+    attendance.regular_minutes =
+      Math.min(
+        attendance.worked_minutes,
+        attendance.scheduled_minutes
+      );
+
+    attendance.overtime_minutes = 0;
     attendance.undertime_minutes = 0;
   }
 
-  attendance.attendance_status = determineAttendanceStatus(
-    attendance,
-    window,
-    settings,
-    now
-  );
+  attendance.attendance_status =
+    determineAttendanceStatus(
+      attendance,
+      window,
+      settings,
+      now
+    );
 
   return attendance;
 }
-function buildAttendanceSessions(sessions, shiftWindow, settings) {
-  const list = Array.isArray(sessions) ? sessions : [];
 
-  const allowOvertime = !!settings.OVERTIME_ENABLED;
+function buildAttendanceSessions(
+  sessions,
+  shiftWindow,
+  settings
+) {
 
-  return list
-    .map(function (session) {
-      if (!session || !session.time_in) {
+  const allowOvertime =
+    !!settings.OVERTIME_ENABLED;
+
+  return (sessions || [])
+    .map(function(session){
+
+      if (!session.time_in) {
         return null;
       }
 
-      const timeIn = new Date(session.time_in);
-      const timeOut = session.time_out ? new Date(session.time_out) : null;
+      const timeIn =
+        new Date(session.time_in);
+
+      const timeOut =
+        session.time_out
+          ? new Date(session.time_out)
+          : null;
 
       if (!allowOvertime) {
+
         if (timeIn < shiftWindow.shift_start) {
-          timeIn.setTime(shiftWindow.shift_start.getTime());
+          timeIn.setTime(
+            shiftWindow.shift_start.getTime()
+          );
         }
 
-        if (timeOut && timeOut > shiftWindow.shift_end) {
-          timeOut.setTime(shiftWindow.shift_end.getTime());
+        if (
+          timeOut &&
+          timeOut > shiftWindow.shift_end
+        ) {
+          timeOut.setTime(
+            shiftWindow.shift_end.getTime()
+          );
         }
       }
 
-      if (timeOut && timeOut <= timeIn) {
+      if (
+        timeOut &&
+        timeOut <= timeIn
+      ) {
         return null;
       }
 
@@ -138,38 +169,43 @@ function buildAttendanceSessions(sessions, shiftWindow, settings) {
         time_in: timeIn,
         time_out: timeOut,
       };
+
     })
     .filter(Boolean);
 }
 
-function calculateWorkedMinutes(sessions, window, now) {
-  now = now ? new Date(now) : new Date();
+function calculateWorkedMinutes(
+  sessions,
+  window
+) {
 
-  return (sessions || []).reduce(function (total, s) {
-    if (!s.time_in) {
-      return total;
-    }
+  const now = new Date();
 
-    const start = new Date(s.time_in);
+  return (sessions || []).reduce(function(total, session){
 
-    let end;
+    const start =
+      new Date(session.time_in);
 
-    if (s.time_out) {
-      end = new Date(s.time_out);
-    } else {
-      end = new Date(
-        window && now > window.shift_end
-          ? window.shift_end
-          : now
-      );
-    }
+    const end =
+      session.time_out
+        ? new Date(session.time_out)
+        : (
+            now > window.shift_end
+              ? window.shift_end
+              : now
+          );
 
     if (end <= start) {
       return total;
     }
 
-    return total + Math.round((end.getTime() - start.getTime()) / 60000);
+    return total +
+      Math.round(
+        (end - start) / 60000
+      );
+
   }, 0);
+
 }
 
 function calculateBreakMinutes(breaks) {
@@ -187,34 +223,65 @@ function calculateLunchMinutes(lunch) {
 }
 
 
-function calculateLateMinutes(sessions, window, settings) {
-  if (!sessions || !sessions.length) {
+function calculateLateMinutes(
+  sessions,
+  window,
+  settings
+) {
+
+  if (!sessions.length) {
     return 0;
   }
 
-  const firstSession = sessions[0];
+  const grace =
+    Number(
+      settings.LATE_GRACE_MINUTES_DEFAULT || 0
+    );
 
-  const grace = Number(settings.LATE_GRACE_MINUTES_DEFAULT || 0);
+  const diff =
+    Math.round(
+      (
+        sessions[0].time_in -
+        window.shift_start
+      ) / 60000
+    );
 
-  const minutesLate = Math.round(
-    (firstSession.time_in.getTime() - window.shift_start.getTime()) / 60000
+  return Math.max(
+    0,
+    diff - grace
   );
 
-  return Math.max(0, minutesLate - grace);
 }
 
 function calculateRegularMinutes(worked, scheduled) {
   return Math.min(Number(worked) || 0, Number(scheduled) || 0);
 }
 
-function calculateUndertimeMinutes(worked, scheduled, window, now) {
-    now = now ? new Date(now) : new Date();
+function calculateUndertimeMinutes(
+  worked,
+  scheduled,
+  window,
+  sessions,
+  settings
+) {
 
-    if (window && now < window.shift_end) {
-        return 0;
-    }
+  if (!sessions || !sessions.length) {
+    return 0;
+  }
 
-    return Math.max(0, scheduled - worked);
+  const now = new Date();
+
+  if (window && now < window.shift_end) {
+    return 0;
+  }
+
+  worked = Number(worked) || 0;
+  scheduled = Number(scheduled) || 0;
+
+  return Math.max(
+    0,
+    scheduled - worked
+  );
 }
 
 function calculateOvertimeMinutes(worked, scheduled, settings) {
@@ -232,41 +299,41 @@ function calculateOvertimeMinutes(worked, scheduled, settings) {
   return raw >= minimum ? raw : 0;
 }
 
-function determineAttendanceStatus(attendance, window, settings, now) {
+function determineAttendanceStatus(
+  attendance,
+  window,
+  settings,
+  now
+) {
+
   if (!window) {
     return "ABSENT";
   }
 
-  const today = formatDateKey(new Date());
-  const workDate = formatDateKey(window.shift_start);
+  now = now || new Date();
 
-  if (workDate < today) {
-  
-    now = new Date(window.shift_end);
-  } else if (workDate === today) {
-    
-    now = new Date();
-  } else {
+  const grace =
+    Number(
+      settings.LATE_GRACE_MINUTES_DEFAULT || 0
+    );
 
-    return "PENDING";
-  }
+  const absentTime =
+    new Date(window.shift_start);
 
-  const grace = Number(settings.LATE_GRACE_MINUTES_DEFAULT || 0);
-
-  const absentTime = new Date(window.shift_start);
-  absentTime.setMinutes(absentTime.getMinutes() + grace);
-
+  absentTime.setMinutes(
+    absentTime.getMinutes() + grace
+  );
 
   if (!attendance.time_in) {
-    return now < absentTime ? "PENDING" : "ABSENT";
-  }
 
-
-  if (now < window.shift_end) {
-    if (!attendance.time_in) {
-      return now < absentTime ? "PENDING" : "ABSENT";
+    if (now < absentTime) {
+      return "PENDING";
     }
 
+    return "ABSENT";
+  }
+
+  if (now < window.shift_end) {
     return "PRESENT";
   }
 

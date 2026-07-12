@@ -108,89 +108,51 @@ function buildEmployeeAttendanceReport(
   end_date,
   settings
 ) {
-
   const rows = [];
-
-  const start = new Date(start_date);
-  const end = new Date(end_date);
-
-  const cursor = new Date(start);
 
   const shift = getShiftById(
     workspace_id,
     user.shift_id
   );
 
+  let workDate = String(start_date);
 
-  while (cursor <= end) {
+  while (workDate <= end_date) {
 
-    if (isWeeklyDayOff(cursor, settings)) {
-      cursor.setDate(cursor.getDate() + 1);
+    if (isWeeklyDayOff(workDate, settings)) {
+      workDate = nextWorkDate(workDate);
       continue;
     }
 
-
-    const workDate = formatDateKey(cursor);
-
-
-    /*
-     * SINGLE SOURCE OF TRUTH
-     * Attendance engine handles:
-     * - shift window
-     * - overnight
-     * - late
-     * - undertime
-     * - overtime
-     * - breaks
-     * - lunch
-     * - status
-     */
-    const attendance =
-      buildAttendanceByWorkDate(
-        workspace_id,
-        user.email,
-        user.shift_id,
-        workDate,
-        settings
-      );
-
+    const attendance = buildAttendanceByWorkDate(
+      workspace_id,
+      user.email,
+      user.shift_id,
+      workDate,
+      settings
+    );
 
     if (attendance) {
-
       rows.push({
-
         ...attendance,
 
-
         user_id: user.user_id,
-
         fullname: user.fullname,
-
         email: user.email,
 
-
         shift_id: user.shift_id,
-
-        shift_name:
-          shift?.shift_name || "",
-
+        shift_name: shift
+          ? shift.shift_name
+          : "",
 
         date: workDate,
 
-
-        status:
-          attendance.attendance_status,
-
+        status: attendance.attendance_status,
       });
-
     }
 
-
-    cursor.setDate(
-      cursor.getDate() + 1
-    );
+    workDate = nextWorkDate(workDate);
   }
-
 
   return rows;
 }

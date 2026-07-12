@@ -238,22 +238,40 @@ function timeToMinutes(time) {
   return h * 60 + m;
 }
 
-function getShiftWorkDate(workspace_id, email, shift_id, timestamp) {
-  const shift = getShiftById(workspace_id, shift_id);
+function getShiftWorkDate(
+  workspace_id,
+  email,
+  shift_id,
+  timestamp
+) {
+
+  const shift = getShiftById(
+    workspace_id,
+    shift_id
+  );
 
   if (!shift) {
     throw new Error("Shift not found.");
   }
 
-  const latestLogs = getTimeLogsByEmail(workspace_id, email, {
-    shift_id,
-  });
+  const latestLogs =
+    getTimeLogsByEmail(
+      workspace_id,
+      email,
+      {
+        shift_id,
+      }
+    );
 
   if (latestLogs.length) {
-    const state = buildTimeLogState(latestLogs);
+
+    const state =
+      buildTimeLogState(latestLogs);
 
     if (state.is_clocked_in) {
-      const latest = latestLogs[latestLogs.length - 1];
+
+      const latest =
+        latestLogs[latestLogs.length - 1];
 
       if (latest && latest.date) {
         return latest.date;
@@ -261,5 +279,9 @@ function getShiftWorkDate(workspace_id, email, shift_id, timestamp) {
     }
   }
 
-  return resolveShiftWorkDate(shift, timestamp || new Date());
+  return resolveShiftWorkDate(
+    shift,
+    timestamp || new Date()
+  );
+
 }
