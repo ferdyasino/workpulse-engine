@@ -7,7 +7,8 @@ function buildAttendanceState(shift, timelogState, options) {
     ? resolveAttendanceSchedule(
         shift,
         options.timestamp,
-        settings
+        settings,
+        options.department_window
       )
     : null;
 

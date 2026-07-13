@@ -286,7 +286,8 @@ function buildAttendanceByWorkDate(
   email,
   shift_id,
   work_date,
-  settings
+  settings,
+  departmentWindow
 ) {
   if (!workspace_id) {
     throw new Error("workspace_id is required");
@@ -339,15 +340,16 @@ function buildAttendanceByWorkDate(
     buildTimeLogState(logs);
 
 
-  const attendance =
-    buildAttendanceState(
-      shift,
-      timelogState,
-      {
-        settings,
-        timestamp: work_date,
-      }
-    );
+const attendance =
+  buildAttendanceState(
+    shift,
+    timelogState,
+    {
+      settings,
+      timestamp: work_date,
+      department_window: departmentWindow
+    }
+  );
 
 
   if (

@@ -391,6 +391,8 @@
 
       const rows = this.state.report?.rows || [];
 
+      console.log("rows", rows);
+
       if (!rows.length) {
         tbody.innerHTML = `<tr>
                         <td colspan="11"
@@ -412,7 +414,7 @@
 
                       <td>${row.fullname || row.email || "-"}</td>
 
-                      <td>${row.shift_name || "-"}</td>
+                      <td>${row.shift_name || "-"} </td>
 
                       <td>${this.formatDateTime(row.time_in)}</td>
 

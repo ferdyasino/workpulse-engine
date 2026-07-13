@@ -211,7 +211,8 @@ function resolveAttendanceWindow(shift, value, settings) {
 function resolveAttendanceSchedule(
   shift,
   work_date,
-  settings
+  settings,
+  departmentWindow
 ) {
 
   if (!shift) {
@@ -247,7 +248,7 @@ function resolveAttendanceSchedule(
     );
   }
 
-  const attendanceStart = new Date(
+  let attendanceStart = new Date(
     shiftStart.getTime()
   );
 
@@ -258,7 +259,7 @@ function resolveAttendanceSchedule(
       )
   );
 
-  const attendanceEnd = new Date(
+  let attendanceEnd = new Date(
     shiftEnd.getTime()
   );
 
@@ -269,18 +270,41 @@ function resolveAttendanceSchedule(
       )
   );
 
+  // Expand attendance window to cover the department
+  if (departmentWindow) {
+
+    if (
+      departmentWindow.earliest_start_utc &&
+      departmentWindow.earliest_start_utc < attendanceStart
+    ) {
+      attendanceStart = new Date(
+        departmentWindow.earliest_start_utc
+      );
+    }
+
+    if (
+      departmentWindow.latest_end_utc &&
+      departmentWindow.latest_end_utc > attendanceEnd
+    ) {
+      attendanceEnd = new Date(
+        departmentWindow.latest_end_utc
+      );
+    }
+
+  }
+
   return {
 
     timezone,
 
     work_date,
 
+    // Employee's scheduled shift
     shift_start: shiftStart,
-
     shift_end: shiftEnd,
 
+    // Actual attendance capture window
     attendance_start: attendanceStart,
-
     attendance_end: attendanceEnd,
 
     scheduled_minutes: Math.round(
