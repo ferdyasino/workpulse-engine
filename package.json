@@ -243,5 +243,8 @@
   "bugs": {
     "url": "https://github.com/ferdyasino/workpulse-engine/issues"
   },
-  "homepage": "https://github.com/ferdyasino/workpulse-engine#readme"
+  "homepage": "https://github.com/ferdyasino/workpulse-engine#readme",
+  "devDependencies": {
+    "@mcpher/gas-fakes": "^2.5.6"
+  }
 }

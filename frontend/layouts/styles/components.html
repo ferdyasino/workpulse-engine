@@ -349,11 +349,159 @@
     color: var(--text-main);
     font-weight: 700;
   }
+  /* =====================================================
+   REPORTS PAGE IMPROVEMENT LAYER
+===================================================== */
+
+  .page-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* every direct section gets spacing */
+  .page-container > .glass-card,
+  .page-container > .row {
+    margin-bottom: 24px;
+  }
+
+  /* table card */
+  .page-container .table-responsive {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .page-container .table {
+    margin-bottom: 0;
+  }
+
+  /* prevent table from being covered */
+  .page-container .glass-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* only animate cards that AREN'T KPI cards */
+  .page-container > .glass-card:hover {
+    transform: translateY(-2px);
+  }
 
   /* =====================================================
-   REPORT TABLE VISIBILITY FIX
-   (PLACE AT VERY BOTTOM OF CSS)
+   KPI GRID
 ===================================================== */
+
+  .page-container > .row.g-3 {
+    margin-top: 24px !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  .page-container > .row.g-3 > div {
+    display: flex;
+  }
+
+  .page-container > .row.g-3 > div > .glass-card {
+    width: 100%;
+    height: 100%;
+    min-height: 120px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    transform: none !important;
+  }
+
+  .page-container > .row.g-3 > div > .glass-card:hover {
+    transform: none !important;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* =====================================================
+   KPI TEXT
+===================================================== */
+
+  .page-container .glass-card .text-muted {
+    color: var(--text-secondary) !important;
+    font-size: 0.82rem;
+  }
+
+  .page-container .glass-card .fs-3,
+  .page-container .glass-card .fs-4 {
+    font-weight: 800;
+    color: var(--text-main);
+  }
+
+  /* KPI COLORS */
+
+  #repOTHours {
+    color: #fbbf24 !important;
+  }
+
+  #repPresent {
+    color: #22c55e !important;
+  }
+
+  #repAbsent {
+    color: #ef4444 !important;
+  }
+
+  #repLate {
+    color: #f59e0b !important;
+  }
+
+  #repUndertimeHours {
+    color: #ef4444 !important;
+  }
+
+  /* =====================================================
+   TABLE
+===================================================== */
+
+  .page-container .table,
+  .page-container .table * {
+    color: #f8fafc !important;
+  }
+
+  .page-container .table thead th {
+    color: #cbd5e1 !important;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .page-container .table tbody td {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .page-container .table-hover tbody tr:hover > * {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* =====================================================
+   MOBILE
+===================================================== */
+
+  @media (max-width: 992px) {
+    .page-container {
+      padding: 16px;
+    }
+
+    .page-container > .row.g-3 {
+      margin-top: 20px !important;
+    }
+
+    .page-container > .row.g-3 > .col-md-3,
+    .page-container > .row.g-3 > .col-md-2 {
+      width: 50%;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .page-container > .row.g-3 > .col-md-3,
+    .page-container > .row.g-3 > .col-md-2 {
+      width: 100%;
+    }
+  }
 
   .page-container .table,
   .page-container .table * {

@@ -161,7 +161,24 @@ function buildEmployeeAttendanceReport(
           : "",
 
         date: workDate,
-        deptWindow: departmentWindow,
+        debug: {
+          shift_start: attendance.shift_start,
+          shift_end: attendance.shift_end,
+          scheduled_minutes: attendance.scheduled_minutes,
+
+          worked_minutes: attendance.worked_minutes,
+          regular_minutes: attendance.regular_minutes,
+          overtime_minutes: attendance.overtime_minutes,
+          undertime_minutes: attendance.undertime_minutes,
+          late_minutes: attendance.late_minutes,
+
+          sessions: attendance.attendance_sessions,
+          breaks: attendance.breaks,
+          lunch: attendance.lunch,
+
+          department_window: departmentWindow,
+          shift,
+        },
 
         status: attendance.attendance_status,
       });

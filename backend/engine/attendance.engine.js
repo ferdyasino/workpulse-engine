@@ -126,7 +126,13 @@ function buildAttendanceSessions(
   const allowOvertime =
     !!settings.OVERTIME_ENABLED;
 
+  const minimumSessionSeconds =
+    Number(
+      settings.MINIMUM_SESSION_SECONDS || 5
+    );
+
   return (sessions || [])
+
     .map(function(session){
 
       if (!session.time_in) {
@@ -157,6 +163,7 @@ function buildAttendanceSessions(
             shiftWindow.shift_end.getTime()
           );
         }
+
       }
 
       if (
@@ -166,13 +173,39 @@ function buildAttendanceSessions(
         return null;
       }
 
+      // Ignore accidental sessions
+      if (timeOut) {
+
+        const seconds =
+          (timeOut - timeIn) / 1000;
+
+        if (
+          seconds <
+          minimumSessionSeconds
+        ) {
+          return null;
+        }
+
+      }
+
       return {
         time_in: timeIn,
-        time_out: timeOut,
+        time_out: timeOut
       };
 
     })
-    .filter(Boolean);
+
+    .filter(Boolean)
+
+    .sort(function(a,b){
+
+      return (
+        a.time_in.getTime() -
+        b.time_in.getTime()
+      );
+
+    });
+
 }
 
 function calculateWorkedMinutes(
@@ -239,10 +272,33 @@ function calculateLateMinutes(
       settings.LATE_GRACE_MINUTES_DEFAULT || 0
     );
 
+  const firstSession =
+    sessions
+      .filter(function(session){
+
+        return (
+          session.time_in &&
+          session.time_in <= window.shift_end
+        );
+
+      })
+      .sort(function(a,b){
+
+        return (
+          a.time_in.getTime() -
+          b.time_in.getTime()
+        );
+
+      })[0];
+
+  if (!firstSession) {
+    return 0;
+  }
+
   const diff =
     Math.round(
       (
-        sessions[0].time_in -
+        firstSession.time_in -
         window.shift_start
       ) / 60000
     );
@@ -353,142 +409,142 @@ function determineAttendanceStatus(
   return "PRESENT";
 }
 
-function api_debugAttendanceEngine(
-  workspace_id,
-  email,
-  shift_id,
-  start_date,
-  end_date,
-  timezone,
-) {
-  if (!workspace_id) {
-    throw new Error("workspace_id is required");
-  }
+// function api_debugAttendanceEngine(
+//   workspace_id,
+//   email,
+//   shift_id,
+//   start_date,
+//   end_date,
+//   timezone,
+// ) {
+//   if (!workspace_id) {
+//     throw new Error("workspace_id is required");
+//   }
 
-  if (!email) {
-    throw new Error("email is required");
-  }
+//   if (!email) {
+//     throw new Error("email is required");
+//   }
 
-  if (!shift_id) {
-    throw new Error("shift_id is required");
-  }
+//   if (!shift_id) {
+//     throw new Error("shift_id is required");
+//   }
 
-  const settings = getWorkspaceSettings(workspace_id);
+//   const settings = getWorkspaceSettings(workspace_id);
 
-  if (timezone) {
-    settings.TIMEZONE = timezone;
-  }
+//   if (timezone) {
+//     settings.TIMEZONE = timezone;
+//   }
 
-  if (!start_date) {
-    throw new Error("start_date is required");
-  }
+//   if (!start_date) {
+//     throw new Error("start_date is required");
+//   }
 
-  const start = new Date(start_date);
-  const end = new Date(end_date);
+//   const start = new Date(start_date);
+//   const end = new Date(end_date);
 
-  if (start > end) {
-    throw new Error("start_date cannot be after end_date");
-  }
+//   if (start > end) {
+//     throw new Error("start_date cannot be after end_date");
+//   }
 
-  const days = [];
+//   const days = [];
 
-  const summary = {
-    total_days: 0,
+//   const summary = {
+//     total_days: 0,
 
-    present: 0,
-    absent: 0,
-    late: 0,
-    undertime: 0,
-    overtime: 0,
-    worked_minutes: 0,
-    regular_minutes: 0,
-    overtime_minutes: 0,
-    late_minutes: 0,
-    undertime_minutes: 0,
-    break_minutes: 0,
-    lunch_minutes: 0,
-  };
+//     present: 0,
+//     absent: 0,
+//     late: 0,
+//     undertime: 0,
+//     overtime: 0,
+//     worked_minutes: 0,
+//     regular_minutes: 0,
+//     overtime_minutes: 0,
+//     late_minutes: 0,
+//     undertime_minutes: 0,
+//     break_minutes: 0,
+//     lunch_minutes: 0,
+//   };
 
-  const cursor = new Date(start);
+//   const cursor = new Date(start);
 
-  while (cursor <= end) {
-    if (isWeeklyDayOff(cursor, settings)) {
-      cursor.setDate(cursor.getDate() + 1);
-      continue;
-    }
+//   while (cursor <= end) {
+//     if (isWeeklyDayOff(cursor, settings)) {
+//       cursor.setDate(cursor.getDate() + 1);
+//       continue;
+//     }
 
-    const workDate = formatDateKey(cursor);
+//     const workDate = formatDateKey(cursor);
 
-    const attendance = buildAttendanceByWorkDate(
-      workspace_id,
-      email,
-      shift_id,
-      workDate,
-      settings
-    );
+//     const attendance = buildAttendanceByWorkDate(
+//       workspace_id,
+//       email,
+//       shift_id,
+//       workDate,
+//       settings
+//     );
 
-    if (!attendance) {
-      cursor.setDate(cursor.getDate() + 1);
-      continue;
-    }
+//     if (!attendance) {
+//       cursor.setDate(cursor.getDate() + 1);
+//       continue;
+//     }
 
-    days.push(attendance);
+//     days.push(attendance);
 
-    summary.total_days++;
+//     summary.total_days++;
 
-    summary.worked_minutes += Number(attendance.worked_minutes || 0);
-    summary.regular_minutes += Number(attendance.regular_minutes || 0);
-    summary.overtime_minutes += Number(attendance.overtime_minutes || 0);
-    summary.late_minutes += Number(attendance.late_minutes || 0);
-    summary.undertime_minutes += Number(attendance.undertime_minutes || 0);
-    summary.break_minutes += Number(attendance.break_minutes || 0);
-    summary.lunch_minutes += Number(attendance.lunch_minutes || 0);
+//     summary.worked_minutes += Number(attendance.worked_minutes || 0);
+//     summary.regular_minutes += Number(attendance.regular_minutes || 0);
+//     summary.overtime_minutes += Number(attendance.overtime_minutes || 0);
+//     summary.late_minutes += Number(attendance.late_minutes || 0);
+//     summary.undertime_minutes += Number(attendance.undertime_minutes || 0);
+//     summary.break_minutes += Number(attendance.break_minutes || 0);
+//     summary.lunch_minutes += Number(attendance.lunch_minutes || 0);
 
-    switch (attendance.attendance_status) {
-      case "PRESENT":
-        summary.present++;
-        break;
+//     switch (attendance.attendance_status) {
+//       case "PRESENT":
+//         summary.present++;
+//         break;
 
-      case "LATE":
-        summary.present++;
-        summary.late++;
-        break;
+//       case "LATE":
+//         summary.present++;
+//         summary.late++;
+//         break;
 
-      case "UNDERTIME":
-        summary.present++;
-        summary.undertime++;
-        break;
+//       case "UNDERTIME":
+//         summary.present++;
+//         summary.undertime++;
+//         break;
 
-      case "OVERTIME":
-        summary.present++;
-        summary.overtime++;
-        break;
+//       case "OVERTIME":
+//         summary.present++;
+//         summary.overtime++;
+//         break;
 
-      case "ABSENT":
-        summary.absent++;
-        break;
-    }
+//       case "ABSENT":
+//         summary.absent++;
+//         break;
+//     }
 
-    cursor.setDate(cursor.getDate() + 1);
-  }
+//     cursor.setDate(cursor.getDate() + 1);
+//   }
 
-  return JSON.stringify({
-    employee: {
-      email,
-      shift_id,
-    },
+//   return JSON.stringify({
+//     employee: {
+//       email,
+//       shift_id,
+//     },
 
-    range: {
-      start_date,
-      end_date,
-    },
+//     range: {
+//       start_date,
+//       end_date,
+//     },
 
-    timezone: settings.TIMEZONE,
+//     timezone: settings.TIMEZONE,
 
-    settings,
+//     settings,
 
-    summary,
+//     summary,
 
-    days,
-  });
-}
+//     days,
+//   });
+// }
