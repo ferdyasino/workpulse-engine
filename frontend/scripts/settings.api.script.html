@@ -102,11 +102,6 @@
 
       const saved = await gas("saveWorkspaceSettings", workspace_id, settingsRows);
 
-      console.log(
-        "Returned from GAS:",
-        saved.find((s) => s.key === "OVERTIME_ENABLED"),
-      );
-
       APP.settings = Array.isArray(saved) ? saved : [];
 
       APP.settingsLoaded = true;

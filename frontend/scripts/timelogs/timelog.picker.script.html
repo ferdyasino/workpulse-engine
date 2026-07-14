@@ -24,7 +24,6 @@
 
     google.script.run
       .withSuccessHandler((state) => {
-        console.log("state", state);
         APP.attendanceState = state;
         APP.timeLogs = state.raw_logs || [];
         APP.sessions = state.sessions || [];
