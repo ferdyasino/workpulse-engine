@@ -19,7 +19,7 @@ function api_getReports(
 
   const settings = getWorkspaceSettings(workspace_id);
   const allUsers = getUsers(workspace_id);
-const allShifts = getAllShifts(workspace_id);
+  const allShifts = getAllShifts(workspace_id);
 
 
   const isAdmin = [
@@ -34,10 +34,11 @@ const allShifts = getAllShifts(workspace_id);
 
   let users = [];
 
-
   if (isAdmin && !email) {
 
-    users = allUsers;
+    users = allUsers.filter(function(user) {
+      return String(user.role || "").toUpperCase() !== "OWNER";
+    });
 
   } else {
 
