@@ -1,26 +1,26 @@
 <script>
-  function maybePromptForDuty() {
-    const shift = getCurrentShift();
+  // function maybePromptForDuty() {
+  //   const shift = getCurrentShift();
 
-    if (
-      !shouldPromptForDuty({
-        workStatus: APP.workStatus,
-        startTime: shift?.start_time,
-        prompted: APP.__dutyPromptShown,
-      })
-    ) {
-      return;
-    }
+  //   if (
+  //     !shouldPromptForDuty({
+  //       workStatus: APP.workStatus,
+  //       startTime: shift?.start_time,
+  //       prompted: APP.__dutyPromptShown,
+  //     })
+  //   ) {
+  //     return;
+  //   }
 
-    APP.__dutyPromptShown = true;
+  //   APP.__dutyPromptShown = true;
 
-    showTimeInPrompt({
-      shift,
-      onConfirm() {
-        logTime("time_in");
-      },
-    });
-  }
+  //   showTimeInPrompt({
+  //     shift,
+  //     onConfirm() {
+  //       logTime("time_in");
+  //     },
+  //   });
+  // }
 
   // =====================================================
   // TIME IN PROMPT
