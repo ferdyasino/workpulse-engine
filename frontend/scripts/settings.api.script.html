@@ -56,6 +56,10 @@
 
       APP.settingsLoaded = true;
 
+      const timezone = APP.settings.find((s) => s.key === "TIMEZONE")?.value || "America/New_York";
+
+      setAppTimezone(timezone);
+
       return APP.settings;
     },
 
@@ -110,6 +114,10 @@
       APP.settings = Array.isArray(saved) ? saved : [];
 
       APP.settingsLoaded = true;
+
+      const timezone = APP.settings.find((s) => s.key === "TIMEZONE")?.value || "America/New_York";
+
+      setAppTimezone(timezone);
 
       await this.refresh();
 

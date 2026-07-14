@@ -1,4 +1,99 @@
 <script>
+  // =====================================================
+  // TIMEZONE
+  // =====================================================
+
+  const APP_TIMEZONE = {
+    value: "America/New_York",
+  };
+
+  function setAppTimezone(timezone) {
+    if (typeof timezone === "string" && timezone.trim()) {
+      APP_TIMEZONE.value = timezone.trim();
+    }
+  }
+
+  function getAppTimezone() {
+    return APP_TIMEZONE.value;
+  }
+
+  // =====================================================
+  // FORMATTERS
+  // =====================================================
+
+  function formatTimeClock(value) {
+    if (!value) return "--:--";
+
+    const date = value instanceof Date ? value : new Date(value);
+
+    if (isNaN(date)) return String(value);
+
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+      timeZone: getAppTimezone(),
+    });
+  }
+
+  function formatDate(value) {
+    if (!value) return "--";
+
+    const date = value instanceof Date ? value : new Date(value);
+
+    if (isNaN(date)) return String(value);
+
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: getAppTimezone(),
+    });
+  }
+
+  function formatToday() {
+    return new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: getAppTimezone(),
+    }).format(new Date());
+  }
+
+  // =====================================================
+  // DATE HELPERS
+  // =====================================================
+
+  function getTodayKey() {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: getAppTimezone(),
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+  }
+
+  function getTodayDate() {
+    return new Date(getTodayKey() + "T12:00:00");
+  }
+
+  function daysBetween(dateA, dateB) {
+    const a = new Date(dateA);
+    const b = new Date(dateB);
+
+    a.setHours(12, 0, 0, 0);
+    b.setHours(12, 0, 0, 0);
+
+    return Math.round((a - b) / 86400000);
+  }
+
+  // =====================================================
+  // LOGIN CLOCK
+  // =====================================================
+
   function updateLoginClock() {
     const timeEl = document.getElementById("loginClockTime");
     const dateEl = document.getElementById("loginClockDate");
@@ -7,19 +102,13 @@
 
     const now = new Date();
 
-    timeEl.textContent = now.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-
-    dateEl.textContent = now.toLocaleDateString(undefined, {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    timeEl.textContent = formatTimeClock(now);
+    dateEl.textContent = formatToday();
   }
+
+  // =====================================================
+  // DASHBOARD CLOCK
+  // =====================================================
 
   function updateDashboardClock() {
     const timeEl = document.getElementById("dashboardClockTime");
@@ -30,20 +119,7 @@
 
     const now = new Date();
 
-    // =====================================================
-    // LIVE CLOCK
-    // =====================================================
-    timeEl.textContent = now.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-
-    // =====================================================
-    // TODAY (CURRENT DATE)
-    // =====================================================
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    timeEl.textContent = formatTimeClock(now);
 
     if (currDate) {
       currDate.innerHTML = `
@@ -57,30 +133,17 @@
         ">
           Current Date
         </div>
-        <div>
-          ${today.toLocaleDateString(undefined, {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </div>
+        <div>${formatToday()}</div>
       `;
     }
 
-    // =====================================================
-    // DISPLAYED ATTENDANCE DATE
-    // =====================================================
+    const todayDate = getTodayDate();
+
     const displayDate = APP.dashboard.viewingDate
-      ? new Date(`${APP.dashboard.viewingDate}T00:00:00`)
-      : now;
+      ? new Date(APP.dashboard.viewingDate + "T12:00:00")
+      : todayDate;
 
-    const selected = new Date(displayDate);
-    selected.setHours(0, 0, 0, 0);
-
-    const diffDays = Math.round(
-      (selected.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const diffDays = daysBetween(displayDate, todayDate);
 
     let prefix = "";
 
@@ -88,86 +151,39 @@
       case 0:
         prefix = "Today";
         break;
-
       case -1:
         prefix = "Yesterday";
         break;
-
       case 1:
         prefix = "Tomorrow";
         break;
-
       default:
-        prefix =
-          diffDays < 0 ? "Viewing Past Record" : "Viewing Future Schedule";
+        prefix = diffDays < 0 ? "Viewing Past Record" : "Viewing Future Schedule";
     }
 
-    const formattedDate = displayDate.toLocaleDateString(undefined, {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-
-    // Hide the second date block when viewing today
     if (diffDays === 0) {
-      if (currDate) {
-        currDate.innerHTML = `
-      <div style="
-        font-size:12px;
-        font-weight:700;
-        text-transform:uppercase;
-        letter-spacing:.08em;
-        color:#64748b;
-        margin-bottom:2px;
-      ">
-        Current Date
-      </div>
-      <div>${formattedDate}</div>
-    `;
-      }
-
       dateEl.style.display = "none";
     } else {
-      if (currDate) {
-        currDate.innerHTML = `
-      <div style="
-        font-size:12px;
-        font-weight:700;
-        text-transform:uppercase;
-        letter-spacing:.08em;
-        color:#64748b;
-        margin-bottom:2px;
-      ">
-        Current Date
-      </div>
-      <div>
-        ${today.toLocaleDateString(undefined, {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        })}
-      </div>
-    `;
-      }
-
       dateEl.style.display = "block";
       dateEl.innerHTML = `
-    <div style="
-      font-size:12px;
-      font-weight:700;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      color:#2563eb;
-      margin-bottom:2px;
-    ">
-      ${prefix}
-    </div>
-    <div>${formattedDate}</div>
-  `;
+        <div style="
+          font-size:12px;
+          font-weight:700;
+          text-transform:uppercase;
+          letter-spacing:.08em;
+          color:#2563eb;
+          margin-bottom:2px;
+        ">
+          ${prefix}
+        </div>
+        <div>${formatDate(displayDate)}</div>
+      `;
     }
   }
+
+  // =====================================================
+  // TOPBAR CLOCK
+  // =====================================================
 
   function updateTopbarClock() {
     const timeEl = document.getElementById("adminClockTime");
@@ -177,22 +193,18 @@
 
     const now = new Date();
 
-    const time = now.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
+    if (timeEl) {
+      timeEl.textContent = formatTimeClock(now);
+    }
 
-    const date = now.toLocaleDateString(undefined, {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-
-    if (timeEl) timeEl.textContent = time;
-    if (dateEl) dateEl.textContent = date;
+    if (dateEl) {
+      dateEl.textContent = formatToday();
+    }
   }
+
+  // =====================================================
+  // MASTER CLOCK
+  // =====================================================
 
   function tickAllClocks() {
     updateLoginClock();

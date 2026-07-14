@@ -104,6 +104,10 @@
 
       APP.settings = await SettingsAPI.saveAll(APP.settings);
 
+      const timezoneSetting = APP.settings.find((s) => s.key === "TIMEZONE");
+
+      setAppTimezone(timezoneSetting?.value || "America/New_York");
+
       renderSettingsGroup(window.currentSettingsGroup || "ALL");
 
       showToast("Settings updated.", "success");

@@ -403,6 +403,13 @@
       APP.settings = await SettingsAPI.getAll();
       APP.settingsLoaded = true;
 
+      // ============================================
+      // Apply workspace timezone
+      // ============================================
+      const timezone = APP.settings.find((s) => s.key === "TIMEZONE")?.value || "America/New_York";
+
+      setAppTimezone(timezone);
+
       return APP.settings;
     } catch (err) {
       APP.settings = {};
