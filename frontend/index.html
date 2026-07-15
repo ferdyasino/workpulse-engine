@@ -20,124 +20,48 @@
   </head>
 
   <body>
-
-    <!-- =====================================================
-        TOPBAR
-    ====================================================== -->
-
-    <header
-      id="appTopbar"
-      class="app-topbar glass d-none">
-
+    <header id="appTopbar" class="app-topbar glass d-none">
       <?!= include("frontend/layouts/topbar"); ?>
-
     </header>
 
-    <!-- =====================================================
-        GLOBAL COMPONENTS
-        ====================================================== -->
-
-
-      <?!= include("frontend/components/toast"); ?>
-      <?!= include("frontend/components/loader"); ?>
-      <?!= include("frontend/components/modals/list.global"); ?>
-      <?!= include("frontend/components/modals/form.global"); ?>
-      <?!= include("frontend/components/modals/delete.global"); ?>
-      <?!= include("frontend/components/modals/confirm.global"); ?>
-
-
-    <!-- =====================================================
-    SHARED CLOCK
-    (moves between dashboard and topbar)
-    ====================================================== -->
-
+    <?!= include("frontend/components/toast"); ?>
+    <?!= include("frontend/components/loader"); ?>
+    <?!= include("frontend/components/modals/list.global"); ?>
+    <?!= include("frontend/components/modals/form.global"); ?>
+    <?!= include("frontend/components/modals/delete.global"); ?>
+    <?!= include("frontend/components/modals/confirm.global"); ?>
     <?!= include("frontend/components/clock"); ?>
 
-    <!-- =====================================================
-    APPLICATION
-    ====================================================== -->
-
     <main id="app">
+      <section id="page-login" class="app-page d-none">
+        <?!= include("frontend/pages/login"); ?>
+      </section>
 
-      <!-- LOGIN -->
-      <section
-      id="page-login"
-      class="app-page d-none">
-
-      <?!= include("frontend/pages/login"); ?>
-
-    </section>
-
-    <!-- HOME -->
-    <section
-        id="page-home"
-        class="app-page d-none">
-
+      <section id="page-home" class="app-page d-none">
         <?!= include("frontend/pages/home"); ?>
+      </section>
 
-    </section>
+      <section id="page-dashboard" class="app-page d-none">
+        <?!= include("frontend/pages/dashboard"); ?>
+      </section>
 
-      <!-- USER DASHBOARD -->
-    <section
-      id="page-dashboard"
-      class="app-page d-none">
+      <section id="page-admin-dashboard" class="app-page d-none">
+        <?!= include("frontend/pages/adminDashboard"); ?>
+      </section>
 
-      <?!= include("frontend/pages/dashboard"); ?>
+      <section id="page-reports" class="app-page d-none">
+        <?!= include("frontend/pages/reports"); ?>
+      </section>
 
-    </section>
+      <section id="page-settings" class="app-page d-none">
+        <?!= include("frontend/pages/settings"); ?>
+      </section>
 
-    <!-- ADMIN DASHBOARD -->
-    <section
-    id="page-admin-dashboard"
-    class="app-page d-none">
-
-    <?!= include("frontend/pages/adminDashboard"); ?>
-
-  </section>
-
-  <section
-    id="page-reports"
-    class="app-page d-none">
-
-    <?!= include("frontend/pages/reports"); ?>
-  </section>
-
-  <section
-    id="page-settings"
-    class="app-page d-none">
-
-    <?!= include("frontend/pages/settings"); ?>
-
-  </section>
-
-    <!-- <section
-    id="page-debug"
-    class="app-page d-none">
-
-    <?!= include("frontend/pages/attendance.debug"); ?>
-
-  </section> -->
-
-  <!-- ERROR -->
-  <section
-  id="page-error"
-        class="app-page d-none">
-
+      <section id="page-error" class="app-page d-none">
         <?!= include("frontend/pages/error"); ?>
-
-  </section>
-
+      </section>
     </main>
-
-    <!-- =====================================================
-    FOOTER
-    ====================================================== -->
-
     <?!= include("frontend/layouts/footer"); ?>
-
-    <!-- =====================================================
-    SCRIPTS
-    ====================================================== -->
     <?!= include("frontend/scripts/scripts"); ?>
     <script>
       window.SERVER_DATA = `<?!= JSON.stringify(SERVER_DATA) ?>`;
@@ -153,7 +77,6 @@
     <?!= include("frontend/scripts/helpers/shift.helper"); ?>
 
     <?!= include("frontend/scripts/login.script"); ?>
-    <?!= include("frontend/scripts/google.login.script"); ?>
     <?!= include("frontend/scripts/settings.script"); ?>
     <?!= include("frontend/scripts/settings.api.script"); ?>
     <?!= include("frontend/scripts/settings.render.script"); ?>

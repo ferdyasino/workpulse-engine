@@ -160,9 +160,7 @@ function doGet(e) {
 
   template.SERVER_DATA = {
     workspaceSlug: e?.parameter?.w || "",
-    email: e?.parameter?.email || "",
-    googleClientId:
-      PropertiesService.getScriptProperties().getProperty("GOOGLE_CLIENT_ID") || ""
+    email: e?.parameter?.email || ""
   };
 
   return template

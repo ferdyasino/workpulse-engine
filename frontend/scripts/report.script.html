@@ -71,12 +71,8 @@
       });
     },
 
-      server(method, ...args) {
-        return ApiClient.call(method, ...args);
-      },
-
     loadSettings() {
-      return this.server("getWorkspaceSettings", this.state.workspace_id)
+      return ApiClient.call("getWorkspaceSettings", this.state.workspace_id)
         .then((settings) => {
           this.state.settings = settings || {};
 
@@ -101,14 +97,14 @@
     },
 
     loadReferenceData() {
-      this.server("getUsers", this.state.workspace_id)
+      ApiClient.call("getUsers", this.state.workspace_id)
 
         .then((users) => {
           this.state.users = Array.isArray(users) ? users : [];
 
           this.renderUsers();
 
-          return this.server("getAllShifts", this.state.workspace_id);
+          return ApiClient.call("getAllShifts", this.state.workspace_id);
         })
 
         .then((shifts) => {
