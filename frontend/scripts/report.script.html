@@ -412,8 +412,25 @@
 
                       <td>${row.fullname || row.email || "-"}</td>
 
-                      <td>${row.shift_name || "-"}</td>
-
+                      <td>
+                        <div class="fw-semibold">
+                          ${row.shift_name || "-"}
+                        </div>
+                          ${
+                            row.shift_start && row.shift_end
+                              ? `<div class="small text-muted">
+                                  ${formatShiftLabel(
+                                    {
+                                      shift_name: "",
+                                      start_time: row.shift_start,
+                                      end_time: row.shift_end,
+                                    },
+                                    { timeOnly: true },
+                                  )}
+                                </div>`
+                              : ""
+                          }
+                      </td>
                       <td>${this.formatDateTime(row.time_in)}</td>
 
                       <td>${this.formatDateTime(row.time_out)}</td>

@@ -1,23 +1,23 @@
 <script>
-  function changeAttendanceDay(days) {
-    if (!APP.dashboard.viewingDate) return;
+  // function changeAttendanceDay(days) {
+  //   if (!APP.dashboard.viewingDate) return;
 
-    const d = new Date(APP.dashboard.viewingDate);
+  //   const d = new Date(APP.dashboard.viewingDate);
 
-    d.setDate(d.getDate() + days);
+  //   d.setDate(d.getDate() + days);
 
-    APP.dashboard.viewingDate = formatDateKey(d);
+  //   APP.dashboard.viewingDate = formatDateKey(d);
 
-    loadAttendanceDay(APP.dashboard.viewingDate);
-  }
+  //   loadAttendanceDay(APP.dashboard.viewingDate);
+  // }
 
-  document
-    .getElementById("btnPrevAttendanceDay")
-    ?.addEventListener("click", () => changeAttendanceDay(-1));
+  // document
+  //   .getElementById("btnPrevAttendanceDay")
+  //   ?.addEventListener("click", () => changeAttendanceDay(-1));
 
-  document
-    .getElementById("btnNextAttendanceDay")
-    ?.addEventListener("click", () => changeAttendanceDay(1));
+  // document
+  //   .getElementById("btnNextAttendanceDay")
+  //   ?.addEventListener("click", () => changeAttendanceDay(1));
 
   function loadAttendanceDay(workDate) {
     const user = getCurrentUser();

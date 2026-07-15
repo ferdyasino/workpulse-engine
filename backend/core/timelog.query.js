@@ -142,19 +142,18 @@ function getTimeLogsByDate(workspace_id, email, dateKey) {
 ========================= */
 
 function getTimeLogsByEmail(workspace_id, email, options) {
-  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
-  const normalizedEmail = normalize("email", email);
 
-  if (!normalizedWorkspaceId) {
+
+  if (!workspace_id) {
     throw new Error("workspace_id is required");
   }
 
-  if (!normalizedEmail) {
+  if (!email) {
     throw new Error("email is required");
   }
 
   const filters = {
-    email: normalizedEmail,
+    email: email,
   };
 
   options = options || {};
@@ -167,7 +166,7 @@ function getTimeLogsByEmail(workspace_id, email, options) {
     filters.date = normalize("date", options.date);
   }
 
-  return findTimeLogs(normalizedWorkspaceId, filters);
+  return findTimeLogs(workspace_id, filters);
 }
 
 function getShiftTimeLogsByEmail(workspace_id, email, shift_id, timestamp) {
@@ -209,28 +208,23 @@ function getAttendanceStateByWorkDate(
 ) {
   options = options || {};
 
-  const normalizedWorkspaceId = normalize("workspace_id", workspace_id);
-  const normalizedEmail = normalize("email", email);
-  const normalizedShiftId = normalize("shift_id", shift_id);
-  const normalizedWorkDate = normalize("date", work_date);
-
-  if (!normalizedWorkspaceId) {
+  if (!workspace_id) {
     throw new Error("workspace_id is required");
   }
 
-  if (!normalizedEmail) {
+  if (!email) {
     throw new Error("email is required");
   }
 
-  if (!normalizedShiftId) {
+  if (!shift_id) {
     throw new Error("shift_id is required");
   }
 
-  if (!normalizedWorkDate) {
+  if (!work_date) {
     throw new Error("work_date is required");
   }
 
-  const settings = getWorkspaceSettings(normalizedWorkspaceId);
+  const settings = getWorkspaceSettings(workspace_id);
 
   options.settings = settings;
 
@@ -239,24 +233,24 @@ function getAttendanceStateByWorkDate(
     settings.TIMEZONE ||
     "Asia/Manila";
 
-  const logs = getTimeLogsByEmail(normalizedWorkspaceId, normalizedEmail, {
-    shift_id: normalizedShiftId,
-    date: normalizedWorkDate,
+  const logs = getTimeLogsByEmail(workspace_id, email, {
+    shift_id: shift_id,
+    date: work_date,
   });
 
   const workDate = getShiftWorkDate(
-    normalizedWorkspaceId,
-    normalizedEmail,
-    normalizedShiftId,
-    normalizedWorkDate,
+    workspace_id,
+    email,
+    shift_id,
+    work_date,
   );
 
   return buildAttendanceSnapshot(
     logs,
     "shift",
-    normalizedShiftId,
-    workDate,
-    normalizedWorkspaceId,
+    shift_id,
+    work_date,
+    workspace_id,
     options,
   );
 }
