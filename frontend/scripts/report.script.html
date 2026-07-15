@@ -424,8 +424,8 @@
                                   ${formatShiftLabel(
                                     {
                                       shift_name: "",
-                                      start_time: row.shift_start,
-                                      end_time: row.shift_end,
+                                      start_time: this.formatDateTime(row.shift_start),
+                                      end_time: this.formatDateTime(row.shift_end),
                                     },
                                     { timeOnly: true },
                                   )}
