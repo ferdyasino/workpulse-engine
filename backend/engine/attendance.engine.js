@@ -80,11 +80,10 @@ function buildAttendanceState(shift, timelogState, options) {
 
     attendance.undertime_minutes =
         calculateUndertimeMinutes(
-            attendance.worked_minutes,
-            attendance.scheduled_minutes,
+            attendance,
             window,
-            new Date()
-    );
+            options.timestamp
+        );
   } else {
   
     attendance.regular_minutes = Math.min(
@@ -283,27 +282,42 @@ function calculateRegularMinutes(worked, scheduled) {
 }
 
 function calculateUndertimeMinutes(
-  worked,
-  scheduled,
+  attendance,
   window,
   now
-){
+) {
 
   now = now
     ? new Date(now)
     : new Date();
 
+  if (window && now < window.shift_end) {
+    return 0;
+  }
+
+  //--------------------------------------------------
+  // Never started work
+  //--------------------------------------------------
+
+  if (!attendance.time_in) {
+    return 0;
+  }
+
+  //--------------------------------------------------
+  // Worked everything
+  //--------------------------------------------------
+
   if (
-    window &&
-    now < window.shift_end
+    attendance.worked_minutes >=
+    attendance.scheduled_minutes
   ) {
     return 0;
   }
 
   return Math.max(
     0,
-    Number(scheduled) -
-      Number(worked)
+    attendance.scheduled_minutes -
+      attendance.worked_minutes
   );
 
 }
