@@ -332,6 +332,54 @@ function buildAttendanceByWorkDate(
       timestamp: work_date,
     },
   );
+
+  attendance.debug = {
+  // =====================================================
+  // INPUT
+  // =====================================================
+  workspace_id,
+  email,
+  shift_id,
+  work_date,
+
+  // =====================================================
+  // SHIFT
+  // =====================================================
+  shift: {
+    shift_id: shift.shift_id,
+    shift_name: shift.shift_name,
+    start_time: shift.start_time,
+    end_time: shift.end_time,
+    timezone: shift.timezone,
+    grace_minutes: shift.grace_minutes,
+  },
+
+  // =====================================================
+  // RAW LOGS
+  // =====================================================
+  raw_logs: logs,
+
+  // =====================================================
+  // TIMELOG STATE
+  // =====================================================
+  timelog_state: timelogState,
+
+  // =====================================================
+  // CALCULATED ATTENDANCE
+  // =====================================================
+  attendance: {
+    attendance_status: attendance.attendance_status,
+    worked_minutes: attendance.worked_minutes,
+    regular_minutes: attendance.regular_minutes,
+    overtime_minutes: attendance.overtime_minutes,
+    late_minutes: attendance.late_minutes,
+    undertime_minutes: attendance.undertime_minutes,
+    break_minutes: attendance.break_minutes,
+    lunch_minutes: attendance.lunch_minutes,
+    time_in: attendance.time_in,
+    time_out: attendance.time_out,
+  },
+};
   
   if (attendance.attendance_status === "PENDING") {
   return null;
