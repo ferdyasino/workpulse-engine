@@ -1,246 +1,113 @@
 <script>
   const AttendanceDebugger = {
-    initialized: false,
-
     storageKey: "attendance_debugger",
 
     state: {
       workspace_id: "",
-
-      users: [],
-      shifts: [],
-
       email: "",
       shift_id: "",
-
-      start_date: "",
-      end_date: "",
-
-      timezone: "",
-
+      work_date: "",
       result: null,
     },
 
     init() {
       if (this.initialized) return;
-
       this.initialized = true;
 
-      // this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
-      this.state.workspace_id = APP.user?.workspace_id || "";
+      document.getElementById("attendanceRun")?.addEventListener("click", AttendanceDebugger.run);
 
-      this.restore();
-      this.renderTimezones();
+      AttendanceDebugger.restore();
 
-      const today = new Date().toISOString().substring(0, 10);
+      document.getElementById("attendanceDate").value =
+        AttendanceDebugger.state.work_date || new Date().toISOString().substring(0, 10);
 
-      document.getElementById("attendanceStartDate").value = this.state.start_date || today;
+      document.getElementById("attendanceEmail").value = AttendanceDebugger.state.email || "";
 
-      document.getElementById("attendanceEndDate").value = this.state.end_date || today;
-
-      document.getElementById("attendanceRun")?.addEventListener("click", () => this.run());
-
-      document
-        .getElementById("attendanceUser")
-        ?.addEventListener("change", () => this.onUserChange());
-
-      this.loadReferenceData();
+      AttendanceDebugger.loadShifts();
     },
 
-    loadReferenceData() {
-      const runServer = (method, ...args) => {
-        return new Promise((resolve, reject) => {
-          google.script.run
-            .withSuccessHandler(resolve)
-            .withFailureHandler(reject)
-            [method](...args);
-        });
-      };
+    loadShifts() {
+      google.script.run
+        .withSuccessHandler(function (shifts) {
+          const select = document.getElementById("attendanceShift");
 
-      runServer("getUsers", this.state.workspace_id)
-        .then((users) => {
-          this.state.users = Array.isArray(users) ? users : [];
-          this.renderUsers();
+          select.innerHTML = "";
 
-          // Return the next promise to keep the code flat
-          return runServer("getAllShifts", this.state.workspace_id);
+          shifts.forEach(function (shift) {
+            const option = document.createElement("option");
+
+            option.value = shift.shift_id;
+            option.textContent = shift.shift_name;
+
+            if (shift.shift_id === AttendanceDebugger.state.shift_id) {
+              option.selected = true;
+            }
+
+            select.appendChild(option);
+          });
         })
-        .then((shifts) => {
-          this.state.shifts = Array.isArray(shifts) ? shifts : [];
-          this.renderShifts();
-
-          if (this.state.email) {
-            document.getElementById("attendanceUser").value = this.state.email;
-            this.onUserChange();
-          }
-        })
-        .catch(console.error);
-    },
-
-    renderUsers() {
-      const select = document.getElementById("attendanceUser");
-
-      if (!select) return;
-
-      select.innerHTML = "";
-
-      this.state.users.forEach((user) => {
-        const option = document.createElement("option");
-
-        option.value = user.email;
-
-        option.textContent = `${user.fullname || user.name} (${user.email})`;
-
-        option.dataset.shiftId = user.shift_id || "";
-
-        select.appendChild(option);
-      });
-    },
-
-    renderShifts() {
-      const select = document.getElementById("attendanceShift");
-
-      if (!select) return;
-
-      select.innerHTML = "";
-
-      this.state.shifts.forEach((shift) => {
-        const option = document.createElement("option");
-
-        option.value = shift.shift_id;
-
-        option.textContent = shift.shift_name;
-
-        select.appendChild(option);
-      });
-
-      if (this.state.shift_id) {
-        select.value = this.state.shift_id;
-      }
-    },
-
-    renderTimezones() {
-      const select = document.getElementById("attendanceTimezone");
-
-      if (!select) return;
-
-      select.innerHTML = "";
-
-      const zones = [
-        "Asia/Manila",
-        "Asia/Manila",
-        "America/New_York",
-        "America/Chicago",
-        "America/Denver",
-        "America/Los_Angeles",
-        "Europe/London",
-        "Asia/Tokyo",
-      ];
-
-      zones.forEach((zone) => {
-        const option = document.createElement("option");
-
-        option.value = zone;
-        option.textContent = zone;
-
-        select.appendChild(option);
-      });
-
-      select.value = this.state.timezone || "Asia/Manila";
-    },
-
-    onUserChange() {
-      const userSelect = document.getElementById("attendanceUser");
-
-      const option = userSelect.options[userSelect.selectedIndex];
-
-      if (!option) return;
-
-      this.state.email = option.value;
-
-      this.state.shift_id = option.dataset.shiftId || "";
-
-      document.getElementById("attendanceShift").value = this.state.shift_id;
+        .api_getShifts();
     },
 
     run() {
-      this.state.workspace_id = localStorage.getItem(STORAGE_KEYS.WORKSPACE_ID) || "";
+      AttendanceDebugger.state.workspace_id =
+        APP.workspace_id || localStorage.getItem("workspace_id") || "";
 
-      this.state.email = document.getElementById("attendanceUser").value;
+      AttendanceDebugger.state.email = document.getElementById("attendanceEmail").value.trim();
 
-      this.state.shift_id = document.getElementById("attendanceShift").value;
+      AttendanceDebugger.state.shift_id = document.getElementById("attendanceShift").value;
 
-      this.state.start_date = document.getElementById("attendanceStartDate").value;
+      AttendanceDebugger.state.work_date = document.getElementById("attendanceDate").value;
 
-      this.state.end_date = document.getElementById("attendanceEndDate").value;
-
-      this.state.timezone = document.getElementById("attendanceTimezone").value;
-
-      this.save();
-
-      document.getElementById("attendanceResult").textContent = "Loading...";
+      AttendanceDebugger.save();
 
       google.script.run
-        .withSuccessHandler((result) => {
-          console.log("result", JSON.parse(result));
-          this.state.result = JSON.parse(result);
-          this.render();
+        .withSuccessHandler(function (result) {
+          AttendanceDebugger.state.result = result;
+          AttendanceDebugger.render();
         })
-        .withFailureHandler((err) => {
+        .withFailureHandler(function (err) {
           document.getElementById("attendanceResult").textContent = err.message || String(err);
         })
         .api_debugAttendanceEngine(
-          this.state.workspace_id,
-          this.state.email,
-          this.state.shift_id,
-          this.state.start_date,
-          this.state.end_date,
-          this.state.timezone,
+          AttendanceDebugger.state.workspace_id,
+          AttendanceDebugger.state.email,
+          AttendanceDebugger.state.shift_id,
+          AttendanceDebugger.state.work_date,
         );
     },
 
     render() {
       document.getElementById("attendanceResult").textContent = JSON.stringify(
-        this.state.result,
+        AttendanceDebugger.state.result,
         null,
         2,
       );
     },
 
     save() {
-      this.state.timezone = document.getElementById("attendanceTimezone")?.value || "Asia/Manila";
-
       localStorage.setItem(
-        this.storageKey,
+        AttendanceDebugger.storageKey,
         JSON.stringify({
-          email: this.state.email,
-          shift_id: this.state.shift_id,
-          start_date: this.state.start_date,
-          end_date: this.state.end_date,
-          timezone: this.state.timezone,
+          email: AttendanceDebugger.state.email,
+          shift_id: AttendanceDebugger.state.shift_id,
+          work_date: AttendanceDebugger.state.work_date,
         }),
       );
     },
 
     restore() {
-      const raw = localStorage.getItem(this.storageKey);
+      const raw = localStorage.getItem(AttendanceDebugger.storageKey);
 
-      if (!raw) {
-        this.state.timezone = "Asia/Manila";
-        return;
-      }
+      if (!raw) return;
 
       try {
-        Object.assign(this.state, JSON.parse(raw));
-
-        this.state.timezone = this.state.timezone || "Asia/Manila";
-      } catch (err) {
-        console.error(err);
-
-        this.state.timezone = "Asia/Manila";
+        Object.assign(AttendanceDebugger.state, JSON.parse(raw));
+      } catch (e) {
+        console.error(e);
       }
     },
   };
 
-  // document.addEventListener("DOMContentLoaded", () => AttendanceDebugger.init());
+  document.addEventListener("DOMContentLoaded", AttendanceDebugger.init);
 </script>

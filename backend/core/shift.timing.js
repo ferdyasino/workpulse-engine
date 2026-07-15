@@ -132,25 +132,16 @@ function resolveShiftWindowByWorkDate(shift, workDate) {
   };
 }
 
-function resolveAttendanceWindow(shift, value, settings) {
-  if (!shift) {
-    throw new Error("Shift is required.");
-  }
+function resolveAttendanceWindow(shift, timestamp, settings) {
+  const shiftWindow = resolveShiftWindow(shift, timestamp);
 
   settings = settings || {};
 
-  const shiftWindow =
-    typeof value === "string"
-      ? resolveShiftWindowByWorkDate(shift, value)
-      : resolveShiftWindow(shift, value);
+  const before =
+    Number(settings.ALLOW_EARLY_TIME_IN_MINUTES || 0);
 
-  const before = Number(
-    settings.ALLOW_EARLY_TIME_IN_MINUTES || 0
-  );
-
-  const after = Number(
-    settings.ALLOW_LATE_TIME_OUT_MINUTES || 0
-  );
+  const after =
+    Number(settings.ALLOW_LATE_TIME_OUT_MINUTES || 0);
 
   const attendanceStart = new Date(shiftWindow.shift_start);
   attendanceStart.setMinutes(
