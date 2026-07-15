@@ -165,54 +165,73 @@ function resolveAttendanceWindow(shift, timestamp, settings) {
   };
 }
 
-function resolveAttendanceSchedule(shift, work_date, settings) {
-  if (!shift) {
-    throw new Error("Shift is required.");
-  }
-  const baseDate =  new Date(work_date);
+function resolveAttendanceSchedule(
+  shift,
+  work_date,
+  settings
+) {
 
-  const shiftStart = new Date(baseDate.getTime());
-  const shiftEnd = new Date(baseDate.getTime());
+  settings = settings || {};
 
-  const [startHour, startMinute] = String(shift.start_time)
-    .split(":")
-    .map(Number);
+  const context =
+    buildShiftDateContext(
+      work_date,
+      shift,
+      settings
+    );
 
-  const [endHour, endMinute] = String(shift.end_time)
-    .split(":")
-    .map(Number);
+  const attendanceStart =
+    new Date(
+      context.shift_start_utc
+    );
 
-  shiftStart.setHours(startHour, startMinute, 0, 0);
-  shiftEnd.setHours(endHour, endMinute, 0, 0);
-
-  if (isOvernightShift(shift) && shiftEnd <= shiftStart) {
-    shiftEnd.setDate(shiftEnd.getDate() + 1);
-  }
-
-  const attendanceStart = new Date(shiftStart);
   attendanceStart.setMinutes(
     attendanceStart.getMinutes() -
-      Number(settings.ALLOW_EARLY_TIME_IN_MINUTES || 0)
+    Number(
+      settings.ALLOW_EARLY_TIME_IN_MINUTES || 0
+    )
   );
 
-  const attendanceEnd = new Date(shiftEnd);
+  const attendanceEnd =
+    new Date(
+      context.shift_end_utc
+    );
+
   attendanceEnd.setMinutes(
     attendanceEnd.getMinutes() +
-      Number(settings.ALLOW_LATE_TIME_OUT_MINUTES || 0)
+    Number(
+      settings.ALLOW_LATE_TIME_OUT_MINUTES || 0
+    )
   );
 
-
   return {
-    work_date: work_date,
 
-    shift_start: shiftStart,
-    shift_end: shiftEnd,
+    work_date,
 
-    attendance_start: attendanceStart,
-    attendance_end: attendanceEnd,
+    timezone:
+      context.display_timezone,
 
-    scheduled_minutes: Math.round(
-      (shiftEnd.getTime() - shiftStart.getTime()) / 60000
-    ),
+    shift_timezone:
+      context.shift_timezone,
+
+    shift_start:
+      context.shift_start_utc,
+
+    shift_end:
+      context.shift_end_utc,
+
+    attendance_start:
+      attendanceStart,
+
+    attendance_end:
+      attendanceEnd,
+
+    scheduled_minutes:
+      context.scheduled_minutes,
+
+    overnight:
+      context.overnight
+
   };
+
 }
