@@ -15,35 +15,23 @@
     // =====================================================
 
     function getUsers(success, fail) {
-      google.script.run.withSuccessHandler(success).withFailureHandler(fail).getUsers(ws());
+      ApiClient.call("getUsers", ws()).then(success).catch(fail);
     }
 
     function createUser(payload, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .createUser(ws(), payload);
+      ApiClient.call("createUser", ws(), payload).then(success).catch(fail);
     }
 
     function updateUser(userId, payload, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .updateUser(ws(), userId, payload);
+      ApiClient.call("updateUser", ws(), userId, payload).then(success).catch(fail);
     }
 
     function deleteUser(userId, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .deleteUser(ws(), userId);
+      ApiClient.call("deleteUser", ws(), userId).then(success).catch(fail);
     }
 
     function deactivateUser(userId, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .deactivateUser(ws(), userId);
+      ApiClient.call("deactivateUser", ws(), userId).then(success).catch(fail);
     }
 
     // =====================================================
@@ -51,31 +39,19 @@
     // =====================================================
 
     function getDepartments(success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .getAllDepartments(ws());
+      ApiClient.call("getAllDepartments", ws()).then(success).catch(fail);
     }
 
     function createDepartment(payload, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .createDepartment(ws(), payload);
+      ApiClient.call("createDepartment", ws(), payload).then(success).catch(fail);
     }
 
     function updateDepartment(departmentId, payload, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .updateDepartment(ws(), departmentId, payload);
+      ApiClient.call("updateDepartment", ws(), departmentId, payload).then(success).catch(fail);
     }
 
     function deleteDepartment(departmentId, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .deleteDepartment(ws(), departmentId);
+      ApiClient.call("deleteDepartment", ws(), departmentId).then(success).catch(fail);
     }
 
     // =====================================================
@@ -83,28 +59,19 @@
     // =====================================================
 
     function getPositions(success, fail) {
-      google.script.run.withSuccessHandler(success).withFailureHandler(fail).getAllPositions(ws());
+      ApiClient.call("getAllPositions", ws()).then(success).catch(fail);
     }
 
     function createPosition(payload, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .createPosition(ws(), payload);
+      ApiClient.call("createPosition", ws(), payload).then(success).catch(fail);
     }
 
     function updatePosition(positionId, payload, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .updatePosition(ws(), positionId, payload);
+      ApiClient.call("updatePosition", ws(), positionId, payload).then(success).catch(fail);
     }
 
     function deletePosition(positionId, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .deletePosition(ws(), positionId);
+      ApiClient.call("deletePosition", ws(), positionId).then(success).catch(fail);
     }
 
     // =====================================================
@@ -112,42 +79,27 @@
     // =====================================================
     // console.log("ws", ws());
     function getShifts(success, fail) {
-      google.script.run.withSuccessHandler(success).withFailureHandler(fail).getAllShifts(ws());
+      ApiClient.call("getAllShifts", ws()).then(success).catch(fail);
     }
 
     function createShift(payload, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .createShift(ws(), payload);
+      ApiClient.call("createShift", ws(), payload).then(success).catch(fail);
     }
 
     function updateShift(shiftId, payload, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .updateShift(ws(), shiftId, payload);
+      ApiClient.call("updateShift", ws(), shiftId, payload).then(success).catch(fail);
     }
 
     function deleteShift(shiftId, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .deleteShift(ws(), shiftId);
+      ApiClient.call("deleteShift", ws(), shiftId).then(success).catch(fail);
     }
 
     function deactivateShift(shiftId, success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .deactivateShift(ws(), shiftId);
+      ApiClient.call("deactivateShift", ws(), shiftId).then(success).catch(fail);
     }
 
     function getWorkspaceSettings(success, fail) {
-      google.script.run
-        .withSuccessHandler(success)
-        .withFailureHandler(fail)
-        .getWorkspaceSettings(ws());
+      ApiClient.call("getWorkspaceSettings", ws()).then(success).catch(fail);
     }
 
     // =====================================================

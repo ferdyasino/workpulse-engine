@@ -59,10 +59,16 @@
 
     showLoader();
 
-    google.script.run
-      .withSuccessHandler(handleReportsSuccess)
-      .withFailureHandler(handleReportsFailure)
-      .api_getReports(user.workspace_id, user.email, user.shift_id, user.role, range);
+    ApiClient.call(
+      "api_getReports",
+      user.workspace_id,
+      user.email,
+      user.shift_id,
+      user.role,
+      range
+    )
+      .then(handleReportsSuccess)
+      .catch(handleReportsFailure);
   }
 
   // =====================================================

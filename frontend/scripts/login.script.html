@@ -68,9 +68,9 @@
     showLoader?.();
     showToast?.("Signing you in...", "info");
 
-    google.script.run
-      .withSuccessHandler(handleLoginSuccess)
-      .withFailureHandler((err) => {
+    ApiClient.call("loginResolver", workspaceSlug, email)
+      .then(handleLoginSuccess)
+      .catch((err) => {
         hideLoader?.();
 
         form
@@ -78,8 +78,7 @@
           .forEach((el) => (el.disabled = false));
 
         handleLoginError(err);
-      })
-      .loginResolver(workspaceSlug, email);
+      });
   });
 
   // =====================================================

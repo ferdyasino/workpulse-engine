@@ -50,7 +50,7 @@
         return APP.settings;
       }
 
-      const settings = await gas("workspaceSettings", workspace_id);
+      const settings = await ApiClient.call("workspaceSettings", workspace_id);
 
       APP.settings = Array.isArray(settings) ? settings : [];
 
@@ -104,7 +104,7 @@
         throw new Error("settingsRows must be an array");
       }
 
-      const saved = await gas("saveWorkspaceSettings", workspace_id, settingsRows);
+      const saved = await ApiClient.call("saveWorkspaceSettings", workspace_id, settingsRows);
 
       console.log(
         "Returned from GAS:",
@@ -136,7 +136,7 @@
         throw new Error("Workspace not found");
       }
 
-      const saved = await gas("patchWorkspaceSettings", workspace_id, settingsRows);
+      const saved = await ApiClient.call("patchWorkspaceSettings", workspace_id, settingsRows);
 
       APP.settings = Array.isArray(saved) ? saved : APP.settings;
 
@@ -157,7 +157,7 @@
         throw new Error("Workspace not found");
       }
 
-      const settings = await gas("resetWorkspaceSettings", workspace_id);
+      const settings = await ApiClient.call("resetWorkspaceSettings", workspace_id);
 
       APP.settings = Array.isArray(settings) ? settings : [];
 
@@ -174,7 +174,7 @@
      * -----------------------------------------------------
      */
     async validate(settingsRows) {
-      return gas("validateWorkspaceSettings", settingsRows);
+      return ApiClient.call("validateWorkspaceSettings", settingsRows);
     },
 
     /**

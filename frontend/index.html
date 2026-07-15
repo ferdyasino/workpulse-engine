@@ -140,11 +140,11 @@
     ====================================================== -->
     <?!= include("frontend/scripts/scripts"); ?>
     <script>
-      window.SERVER_DATA =
-      '<?!= JSON.stringify(SERVER_DATA) ?>';
-      </script>
+      window.SERVER_DATA = `<?!= JSON.stringify(SERVER_DATA) ?>`;
+    </script>
     <?!= include("frontend/scripts/app.core.script"); ?>
 
+    <?!= include("frontend/scripts/api.client"); ?>
     <?!= include("frontend/scripts/helpers/helper.script"); ?>
     <?!= include("frontend/scripts/helpers/display.helper"); ?>
     <?!= include("frontend/scripts/helpers/lookup.helper"); ?>
@@ -153,7 +153,7 @@
     <?!= include("frontend/scripts/helpers/shift.helper"); ?>
 
     <?!= include("frontend/scripts/login.script"); ?>
-    <!-- <?!= include("frontend/scripts/attendance.debug.script"); ?> -->
+    <?!= include("frontend/scripts/google.login.script"); ?>
     <?!= include("frontend/scripts/settings.script"); ?>
     <?!= include("frontend/scripts/settings.api.script"); ?>
     <?!= include("frontend/scripts/settings.render.script"); ?>

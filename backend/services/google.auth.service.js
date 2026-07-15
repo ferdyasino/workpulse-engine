@@ -46,6 +46,12 @@ function loginWithGoogle(payload = {}) {
   const workspaceSlug = String(payload.workspace_slug || "").trim();
   const autoTimeIn = payload.auto_time_in === true;
 
+  console.log("[GoogleAuth] loginWithGoogle called", {
+    hasIdToken: !!idToken,
+    workspaceSlug,
+    autoTimeIn,
+  });
+
   if (!idToken) {
     throw new Error("Google ID token is required");
   }
@@ -55,12 +61,25 @@ function loginWithGoogle(payload = {}) {
   // =====================================================
   const googleProfile = verifyGoogleIdToken(idToken);
 
+  console.log("[GoogleAuth] verified Google profile", {
+    sub: googleProfile.sub,
+    email: googleProfile.email,
+    email_verified: googleProfile.email_verified,
+  });
+
   // =====================================================
   // 2. RESOLVE INTERNAL AUTH USER
   // - by google_sub first
   // - fallback by email then link
   // =====================================================
   const authUser = resolveGoogleLoginUser(googleProfile);
+
+  console.log("[GoogleAuth] resolved auth user", {
+    user_id: authUser?.user_id,
+    email: authUser?.email,
+    auth_provider: authUser?.auth_provider,
+    workspace_id: authUser?.workspace_id,
+  });
 
   if (!authUser) {
     throw new Error("Unable to resolve Google login user");
@@ -83,8 +102,30 @@ function loginWithGoogle(payload = {}) {
     googleProfile.email
   );
 
+  console.log("[GoogleAuth] resolved workspace login", {
+    success: login?.success,
+    workspace_id: login?.workspace_id,
+    user_id: login?.user_id,
+    auth_user_id: login?.auth_user_id,
+    role: login?.role,
+  });
+
   if (!login || login.success !== true) {
     throw new Error("Login resolver failed");
+  }
+
+  // =====================================================
+  // SECURITY CHECK
+  // Ensure workspace login belongs to the authenticated
+  // master auth user.
+  // =====================================================
+  if (
+    login.auth_user_id &&
+    login.auth_user_id !== authUser.user_id
+  ) {
+    throw new Error(
+      "Workspace login does not belong to the authenticated user"
+    );
   }
 
   // =====================================================
@@ -103,6 +144,8 @@ function loginWithGoogle(payload = {}) {
       googleProfile,
       login
     });
+
+    console.log("[GoogleAuth] auto time-in result", autoTimeInResult);
   }
 
   // =====================================================
@@ -202,6 +245,8 @@ function verifyGoogleIdToken(idToken) {
   }
 
   const aud = String(data.aud || "").trim();
+  const iss = String(data.iss || "").trim();
+  const exp = Number(data.exp || 0);
   const sub = String(data.sub || "").trim();
   const email = normalize("email", data.email || "");
   const emailVerified =
@@ -221,6 +266,17 @@ function verifyGoogleIdToken(idToken) {
 
   if (aud !== clientId) {
     throw new Error("Google token audience mismatch");
+  }
+
+  if (
+    iss !== "accounts.google.com" &&
+    iss !== "https://accounts.google.com"
+  ) {
+    throw new Error("Google token issuer mismatch");
+  }
+
+  if (!exp || exp * 1000 < Date.now()) {
+    throw new Error("Google ID token has expired");
   }
 
   return {
@@ -361,4 +417,29 @@ function maybeAutoTimeInAfterGoogleLogin(context = {}) {
       error: err.message || String(err)
     };
   }
+}
+
+function getCurrentUserEmail(){
+
+  return Session
+    .getActiveUser()
+    .getEmail();
+
+}
+
+function loginWithGoogleEmail(email){
+
+  const normalized =
+    normalize("email", email);
+
+  const login =
+    loginResolver(
+      "",
+      normalized
+    );
+
+  return {
+    success:true,
+    login
+  };
 }

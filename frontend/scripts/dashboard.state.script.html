@@ -305,8 +305,8 @@
         showLoader?.();
       }
 
-      google.script.run
-        .withSuccessHandler((state) => {
+      ApiClient.call("getCurrentState", workspace_id, email, shift_id)
+        .then((state) => {
           if (!silent) {
             hideLoader?.();
           }
@@ -331,14 +331,13 @@
 
           resolve(state);
         })
-        .withFailureHandler((err) => {
+        .catch((err) => {
           if (!silent) {
             hideLoader?.();
           }
 
           reject(err);
-        })
-        .getCurrentState(workspace_id, email, shift_id);
+        });
     });
   }
 

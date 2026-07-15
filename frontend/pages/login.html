@@ -1,23 +1,16 @@
 <div class="container min-vh-100 d-flex align-items-center justify-content-center">
-
-  <div class="glass glass-card glass-strong w-100" style="max-width:450px;">
-
+  <div class="glass glass-card glass-strong w-100" style="max-width: 450px">
     <!-- =====================================================
          BIG LOGIN CLOCK
     ====================================================== -->
     <div class="text-center mb-4">
-
-      <div id="loginClockTime"
-           style="font-size:56px;font-weight:800;letter-spacing:1px;">
+      <div id="loginClockTime" style="font-size: 56px; font-weight: 800; letter-spacing: 1px">
         00:00:00
       </div>
 
-      <div id="loginClockDate"
-           class="text-muted-custom"
-           style="font-size:14px;margin-top:6px;">
+      <div id="loginClockDate" class="text-muted-custom" style="font-size: 14px; margin-top: 6px">
         Loading date...
       </div>
-
     </div>
 
     <!-- =====================================================
@@ -25,21 +18,15 @@
     ====================================================== -->
     <div class="text-center mb-4">
       <h2 class="fw-bold">Attendance System</h2>
-      <p class="text-muted-custom mb-0">
-        Sign in to continue
-      </p>
+      <p class="text-muted-custom mb-0">Sign in to continue</p>
     </div>
 
     <!-- =====================================================
          LOGIN FORM
     ====================================================== -->
     <form id="loginForm">
-
       <!-- Hidden SID -->
-      <input
-        type="hidden"
-        id="sid"
-        name="sid">
+      <input type="hidden" id="sid" name="sid" />
 
       <!-- EMAIL -->
       <div class="mb-3">
@@ -50,15 +37,20 @@
           id="email"
           class="form-control"
           placeholder="you@example.com"
-          required>
+          required
+        />
       </div>
 
       <!-- LOGIN BUTTON -->
-      <button
-        type="submit"
-        class="btn btn-primary w-100 mb-2">
-        Login
+      <button type="submit" class="btn btn-primary w-100 mb-2">Login</button>
+
+      <button type="button" id="googleLoginButton" class="btn btn-outline-light w-100 mb-2">
+        <i class="bi bi-google me-2"></i>
+        Continue with Google
       </button>
+
+      <!-- GOOGLE LOGIN -->
+      <div id="googleSignInButton" class="d-flex justify-content-center mb-2"></div>
 
       <!-- TEST BUTTONS (DEV ONLY)
       <button
@@ -74,9 +66,6 @@
         onclick="mockLogin('admin')">
         Test Admin
       </button> -->
-
     </form>
-
   </div>
-
 </div>

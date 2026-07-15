@@ -69,15 +69,57 @@ function linkGoogleAccountToAuthUser(userId, googleProfile = {}) {
   }
 
   // =====================================================
-  // SAFETY: prevent same google_sub being linked to another user
+  // ALREADY LINKED
+  // =====================================================
+  const currentGoogleSub = String(authUser.google_sub || "").trim();
+  const currentGoogleEmail = normalize(
+    "email",
+    authUser.google_email || ""
+  );
+
+  if (
+    currentGoogleSub === googleSub &&
+    currentGoogleEmail === googleEmail
+  ) {
+    return {
+      success: true,
+      user_id: userId,
+      auth_provider: authUser.auth_provider,
+      google_sub: currentGoogleSub,
+      google_email: currentGoogleEmail,
+      already_linked: true
+    };
+  }
+
+  // =====================================================
+  // PREVENT REPLACING EXISTING GOOGLE ACCOUNT
+  // =====================================================
+  if (
+    currentGoogleSub &&
+    currentGoogleSub !== googleSub
+  ) {
+    throw new Error(
+      "This account is already linked to a different Google account"
+    );
+  }
+
+  // =====================================================
+  // SAFETY: prevent same google_sub being linked elsewhere
   // =====================================================
   const existingGoogleUser = findAuthUserByGoogleSub(googleSub);
 
-  if (existingGoogleUser && existingGoogleUser.user_id !== userId) {
-    throw new Error("This Google account is already linked to another user");
+  if (
+    existingGoogleUser &&
+    existingGoogleUser.user_id !== userId
+  ) {
+    throw new Error(
+      "This Google account is already linked to another user"
+    );
   }
 
-  const currentProvider = String(authUser.auth_provider || "").toLowerCase();
+  const currentProvider = String(
+    authUser.auth_provider || ""
+  ).toLowerCase();
 
   let nextProvider = AUTH_PROVIDERS.GOOGLE;
 
@@ -102,7 +144,9 @@ function linkGoogleAccountToAuthUser(userId, googleProfile = {}) {
   );
 
   if (!ok) {
-    throw new Error("Failed to link Google account to auth user");
+    throw new Error(
+      "Failed to link Google account to auth user"
+    );
   }
 
   return {

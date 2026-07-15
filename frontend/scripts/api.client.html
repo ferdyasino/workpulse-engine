@@ -1,0 +1,37 @@
+<script>
+  /**
+   * =====================================================
+   * CLIENT TO SERVER BRIDGE
+   * =====================================================
+   * Centralizes Apps Script calls so page scripts don't
+   * talk to google.script.run directly everywhere.
+   * =====================================================
+   */
+  window.ApiClient = (() => {
+    function call(method, ...args) {
+      if (!method) {
+        return Promise.reject(new Error("Method name is required"));
+      }
+
+      return new Promise((resolve, reject) => {
+        if (!window.google?.script?.run) {
+          reject(new Error("Server bridge is not available"));
+          return;
+        }
+
+        const runner = google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject);
+
+        if (typeof runner[method] !== "function") {
+          reject(new Error(`Server method not found: ${method}`));
+          return;
+        }
+
+        runner[method](...args);
+      });
+    }
+
+    return { call };
+  })();
+</script>

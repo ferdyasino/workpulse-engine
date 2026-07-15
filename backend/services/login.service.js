@@ -228,6 +228,14 @@ function loginResolver(workspaceSlug, email) {
   return {
     success: true,
 
+    // =====================================================
+    // MASTER AUTH USER
+    // =====================================================
+    auth_user_id: authUser?.user_id || "",
+
+    // =====================================================
+    // WORKSPACE USER
+    // =====================================================
     user_id: workspaceUser.user_id,
     email: workspaceUser.email,
     fullname: workspaceUser.fullname,
@@ -235,9 +243,18 @@ function loginResolver(workspaceSlug, email) {
 
     role,
     status,
-    dept_name: deptName,
-    sched: sched,
-    
+
+    dept_name: dept?.department_name || "DEPARTMENT",
+
+    sched: schedRow
+      ? {
+          shift_name: schedRow.shift_name,
+          start_time: schedRow.start_time,
+          end_time: schedRow.end_time,
+          grace_minutes: schedRow.grace_minutes
+        }
+      : null,
+
     workspace_id: workspace.workspace_id,
     workspace_url: workspace.workspace_url,
     timelog_spreadsheet_id: workspace.timelog_spreadsheet_id,

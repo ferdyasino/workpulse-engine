@@ -278,8 +278,8 @@
       timestamp: new Date().toISOString(),
     };
 
-    google.script.run
-      .withSuccessHandler((res) => {
+    ApiClient.call("submitTimeLogAction", workspace_id, payload)
+      .then((res) => {
         hideLoader?.();
 
         if (!res?.success) {
@@ -301,11 +301,10 @@
         // Fallback: use the single dashboard sync pipeline
         syncAttendanceState?.();
       })
-      .withFailureHandler((err) => {
+      .catch((err) => {
         hideLoader?.();
         showToast?.(err?.message || "Server error", "error");
-      })
-      .submitTimeLogAction(workspace_id, payload);
+      });
   }
 
   /* =====================================================
