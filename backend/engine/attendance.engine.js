@@ -330,7 +330,6 @@ function api_debugAttendanceEngine(
     late: 0,
     undertime: 0,
     overtime: 0,
-
     worked_minutes: 0,
     regular_minutes: 0,
     overtime_minutes: 0,
