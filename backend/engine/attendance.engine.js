@@ -3,11 +3,13 @@ function buildAttendanceState(shift, timelogState, options) {
 
   const settings = options.settings || {};
 
-  const window = resolveAttendanceSchedule(
-    shift,
-    options.timestamp,
-    settings
-  );
+  const window = shift
+    ? resolveAttendanceWindow(
+        shift,
+        options.timestamp,
+        settings
+      )
+    : null;
 
   const attendance = {
     ...timelogState,
