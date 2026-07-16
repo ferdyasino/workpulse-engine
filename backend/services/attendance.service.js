@@ -32,7 +32,7 @@ function submitTimeLogAction(workspace_id, payload) {
       throw new Error(result && result.message ? result.message : "Failed to save timelog action.");
     }
 
-    const state = getCurrentState(normalizedWorkspaceId, normalized.email, normalized.shift_id);
+    const state = getCurrentState(normalizedWorkspaceId, normalized.email, normalized.shift_id, normalized.date);
 
     return {
       success: true,

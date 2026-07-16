@@ -261,5 +261,5 @@ function getShiftWorkDate(workspace_id, email, shift_id, timestamp) {
     }
   }
 
-  return resolveShiftWorkDate(shift, timestamp || new Date());
+  return resolveShiftWorkDate(workspace_id, shift, timestamp || new Date());
 }

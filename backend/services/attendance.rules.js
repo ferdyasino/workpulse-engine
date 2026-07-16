@@ -104,7 +104,8 @@ function validateTimeLogAction(
   const state = getCurrentState(
     normalizedWorkspaceId,
     normalized.email,
-    normalized.shift_id
+    normalized.shift_id,
+    normalized.date
   );
 
   switch (normalized.action) {

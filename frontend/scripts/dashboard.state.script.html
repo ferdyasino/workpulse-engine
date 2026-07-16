@@ -305,7 +305,7 @@
         showLoader?.();
       }
 
-      ApiClient.call("getCurrentState", workspace_id, email, shift_id)
+      ApiClient.call("getCurrentState", workspace_id, email, shift_id, APP.dashboard.viewingDate)
         .then((state) => {
           if (!silent) {
             hideLoader?.();

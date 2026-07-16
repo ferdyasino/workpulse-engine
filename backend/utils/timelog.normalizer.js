@@ -84,7 +84,7 @@ function normalizeTimeLog(data, workspace_id) {
       : null;
 
     finalDate = shift
-      ? resolveShiftWorkDate(shift, timestampDate)
+      ? resolveShiftWorkDate(workspace_id, shift, timestampDate)
       : formatDateKey(timestampDate);
   }
 

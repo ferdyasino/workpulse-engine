@@ -54,8 +54,7 @@ function getCurrentState(workspace_id, email, shift_id, timestamp, options) {
 
   options.timezone =
     normalize("timezone", options.timezone) ||
-    settings.TIMEZONE ||
-    "Asia/Manila";
+    settings.TIMEZONE
 
   const targetTime = timestamp || new Date();
 
@@ -105,7 +104,7 @@ function getTodayTimeLogsByEmail(workspace_id, email, timestamp, shift) {
   }
 
   const workDate = shift
-    ? resolveShiftWorkDate(shift, timestamp)
+    ? resolveShiftWorkDate(normalizedWorkspaceId, shift, timestamp)
     : formatDateKey(timestamp || new Date());
 
   return getTimeLogsByDate(normalizedWorkspaceId, normalizedEmail, workDate);
@@ -195,8 +194,8 @@ function matchesTimeLogFilters(record, filters) {
   });
 }
 
-function resolveShiftWorkDate(shift, timestamp) {
-  return resolveShiftWindow(shift, timestamp).work_date;
+function resolveShiftWorkDate(workspace_id, shift, timestamp) {
+  return resolveShiftWindow(workspace_id, shift, timestamp).work_date;
 }
 
 function getAttendanceStateByWorkDate(
