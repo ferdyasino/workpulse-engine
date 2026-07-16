@@ -293,7 +293,6 @@
 
       // Show loading spinner
       this.renderLoading();
-
       ApiClient.call(
         "api_getReports",
         this.state.workspace_id,
@@ -302,6 +301,7 @@
         APP.role,
         this.state.start_date,
         this.state.end_date,
+        this.getShiftTimezone(),
       )
         .then((result) => {
           if (typeof result === "string") {
@@ -414,8 +414,8 @@
                                   ${formatShiftLabel(
                                     {
                                       shift_name: "",
-                                      start_time: this.formatDateTime(row.shift_start),
-                                      end_time: this.formatDateTime(row.shift_end),
+                                      start_time: row.shift_start,
+                                      end_time: row.shift_end,
                                     },
                                     { timeOnly: true },
                                   )}
@@ -511,9 +511,10 @@
     },
 
     getShiftTimezone() {
-      return "Asia/Manila";
+      return (
+        this.state.timezone || APP.settings?.TIMEZONE || getAppTimezone?.() || "America/New_York"
+      );
     },
-
     renderLoading() {
       const tbody = document.getElementById("reportTableBody");
 
