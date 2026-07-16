@@ -14,17 +14,29 @@
 
       const d = value instanceof Date ? new Date(value) : new Date(value);
 
-      if (isNaN(d)) return "";
+      if (isNaN(d.getTime())) return "";
 
-      return [
-        d.getFullYear(),
-        String(d.getMonth() + 1).padStart(2, "0"),
-        String(d.getDate()).padStart(2, "0"),
-      ].join("-");
+      const timezone =
+        typeof getAppTimezone === "function"
+          ? getAppTimezone()
+          : Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(d);
+
+      const year = parts.find((p) => p.type === "year")?.value;
+      const month = parts.find((p) => p.type === "month")?.value;
+      const day = parts.find((p) => p.type === "day")?.value;
+
+      return `${year}-${month}-${day}`;
     };
 
     window.addMinutes = function (date, minutes = 0) {
-      if (!(date instanceof Date) || isNaN(date)) return null;
+      if (!(date instanceof Date) || isNaN(date.getTime())) return null;
 
       return new Date(date.getTime() + Number(minutes) * 60000);
     };
@@ -33,9 +45,9 @@
       const a = new Date(later);
       const b = new Date(earlier);
 
-      if (isNaN(a) || isNaN(b)) return 0;
+      if (isNaN(a.getTime()) || isNaN(b.getTime())) return 0;
 
-      return Math.floor((a - b) / 60000);
+      return Math.floor((a.getTime() - b.getTime()) / 60000);
     };
 
     window.formatMinutesDuration = function (minutes = 0) {
