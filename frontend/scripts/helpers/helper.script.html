@@ -10,14 +10,37 @@
       ? window.addMinutes(scheduledStart, normalizedShift.grace_minutes)
       : null;
 
-    const actualTimeIn = time_in ? new Date(time_in) : null;
-    const actualTimeOut = time_out ? new Date(time_out) : null;
+    function normalizeTimestamp(value) {
+      if (!value) return null;
 
-    const validTimeIn =
-      actualTimeIn instanceof Date && !isNaN(actualTimeIn.getTime()) ? actualTimeIn : null;
+      const date = value instanceof Date ? value : new Date(value);
 
-    const validTimeOut =
-      actualTimeOut instanceof Date && !isNaN(actualTimeOut.getTime()) ? actualTimeOut : null;
+      if (isNaN(date.getTime())) return null;
+
+      const timezone =
+        typeof getAppTimezone === "function"
+          ? getAppTimezone()
+          : Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      const dateKey = window.formatDateKey(date);
+
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).formatToParts(date);
+
+      const hour = parts.find((p) => p.type === "hour")?.value || "00";
+      const minute = parts.find((p) => p.type === "minute")?.value || "00";
+      const second = parts.find((p) => p.type === "second")?.value || "00";
+
+      return new Date(`${dateKey}T${hour}:${minute}:${second}`);
+    }
+
+    const validTimeIn = normalizeTimestamp(time_in);
+    const validTimeOut = normalizeTimestamp(time_out);
 
     let timeInStatus = {
       code: "NOT_TIMED_IN",

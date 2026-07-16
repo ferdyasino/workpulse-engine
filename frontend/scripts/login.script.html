@@ -120,21 +120,25 @@
 
       APP.workStatus = "NOT STARTED";
       APP.dashboard = APP.dashboard || {};
+      APP.dashboard.viewingDate = null;
+
+      // Load workspace settings FIRST (loads TIMEZONE)
+      await bootstrapSettings(true);
+
+      // Now today's date is based on settings.TIMEZONE
       APP.dashboard.viewingDate = formatDateKey(new Date());
 
       hideLoader?.();
+
       renderUserHeader();
       applyRoleUI?.();
+
       await go("dashboard");
 
       queueMicrotask(() => {
-        bootstrapSettings().catch(console.error);
-
         if (APP.role === "admin" || APP.role === "owner") {
           UserInit?.();
         }
-
-        // maybePromptForDuty?.();
       });
     } catch (err) {
       console.error(err);
@@ -199,11 +203,12 @@
     APP.attendanceState = null;
     APP.shiftSummary = null;
     APP.selectedUser = null;
+
     APP.dashboard = APP.dashboard || {};
-    APP.dashboard.viewingDate = formatDateKey(new Date());
+    APP.dashboard.viewingDate = null;
+
     APP.__dutyPromptShown = false;
   }
-
   // =====================================================
   // UI RESET
   // =====================================================
@@ -309,7 +314,7 @@
     });
   }
 
-  function restoreSessionLite() {
+  async function restoreSessionLite() {
     const user_id = localStorage.getItem(STORAGE_KEYS.USER_ID);
     const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
     const role = localStorage.getItem(STORAGE_KEYS.ROLE);
@@ -325,6 +330,12 @@
     APP.user = getCurrentUser();
     APP.role = DISPLAY.lower(APP.user.role || "guest");
 
+    // Load timezone before computing today's date
+    await bootstrapSettings(true);
+
+    APP.dashboard = APP.dashboard || {};
+    APP.dashboard.viewingDate = formatDateKey(new Date());
+
     const lastPage = localStorage.getItem(STORAGE_KEYS.LAST_PAGE);
 
     const isAdmin = APP.role === "admin" || APP.role === "owner";
@@ -332,7 +343,6 @@
 
     if (isAdmin) {
       UserInit?.();
-      bootstrapSettings().catch(console.error);
     }
 
     APP.currentPage = allowedPages.includes(lastPage) ? lastPage : isAdmin ? "admin" : "dashboard";
@@ -385,32 +395,27 @@
     const workspace_id = getCurrentUser()?.workspace_id;
 
     if (!workspace_id) {
-      APP.settings = {};
+      APP.settings = [];
       APP.settingsLoaded = false;
-      return;
+      return [];
     }
 
     if (APP.settingsLoaded && !force) {
       return APP.settings;
     }
 
-    try {
-      APP.settings = await SettingsAPI.getAll();
-      APP.settingsLoaded = true;
+    APP.settings = await SettingsAPI.getAll();
+    APP.settingsLoaded = true;
 
-      // ============================================
-      // Apply workspace timezone
-      // ============================================
-      const timezone = APP.settings.find((s) => s.key === "TIMEZONE")?.value || "America/New_York";
+    const timezone = APP.settings.find((s) => s.key === "TIMEZONE")?.value || "America/New_York";
 
-      setAppTimezone(timezone);
+    setAppTimezone(timezone);
 
-      return APP.settings;
-    } catch (err) {
-      APP.settings = {};
-      APP.settingsLoaded = false;
-      throw err;
-    }
+    // Refresh today's key using the workspace timezone
+    APP.dashboard = APP.dashboard || {};
+    APP.dashboard.viewingDate = formatDateKey(new Date());
+
+    return APP.settings;
   }
 
   function resetLoginForm() {

@@ -3,12 +3,18 @@
     if (window.__SHIFT_HELPER_READY__) return;
     window.__SHIFT_HELPER_READY__ = true;
 
+    function getTimezone() {
+      return typeof getAppTimezone === "function"
+        ? getAppTimezone()
+        : Intl.DateTimeFormat().resolvedOptions().timeZone;
+    }
+
     function parseTime(value) {
       if (!value) return null;
 
       const str = String(value).trim();
 
-      // H:mm / HH:mm / HH:mm:ss
+      // HH:mm / HH:mm:ss
       let match = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
 
       if (match) {
@@ -18,12 +24,11 @@
         };
       }
 
-      // H:mm AM/PM
+      // HH:mm AM/PM
       match = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
 
       if (match) {
         let hours = Number(match[1]);
-
         const minutes = Number(match[2]);
         const ap = match[3].toUpperCase();
 
@@ -36,12 +41,20 @@
         };
       }
 
+      // ISO / Date string
       const d = new Date(str);
 
       if (!isNaN(d.getTime())) {
+        const parts = new Intl.DateTimeFormat("en-US", {
+          timeZone: getTimezone(),
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }).formatToParts(d);
+
         return {
-          hours: d.getHours(),
-          minutes: d.getMinutes(),
+          hours: Number(parts.find((p) => p.type === "hour")?.value || 0),
+          minutes: Number(parts.find((p) => p.type === "minute")?.value || 0),
         };
       }
 
@@ -54,7 +67,6 @@
       if (!time) return "--";
 
       let hour = time.hours;
-
       const minute = String(time.minutes).padStart(2, "0");
 
       const suffix = hour >= 12 ? "PM" : "AM";
@@ -64,17 +76,13 @@
       return `${hour}:${minute} ${suffix}`;
     };
 
-    window.formatTime = function (value) {
-      return window.formatShift(value);
-    };
-
     window.normalizeShift = function (shift = {}) {
       function toTimeInput(value) {
         const time = parseTime(value);
 
         if (!time) return "";
 
-        return `${String(time.hours).padStart(2, "0")}:${String(time.minutes).padStart(2, "0")}`;
+        return String(time.hours).padStart(2, "0") + ":" + String(time.minutes).padStart(2, "0");
       }
 
       return {
@@ -91,7 +99,16 @@
 
       if (!time) return null;
 
-      const date = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+      const timezone = getTimezone();
+
+      const dateKey = new Intl.DateTimeFormat("en-CA", {
+        timeZone: timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(base);
+
+      const date = new Date(dateKey + "T00:00:00");
 
       date.setHours(time.hours, time.minutes, 0, 0);
 
@@ -103,9 +120,8 @@
 
       const name = DISPLAY.label(shift.shift_name || "Unnamed Shift");
 
-      const range = `${window.formatShift(shift.start_time)} - ${window.formatShift(
-        shift.end_time,
-      )}`;
+      const range =
+        window.formatShift(shift.start_time) + " - " + window.formatShift(shift.end_time);
 
       return options.timeOnly ? range : `${name} (${range})`;
     };

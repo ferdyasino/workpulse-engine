@@ -119,13 +119,9 @@
     if (timeOutBtn) {
       timeOutBtn.disabled = false;
 
+      // Time Out immediately (no confirmation dialog)
       timeOutBtn.onclick = () => {
-        showTimeOutPrompt({
-          shift: getCurrentShift(),
-          onConfirm() {
-            logTime("time_out");
-          },
-        });
+        logTime("time_out");
       };
     }
 

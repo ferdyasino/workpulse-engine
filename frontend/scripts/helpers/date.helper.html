@@ -3,6 +3,12 @@
     if (window.__DATE_HELPER_READY__) return;
     window.__DATE_HELPER_READY__ = true;
 
+    function getTimezone() {
+      return typeof getAppTimezone === "function"
+        ? getAppTimezone()
+        : Intl.DateTimeFormat().resolvedOptions().timeZone;
+    }
+
     window.formatDateKey = function (value = new Date()) {
       if (typeof value === "string") {
         const str = value.trim();
@@ -16,13 +22,8 @@
 
       if (isNaN(d.getTime())) return "";
 
-      const timezone =
-        typeof getAppTimezone === "function"
-          ? getAppTimezone()
-          : Intl.DateTimeFormat().resolvedOptions().timeZone;
-
       const parts = new Intl.DateTimeFormat("en-CA", {
-        timeZone: timezone,
+        timeZone: getTimezone(),
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
@@ -33,6 +34,41 @@
       const day = parts.find((p) => p.type === "day")?.value;
 
       return `${year}-${month}-${day}`;
+    };
+
+    window.formatTime = function (value) {
+      if (!value) return "--:--";
+
+      const d = value instanceof Date ? value : new Date(value);
+
+      if (isNaN(d.getTime())) return String(value);
+
+      return d.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+        timeZone: getTimezone(),
+      });
+    };
+
+    window.formatDateTime = function (value) {
+      if (!value) return "--";
+
+      const d = value instanceof Date ? value : new Date(value);
+
+      if (isNaN(d.getTime())) return String(value);
+
+      return d.toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+        timeZone: getTimezone(),
+      });
     };
 
     window.addMinutes = function (date, minutes = 0) {
