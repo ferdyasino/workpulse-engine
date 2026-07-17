@@ -14,15 +14,14 @@ function safeGetHeaders(db, sheetName) {
 function ensureWorkspaceSchema(dbRef) {
   const db = resolveDb(dbRef);
 
-  Object.values(TABLES).forEach(table => {
+  Object.values(TABLES).forEach((table) => {
     let sheet = db.getSheetByName(table.sheet);
 
     if (!sheet) {
       sheet = db.insertSheet(table.sheet);
 
       if (table.schema?.length) {
-        sheet.getRange(1, 1, 1, table.schema.length)
-          .setValues([table.schema]);
+        sheet.getRange(1, 1, 1, table.schema.length).setValues([table.schema]);
       }
     }
   });

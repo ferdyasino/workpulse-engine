@@ -1,12 +1,4 @@
-const ALLOWED_PAGES = [
-  "home",
-  "dashboard",
-  "admin",
-  "reports",
-  "login",
-  "settings",
-  "debugger"
-];
+const ALLOWED_PAGES = ["home", "dashboard", "admin", "reports", "login", "settings", "debugger"];
 
 /* =====================================================
    ROUTE NORMALIZATION
@@ -30,7 +22,6 @@ function isAllowedPage(page) {
 ===================================================== */
 
 function getPagePath(page) {
-
   const map = {
     home: "frontend/pages/home",
     dashboard: "frontend/pages/dashboard",
@@ -38,7 +29,7 @@ function getPagePath(page) {
     reports: "frontend/pages/reports",
     login: "frontend/pages/login",
     settings: "frontend/pages/settings",
-    debugger: "frontend/pages/attendance.debug"
+    debugger: "frontend/pages/attendance.debug",
   };
 
   return map[page] || map.home;
@@ -50,7 +41,7 @@ function getPagePath(page) {
 
 function handleInviteFlow(token) {
   return renderPage("frontend/pages/login", {
-    inviteToken: token
+    inviteToken: token,
   });
 }
 
@@ -60,7 +51,6 @@ function handleInviteFlow(token) {
 ===================================================== */
 
 function routeRequest(e) {
-
   const params = e?.parameter || {};
 
   const page = normalizePage(params.page);
@@ -75,7 +65,7 @@ function routeRequest(e) {
   }
 
   return renderPage(getPagePath(page), {
-    page
+    page,
   });
 }
 
@@ -84,21 +74,23 @@ function routeRequest(e) {
 ===================================================== */
 
 function doPost(e) {
-
   try {
+    let p = {};
 
-    const p = e?.parameter || {};
+    if (e?.parameter) {
+      p = e.parameter;
+    }
+
     const action = String(p.action || "").toLowerCase();
 
     if (!action) {
       return jsonResponse({
         success: false,
-        message: "Missing action"
+        message: "Missing action",
       });
     }
 
     switch (action) {
-
       // -------------------------------------------------
       // AUTH
       // -------------------------------------------------
@@ -108,11 +100,8 @@ function doPost(e) {
       case "createpassword":
         return jsonResponse(createPassword(p.email, p.password));
 
-      // -------------------------------------------------
-      // SYSTEM INIT
-      // -------------------------------------------------
-      case "initsystem":
-        return jsonResponse(initSystem(p.email, p.sheetUrl, p.name));
+      case "logingoogle":
+        return jsonResponse(loginWithGoogle(p.workspaceSlug, p.credential));
 
       // -------------------------------------------------
       // ATTENDANCE
@@ -124,8 +113,8 @@ function doPost(e) {
             p.email,
             p.actiontype,
             p.date || null,
-            p.time || null
-          )
+            p.time || null,
+          ),
         );
 
       // -------------------------------------------------
@@ -134,48 +123,37 @@ function doPost(e) {
       case "employees":
         return jsonResponse(employeeManagement(p.email, p.sheetUrl));
 
-      // -------------------------------------------------
-      // DEFAULT
-      // -------------------------------------------------
       default:
         return jsonResponse({
           success: false,
-          message: "Invalid action"
+          message: "Invalid action",
         });
     }
-
   } catch (err) {
-
     return jsonResponse({
       success: false,
-      message: err?.message || "Server error"
+      message: err?.message || "Server error",
     });
   }
 }
 
 function doGet(e) {
-
-  const template =
-    HtmlService.createTemplateFromFile("frontend/index");
+  const template = HtmlService.createTemplateFromFile("frontend/index");
 
   template.SERVER_DATA = {
     workspaceSlug: e?.parameter?.w || "",
-    email: e?.parameter?.email || ""
+    email: e?.parameter?.email || "",
   };
 
-  return template
-    .evaluate()
-    .setTitle("Attendance Payroll");
+  return template.evaluate().setTitle("Attendance Payroll");
 }
 
 function jsonResponse(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj || {}))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(obj || {})).setMimeType(
+    ContentService.MimeType.JSON,
+  );
 }
 
 function include(filename) {
-  return HtmlService
-    .createHtmlOutputFromFile(filename)
-    .getContent();
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }

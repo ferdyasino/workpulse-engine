@@ -4,20 +4,13 @@
 ========================= */
 
 function buildTimeLogState(timeLogs) {
-
-  const logs = Array.isArray(timeLogs)
-    ? timeLogs.slice()
-    : timeLogs
-      ? [timeLogs]
-      : [];
+  const logs = Array.isArray(timeLogs) ? timeLogs.slice() : timeLogs ? [timeLogs] : [];
 
   logs.sort(function (a, b) {
-    return new Date(a.timestamp).getTime() -
-      new Date(b.timestamp).getTime();
+    return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
   });
 
   const state = {
-
     status: "NOT_STARTED",
 
     /**
@@ -30,7 +23,7 @@ function buildTimeLogState(timeLogs) {
 
     lunch: {
       in: null,
-      out: null
+      out: null,
     },
 
     breaks: [],
@@ -47,12 +40,10 @@ function buildTimeLogState(timeLogs) {
     active_break: null,
     active_lunch: false,
     completed_lunch: false,
-    is_clocked_in: false
-
+    is_clocked_in: false,
   };
 
   logs.forEach(function (log) {
-
     if (!log) return;
 
     const action = String(log.action || "")
@@ -62,12 +53,10 @@ function buildTimeLogState(timeLogs) {
     const timestamp = log.timestamp || null;
 
     switch (action) {
-
       case "time_in":
-
         state.sessions.push({
           time_in: timestamp,
-          time_out: null
+          time_out: null,
         });
 
         if (!state.time_in) {
@@ -77,9 +66,7 @@ function buildTimeLogState(timeLogs) {
         break;
 
       case "time_out": {
-
-        const session =
-          getLastOpenSession(state.sessions);
+        const session = getLastOpenSession(state.sessions);
 
         if (session) {
           session.time_out = timestamp;
@@ -90,18 +77,15 @@ function buildTimeLogState(timeLogs) {
       }
 
       case "break_start":
-
         state.breaks.push({
           in: timestamp,
-          out: null
+          out: null,
         });
 
         break;
 
       case "break_end": {
-
-        const activeBreak =
-          getLastOpenBreak(state.breaks);
+        const activeBreak = getLastOpenBreak(state.breaks);
 
         if (activeBreak) {
           activeBreak.out = timestamp;
@@ -111,25 +95,20 @@ function buildTimeLogState(timeLogs) {
       }
 
       case "lunch_start":
-
         state.lunch.in = timestamp;
         state.lunch.out = null;
         break;
 
       case "lunch_end":
-
         if (state.lunch.in) {
           state.lunch.out = timestamp;
         }
 
         break;
-
     }
-
   });
 
   return finalizeTimeLogState(state);
-
 }
 
 /* =========================
@@ -137,27 +116,17 @@ function buildTimeLogState(timeLogs) {
 ========================= */
 
 function getLastOpenSession(sessions) {
-
-  const list = Array.isArray(sessions)
-    ? sessions
-    : [];
+  const list = Array.isArray(sessions) ? sessions : [];
 
   for (let i = list.length - 1; i >= 0; i--) {
-
     const session = list[i];
 
-    if (
-      session &&
-      session.time_in &&
-      !session.time_out
-    ) {
+    if (session && session.time_in && !session.time_out) {
       return session;
     }
-
   }
 
   return null;
-
 }
 
 /* =========================
@@ -165,27 +134,17 @@ function getLastOpenSession(sessions) {
 ========================= */
 
 function getLastOpenBreak(breaks) {
-
-  const list = Array.isArray(breaks)
-    ? breaks
-    : [];
+  const list = Array.isArray(breaks) ? breaks : [];
 
   for (let i = list.length - 1; i >= 0; i--) {
-
     const brk = list[i];
 
-    if (
-      brk &&
-      brk.in &&
-      !brk.out
-    ) {
+    if (brk && brk.in && !brk.out) {
       return brk;
     }
-
   }
 
   return null;
-
 }
 
 /* =========================
@@ -193,29 +152,15 @@ function getLastOpenBreak(breaks) {
 ========================= */
 
 function finalizeTimeLogState(state) {
+  state.active_session = getLastOpenSession(state.sessions);
 
-  state.active_session =
-    getLastOpenSession(state.sessions);
+  state.active_break = getLastOpenBreak(state.breaks);
 
-  state.active_break =
-    getLastOpenBreak(state.breaks);
+  state.active_lunch = !!(state.lunch && state.lunch.in && !state.lunch.out);
 
-  state.active_lunch =
-    !!(
-      state.lunch &&
-      state.lunch.in &&
-      !state.lunch.out
-    );
+  state.completed_lunch = !!(state.lunch && state.lunch.in && state.lunch.out);
 
-  state.completed_lunch =
-    !!(
-      state.lunch &&
-      state.lunch.in &&
-      state.lunch.out
-    );
-
-  state.is_clocked_in =
-    !!state.active_session;
+  state.is_clocked_in = !!state.active_session;
 
   if (state.active_lunch) {
     state.status = "AT_LUNCH";
@@ -240,5 +185,4 @@ function finalizeTimeLogState(state) {
   state.status = "NOT_STARTED";
 
   return state;
-
 }

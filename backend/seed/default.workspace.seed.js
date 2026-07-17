@@ -48,7 +48,7 @@ function seedWorkspace(workspace_id, ownerMeta = {}) {
   return {
     success: true,
     workspace_id,
-    seeded: result
+    seeded: result,
   };
 }
 
@@ -59,7 +59,7 @@ function seedWorkspace(workspace_id, ownerMeta = {}) {
 function seedOwnerUser(workspace_id, ownerMeta) {
   return {
     seeded: true,
-    owner: createOwnerUser(workspace_id, ownerMeta)
+    owner: createOwnerUser(workspace_id, ownerMeta),
   };
 }
 
@@ -67,36 +67,30 @@ function seedDepartments(workspace_id) {
   const departments = [
     { department_name: "Operations", description: "Core operations team" },
     { department_name: "HR", description: "Human Resources" },
-    { department_name: "IT", description: "Information Technology" }
+    { department_name: "IT", description: "Information Technology" },
   ];
 
-  return departments.map(dep =>
-    createDepartment(workspace_id, dep, { skipIfExists: true })
-  );
+  return departments.map((dep) => createDepartment(workspace_id, dep, { skipIfExists: true }));
 }
 
 function seedShifts(workspace_id) {
   const shifts = [
     { shift_name: "MORNING", start_time: "06:00", end_time: "14:00", grace_minutes: 10 },
     { shift_name: "MID", start_time: "14:00", end_time: "22:00", grace_minutes: 10 },
-    { shift_name: "NIGHT", start_time: "22:00", end_time: "06:00", grace_minutes: 10 }
+    { shift_name: "NIGHT", start_time: "22:00", end_time: "06:00", grace_minutes: 10 },
   ];
 
-  return shifts.map(shift =>
-    createShift(workspace_id, shift)
-  );
+  return shifts.map((shift) => createShift(workspace_id, shift));
 }
 
 function seedPositions(workspace_id, defaultDeptId = null) {
   const positions = [
     { position_name: "ADMIN", department_id: defaultDeptId, description: "System Administrator" },
     { position_name: "MANAGER", department_id: defaultDeptId, description: "Team Manager" },
-    { position_name: "EMPLOYEE", department_id: defaultDeptId, description: "General Staff" }
+    { position_name: "EMPLOYEE", department_id: defaultDeptId, description: "General Staff" },
   ];
 
-  return positions.map(pos =>
-    createPosition(workspace_id, pos)
-  );
+  return positions.map((pos) => createPosition(workspace_id, pos));
 }
 
 /* =====================================================
@@ -139,23 +133,21 @@ function seedWorkspaceSettings(workspace_id) {
     ["BREAK_MIN_DURATION_MINUTES", "5"],
     ["BREAK_ALLOW_MULTIPLE_BREAKS", "true"],
     ["BREAK_AUTO_DEDUCT_ENABLED", "false"],
-    ["BREAK_AUTO_DEDUCT_MINUTES", "0"]
+    ["BREAK_AUTO_DEDUCT_MINUTES", "0"],
   ];
 
   const existingRows = sheet.getDataRange().getValues();
-  const existingKeys = new Set(existingRows.map(r => r[0]));
+  const existingKeys = new Set(existingRows.map((r) => r[0]));
 
   const newRows = defaults.filter(([key]) => !existingKeys.has(key));
 
   if (newRows.length > 0) {
-    sheet
-      .getRange(sheet.getLastRow() + 1, 1, newRows.length, 2)
-      .setValues(newRows);
+    sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, 2).setValues(newRows);
   }
 
   return {
     seeded: true,
     inserted: newRows.length,
-    total: defaults.length
+    total: defaults.length,
   };
 }

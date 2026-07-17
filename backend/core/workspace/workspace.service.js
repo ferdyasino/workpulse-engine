@@ -14,7 +14,7 @@ function createWorkspace(email) {
     return {
       success: true,
       alreadyExists: true,
-      workspace: existing
+      workspace: existing,
     };
   }
 
@@ -46,7 +46,7 @@ function createWorkspace(email) {
       Positions: SCHEMA.POSITIONS,
       "Attendance Index": SCHEMA.ATTENDANCE_INDEX,
       Reports: null,
-      "Audit Logs": null
+      "Audit Logs": null,
     };
 
     const base = ss.getSheets()[0];
@@ -72,7 +72,7 @@ function createWorkspace(email) {
       ["OWNER_EMAIL", normalizedEmail],
       ["OWNER_NAME", owner.fullname || ""],
       ["CREATED_AT", createdAt],
-      ["TIMEZONE", Session.getScriptTimeZone()]
+      ["TIMEZONE", Session.getScriptTimeZone()],
     ]);
 
     // 6. timelog
@@ -80,13 +80,14 @@ function createWorkspace(email) {
     logSheet.setName(EXTERNAL_TABLES.TIME_LOGS.sheet);
     logSheet.clear();
 
-    logSheet.getRange(1, 1, 1, EXTERNAL_SCHEMA.TIME_LOGS.length)
+    logSheet
+      .getRange(1, 1, 1, EXTERNAL_SCHEMA.TIME_LOGS.length)
       .setValues([EXTERNAL_SCHEMA.TIME_LOGS]);
 
     // 7. seed
     const seedResult = seedWorkspace(workspace_id, {
       email: normalizedEmail,
-      fullname: owner.fullname || ""
+      fullname: owner.fullname || "",
     });
 
     // 8. register owner
@@ -95,7 +96,7 @@ function createWorkspace(email) {
       workspace_id,
       ss.getUrl(),
       timelogId,
-      timelogSS.getUrl()
+      timelogSS.getUrl(),
     );
 
     console.info(`✅ Workspace created: ${workspace_id}`);
@@ -104,9 +105,8 @@ function createWorkspace(email) {
       success: true,
       workspace: { workspace_id, url: ss.getUrl(), name: workspaceName },
       timelogs: { timelogId, url: timelogSS.getUrl() },
-      seeded: seedResult.seeded
+      seeded: seedResult.seeded,
     };
-
   } catch (err) {
     console.error(`❌ createWorkspace failed:`, err);
     throw err;

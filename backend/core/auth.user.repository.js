@@ -13,7 +13,7 @@ function findAuthUserById(userId) {
   if (!userId) return null;
 
   return findOne(getMasterDatabase(), AUTH_TABLES.USERS, {
-    user_id: userId
+    user_id: userId,
   });
 }
 
@@ -23,7 +23,7 @@ function findAuthUserByEmail(email) {
   if (!normalizedEmail) return null;
 
   return findOne(getMasterDatabase(), AUTH_TABLES.USERS, {
-    email: normalizedEmail
+    email: normalizedEmail,
   });
 }
 
@@ -33,7 +33,7 @@ function findAuthUserByGoogleSub(googleSub) {
   if (!sub) return null;
 
   return findOne(getMasterDatabase(), AUTH_TABLES.USERS, {
-    google_sub: sub
+    google_sub: sub,
   });
 }
 
@@ -72,35 +72,24 @@ function linkGoogleAccountToAuthUser(userId, googleProfile = {}) {
   // ALREADY LINKED
   // =====================================================
   const currentGoogleSub = String(authUser.google_sub || "").trim();
-  const currentGoogleEmail = normalize(
-    "email",
-    authUser.google_email || ""
-  );
+  const currentGoogleEmail = normalize("email", authUser.google_email || "");
 
-  if (
-    currentGoogleSub === googleSub &&
-    currentGoogleEmail === googleEmail
-  ) {
+  if (currentGoogleSub === googleSub && currentGoogleEmail === googleEmail) {
     return {
       success: true,
       user_id: userId,
       auth_provider: authUser.auth_provider,
       google_sub: currentGoogleSub,
       google_email: currentGoogleEmail,
-      already_linked: true
+      already_linked: true,
     };
   }
 
   // =====================================================
   // PREVENT REPLACING EXISTING GOOGLE ACCOUNT
   // =====================================================
-  if (
-    currentGoogleSub &&
-    currentGoogleSub !== googleSub
-  ) {
-    throw new Error(
-      "This account is already linked to a different Google account"
-    );
+  if (currentGoogleSub && currentGoogleSub !== googleSub) {
+    throw new Error("This account is already linked to a different Google account");
   }
 
   // =====================================================
@@ -108,18 +97,11 @@ function linkGoogleAccountToAuthUser(userId, googleProfile = {}) {
   // =====================================================
   const existingGoogleUser = findAuthUserByGoogleSub(googleSub);
 
-  if (
-    existingGoogleUser &&
-    existingGoogleUser.user_id !== userId
-  ) {
-    throw new Error(
-      "This Google account is already linked to another user"
-    );
+  if (existingGoogleUser && existingGoogleUser.user_id !== userId) {
+    throw new Error("This Google account is already linked to another user");
   }
 
-  const currentProvider = String(
-    authUser.auth_provider || ""
-  ).toLowerCase();
+  const currentProvider = String(authUser.auth_provider || "").toLowerCase();
 
   let nextProvider = AUTH_PROVIDERS.GOOGLE;
 
@@ -131,22 +113,15 @@ function linkGoogleAccountToAuthUser(userId, googleProfile = {}) {
     nextProvider = AUTH_PROVIDERS.GOOGLE;
   }
 
-  const ok = update(
-    getMasterDatabase(),
-    AUTH_TABLES.USERS,
-    userId,
-    {
-      auth_provider: nextProvider,
-      google_sub: googleSub,
-      google_email: googleEmail,
-      updated_at: new Date().toISOString()
-    }
-  );
+  const ok = update(getMasterDatabase(), AUTH_TABLES.USERS, userId, {
+    auth_provider: nextProvider,
+    google_sub: googleSub,
+    google_email: googleEmail,
+    updated_at: new Date().toISOString(),
+  });
 
   if (!ok) {
-    throw new Error(
-      "Failed to link Google account to auth user"
-    );
+    throw new Error("Failed to link Google account to auth user");
   }
 
   return {
@@ -154,7 +129,7 @@ function linkGoogleAccountToAuthUser(userId, googleProfile = {}) {
     user_id: userId,
     auth_provider: nextProvider,
     google_sub: googleSub,
-    google_email: googleEmail
+    google_email: googleEmail,
   };
 }
 
@@ -168,15 +143,10 @@ function touchAuthUserLastLogin(userId) {
     throw new Error("userId is required");
   }
 
-  const ok = update(
-    getMasterDatabase(),
-    AUTH_TABLES.USERS,
-    userId,
-    {
-      last_login_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  );
+  const ok = update(getMasterDatabase(), AUTH_TABLES.USERS, userId, {
+    last_login_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
 
   if (!ok) {
     throw new Error("Failed to update auth last login");
@@ -184,6 +154,6 @@ function touchAuthUserLastLogin(userId) {
 
   return {
     success: true,
-    user_id: userId
+    user_id: userId,
   };
 }

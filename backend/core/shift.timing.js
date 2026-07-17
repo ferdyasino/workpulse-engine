@@ -7,15 +7,9 @@ function resolveShiftWindow(workspace_id, shift, timestamp) {
   const timezone = settings.TIMEZONE || Session.getScriptTimeZone();
 
   const reference =
-    timestamp instanceof Date
-      ? new Date(timestamp)
-      : new Date(timestamp || new Date());
+    timestamp instanceof Date ? new Date(timestamp) : new Date(timestamp || new Date());
 
-  const localDate = Utilities.formatDate(
-    reference,
-    timezone,
-    "yyyy-MM-dd"
-  );
+  const localDate = Utilities.formatDate(reference, timezone, "yyyy-MM-dd");
 
   const [year, month, day] = localDate.split("-").map(Number);
 
@@ -55,84 +49,45 @@ function resolveShiftWindow(workspace_id, shift, timestamp) {
   return {
     shift_start: shiftStart,
     shift_end: shiftEnd,
-    work_date: Utilities.formatDate(
-      shiftStart,
-      timezone,
-      "yyyy-MM-dd"
-    ),
-    scheduled_minutes: Math.round(
-      (shiftEnd.getTime() - shiftStart.getTime()) / 60000
-    ),
+    work_date: Utilities.formatDate(shiftStart, timezone, "yyyy-MM-dd"),
+    scheduled_minutes: Math.round((shiftEnd.getTime() - shiftStart.getTime()) / 60000),
   };
 }
 
-function resolveAttendanceSchedule(
-  shift,
-  work_date,
-  settings
-) {
-
+function resolveAttendanceSchedule(shift, work_date, settings) {
   settings = settings || {};
 
-  const context =
-    buildShiftDateContext(
-      work_date,
-      shift,
-      settings
-    );
+  const context = buildShiftDateContext(work_date, shift, settings);
 
-  const attendanceStart =
-    new Date(
-      context.shift_start_utc
-    );
+  const attendanceStart = new Date(context.shift_start_utc);
 
   attendanceStart.setMinutes(
-    attendanceStart.getMinutes() -
-    Number(
-      settings.ALLOW_EARLY_TIME_IN_MINUTES || 0
-    )
+    attendanceStart.getMinutes() - Number(settings.ALLOW_EARLY_TIME_IN_MINUTES || 0),
   );
 
-  const attendanceEnd =
-    new Date(
-      context.shift_end_utc
-    );
+  const attendanceEnd = new Date(context.shift_end_utc);
 
   attendanceEnd.setMinutes(
-    attendanceEnd.getMinutes() +
-    Number(
-      settings.ALLOW_LATE_TIME_OUT_MINUTES || 0
-    )
+    attendanceEnd.getMinutes() + Number(settings.ALLOW_LATE_TIME_OUT_MINUTES || 0),
   );
 
   return {
-
     work_date,
 
-    timezone:
-      context.display_timezone,
+    timezone: context.display_timezone,
 
-    shift_timezone:
-      context.shift_timezone,
+    shift_timezone: context.shift_timezone,
 
-    shift_start:
-      context.shift_start_utc,
+    shift_start: context.shift_start_utc,
 
-    shift_end:
-      context.shift_end_utc,
+    shift_end: context.shift_end_utc,
 
-    attendance_start:
-      attendanceStart,
+    attendance_start: attendanceStart,
 
-    attendance_end:
-      attendanceEnd,
+    attendance_end: attendanceEnd,
 
-    scheduled_minutes:
-      context.scheduled_minutes,
+    scheduled_minutes: context.scheduled_minutes,
 
-    overnight:
-      context.overnight
-
+    overnight: context.overnight,
   };
-
 }

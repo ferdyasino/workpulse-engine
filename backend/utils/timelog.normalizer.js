@@ -9,23 +9,16 @@ function formatDateKey(date = new Date()) {
   return normalizeDateKey(date);
 }
 
-
 function normalizeTimeLogFilters(filters = {}) {
   const normalized = { ...filters };
 
-  [
-    "log_id",
-    "workspace_id",
-    "user_id",
-    "email",
-    "action",
-    "date",
-    "shift_id",
-  ].forEach(function (field) {
-    if (Object.prototype.hasOwnProperty.call(normalized, field)) {
-      normalized[field] = normalize(field, normalized[field]);
-    }
-  });
+  ["log_id", "workspace_id", "user_id", "email", "action", "date", "shift_id"].forEach(
+    function (field) {
+      if (Object.prototype.hasOwnProperty.call(normalized, field)) {
+        normalized[field] = normalize(field, normalized[field]);
+      }
+    },
+  );
 
   return normalized;
 }
@@ -91,10 +84,7 @@ function normalizeTimeLog(data, workspace_id) {
   return {
     log_id: normalize("log_id", payload.log_id || generateId("LOG")),
 
-    workspace_id: normalize(
-      "workspace_id",
-      workspace_id || payload.workspace_id
-    ),
+    workspace_id: normalize("workspace_id", workspace_id || payload.workspace_id),
 
     user_id: normalize("user_id", payload.user_id),
     email: normalize("email", payload.email),

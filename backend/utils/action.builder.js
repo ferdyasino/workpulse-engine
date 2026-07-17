@@ -12,11 +12,7 @@ function buildActionMessage(action) {
 
   switch (base) {
     case "time":
-      label = second === "in"
-        ? "Time In"
-        : second === "out"
-          ? "Time Out"
-          : "Time";
+      label = second === "in" ? "Time In" : second === "out" ? "Time Out" : "Time";
       break;
 
     case "break":
@@ -33,11 +29,7 @@ function buildActionMessage(action) {
   }
 
   if (base === "time") {
-    verb = second === "in"
-      ? "clocked in"
-      : second === "out"
-        ? "clocked out"
-        : "recorded";
+    verb = second === "in" ? "clocked in" : second === "out" ? "clocked out" : "recorded";
   } else {
     const last = parts[parts.length - 1];
 

@@ -27,9 +27,7 @@ function ensureOwnersSheet() {
   if (!isValidSchema) {
     sheet.clear();
 
-    sheet
-      .getRange(1, 1, 1, expected.length)
-      .setValues([expected]);
+    sheet.getRange(1, 1, 1, expected.length).setValues([expected]);
 
     sheet.setFrozenRows(1);
   }
@@ -50,12 +48,7 @@ function getWorkspace(workspace_id) {
 
   const db = getMasterDatabase();
 
-  const result = findRowByValue(
-    db,
-    AUTH_TABLES.OWNERS.sheet,
-    "workspace_id",
-    workspace_id
-  );
+  const result = findRowByValue(db, AUTH_TABLES.OWNERS.sheet, "workspace_id", workspace_id);
 
   if (!result) {
     throw new Error(`Workspace not found: ${workspace_id}`);
@@ -72,12 +65,7 @@ function workspaceExists(workspace_id) {
 
   const db = getMasterDatabase();
 
-  return !!findRowByValue(
-    db,
-    AUTH_TABLES.OWNERS.sheet,
-    "workspace_id",
-    workspace_id
-  );
+  return !!findRowByValue(db, AUTH_TABLES.OWNERS.sheet, "workspace_id", workspace_id);
 }
 
 function getWorkspaceDb(workspace_id) {
@@ -86,14 +74,7 @@ function getWorkspaceDb(workspace_id) {
   return SpreadsheetApp.openById(workspace_id);
 }
 
-
-function registerOwnerWorkspace(
-  ownerKey,
-  workspace_id,
-  workspaceUrl,
-  timelogId,
-  timelogUrl
-) {
+function registerOwnerWorkspace(ownerKey, workspace_id, workspaceUrl, timelogId, timelogUrl) {
   if (!ownerKey) throw new Error("ownerKey is required");
 
   ensureOwnersSheet();
@@ -119,7 +100,7 @@ function registerOwnerWorkspace(
       timelog_spreadsheet_id: timelogId,
       timelog_url: timelogUrl,
       status: "ACTIVE",
-      updated_at: now
+      updated_at: now,
     });
   }
 
@@ -135,7 +116,7 @@ function registerOwnerWorkspace(
     timelog_url: timelogUrl,
     status: "ACTIVE",
     created_at: now,
-    updated_at: now
+    updated_at: now,
   });
 }
 
@@ -159,12 +140,7 @@ function getWorkspaceByEmail(email) {
 
   const db = getMasterDatabase();
 
-  const result = findRowByValue(
-    db,
-    AUTH_TABLES.OWNERS.sheet,
-    "email",
-    normalized
-  );
+  const result = findRowByValue(db, AUTH_TABLES.OWNERS.sheet, "email", normalized);
 
   if (!result) return null;
 

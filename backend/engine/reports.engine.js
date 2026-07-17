@@ -24,9 +24,7 @@ function buildEmployeeReport(workspace_id, email, range, settings) {
   const rows = [];
 
   users.forEach(function (user) {
-
     eachDate(reportRange.startDate, reportRange.endDate, function (workDate) {
-
       const attendance = getAttendanceStateByWorkDate(
         workspace_id,
         user.email,
@@ -46,9 +44,8 @@ function buildEmployeeReport(workspace_id, email, range, settings) {
         shift_id: user.shift_id,
 
         // @ts-ignore
-        ...attendance
+        ...attendance,
       });
-
     });
   });
 
@@ -66,38 +63,35 @@ function resolveReportRange(range, settings) {
   start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
 
-const weekdayMap = {
-  SUNDAY: 0,
-  MONDAY: 1,
-  TUESDAY: 2,
-  WEDNESDAY: 3,
-  THURSDAY: 4,
-  FRIDAY: 5,
-  SATURDAY: 6,
-};
+  const weekdayMap = {
+    SUNDAY: 0,
+    MONDAY: 1,
+    TUESDAY: 2,
+    WEDNESDAY: 3,
+    THURSDAY: 4,
+    FRIDAY: 5,
+    SATURDAY: 6,
+  };
 
-const weekStart = weekdayMap[
-  String(settings.WEEKLY_START_DAY || "MONDAY").toUpperCase()
-];
+  const weekStart = weekdayMap[String(settings.WEEKLY_START_DAY || "MONDAY").toUpperCase()];
 
-// Returns a brand new date instance instead of altering the original input
-function getWeekStartDate(inputDate) {
-  // 1. Create a safe copy of the date instance
-  const newDate = new Date(inputDate.getTime());
-  
-  const current = newDate.getDay();
-  let diff = current - weekStart;
+  // Returns a brand new date instance instead of altering the original input
+  function getWeekStartDate(inputDate) {
+    // 1. Create a safe copy of the date instance
+    const newDate = new Date(inputDate.getTime());
 
-  if (diff < 0) {
-    diff += 7;
+    const current = newDate.getDay();
+    let diff = current - weekStart;
+
+    if (diff < 0) {
+      diff += 7;
+    }
+
+    // 2. Safely mutate only the copy
+    newDate.setDate(newDate.getDate() - diff);
+
+    return newDate;
   }
-
-  // 2. Safely mutate only the copy
-  newDate.setDate(newDate.getDate() - diff);
-  
-  return newDate;
-}
-
 
   switch (range) {
     case "today":
@@ -156,6 +150,6 @@ function eachDate(startDate, endDate, callback) {
   while (current <= end) {
     callback(formatDateKey(current));
 
-    current.setDate(current.getDate() + 1); 
+    current.setDate(current.getDate() + 1);
   }
 }

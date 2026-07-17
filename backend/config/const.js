@@ -1,19 +1,15 @@
-function specificPatch(email){
-    patchWorkspace(email);
+function specificPatch(email) {
+  patchWorkspace(email);
 }
 
 const ROLES = {
   SUPERADMIN: "superadmin",
   ADMIN: "admin",
   HR: "hr",
-  USER: "user"
+  USER: "user",
 };
 
-const WORKSPACE_ROLES = [
-  ROLES.ADMIN,
-  ROLES.HR,
-  ROLES.USER
-];
+const WORKSPACE_ROLES = [ROLES.ADMIN, ROLES.HR, ROLES.USER];
 
 const TIMELOG_SHEET_NAME = "TIME_LOGS";
 
@@ -50,9 +46,8 @@ const SETTINGS_KEYS = {
   // =========================
   COMPANY_NAME: "COMPANY_NAME",
   OWNER_NAME: "OWNER_NAME",
-  TIMEZONE: "TIMEZONE"
+  TIMEZONE: "TIMEZONE",
 };
-
 
 function getRequiredTimeLogHeaders() {
   return [
@@ -67,6 +62,6 @@ function getRequiredTimeLogHeaders() {
     "device_info",
     "location",
     "remarks",
-    "created_at"
+    "created_at",
   ];
 }

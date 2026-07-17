@@ -46,16 +46,16 @@ function createShift(workspace_id, payload) {
     };
   }
 
-const shift = {
-  shift_id: generateId("SHIFT"),
-  shift_name: shiftName,
-  start_time: startTime,
-  end_time: endTime,
-  grace_minutes: Number(payload.grace_minutes ?? 10),
-  timezone: String(payload.timezone || workspaceSettings(workspace_id).TIMEZONE || "Asia/Manila"),
-  status: "ACTIVE",
-  created_at: new Date().toISOString(),
-};
+  const shift = {
+    shift_id: generateId("SHIFT"),
+    shift_name: shiftName,
+    start_time: startTime,
+    end_time: endTime,
+    grace_minutes: Number(payload.grace_minutes ?? 10),
+    timezone: String(payload.timezone || workspaceSettings(workspace_id).TIMEZONE || "Asia/Manila"),
+    status: "ACTIVE",
+    created_at: new Date().toISOString(),
+  };
   insert(workspace_id, SHIFT_TABLE, shift);
 
   return {
@@ -69,7 +69,6 @@ function getShiftById(workspace_id, shiftId) {
   return row ? mapShift(row) : null;
 }
 
-
 function getAllShifts(workspace_id) {
   try {
     return find(workspace_id, SHIFT_TABLE).map(mapShift);
@@ -78,7 +77,6 @@ function getAllShifts(workspace_id) {
     return [];
   }
 }
-
 
 function updateShift(workspace_id, shiftId, updates) {
   const shift = getShiftById(workspace_id, shiftId);
@@ -110,7 +108,6 @@ function updateShift(workspace_id, shiftId, updates) {
     safeUpdates.shift_name = newName;
   }
 
-
   const start =
     safeUpdates.start_time !== undefined ? String(safeUpdates.start_time).trim() : shift.start_time;
 
@@ -141,7 +138,6 @@ function updateShift(workspace_id, shiftId, updates) {
     .map(mapShift)
     .filter((s) => s.shift_id !== shiftId);
 
-
   if (safeUpdates.start_time !== undefined) {
     safeUpdates.start_time = start;
   }
@@ -171,7 +167,6 @@ function deleteShift(workspace_id, shiftId) {
   if (!shift) throw new Error("Shift not found");
 }
 
-
 function deactivateShift(workspace_id, shiftId) {
   const shift = getShiftById(workspace_id, shiftId);
   if (!shift) throw new Error("Shift not found");
@@ -185,7 +180,6 @@ function deactivateShift(workspace_id, shiftId) {
     data: getShiftById(workspace_id, shiftId),
   };
 }
-
 
 function isTimeOverlap(startA, endA, startB, endB) {
   const toMinutes = (t) => {
