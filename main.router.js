@@ -76,60 +76,80 @@ function routeRequest(e) {
    API GATEWAY (POST)
 ===================================================== */
 
-function doPost(e) {
-  try {
-    const p = e?.parameter || {};
+  function doPost(e) {
+    try {
+      const p = e?.parameter || {};
 
-    const action = String(p.action || "")
-      .trim()
-      .toLowerCase();
-      
-    switch (action) {
-      case "logingoogle":
-        return jsonResponse(loginWithGoogle(p.workspaceSlug, p.credential));
+      const action = String(p.action || "")
+        .trim()
+        .toLowerCase();
 
-      case "timelogs": {
-        const payload = {
-          user_id: p.user_id,
-          email: p.email,
-          shift_id: p.shift_id,
-          action: p.action_type,
-          device_info: p.device_info,
-          location: p.location ? JSON.parse(p.location) : null,
-          location_status: p.location_status,
-          location_message: p.location_message,
-          timestamp: p.timestamp,
-        };
+      switch (action) {
 
-        return jsonResponse(
-          submitTimeLogAction(p.workspace_id, payload),
-        );
+        case "logingoogle":
+          return jsonResponse(
+            loginWithGoogle(
+              p.workspaceSlug,
+              p.credential
+            )
+          );
+
+
+        case "timelogs": {
+
+          const payload = {
+            user_id: p.user_id,
+            email: p.email,
+            shift_id: p.shift_id,
+            action: p.action_type,
+
+            device_info: p.device_info,
+
+            location: p.location
+              ? JSON.parse(p.location)
+              : null,
+
+            location_status: p.location_status,
+            location_message: p.location_message,
+
+            timestamp: p.timestamp,
+          };
+          return jsonResponse(result);
+        }
+
+
+        case "getcurrentstate":
+
+          return jsonResponse(
+            getCurrentState(
+              p.workspace_id,
+              p.email,
+              p.shift_id,
+              p.date,
+              p.options
+                ? JSON.parse(p.options)
+                : null
+            )
+          );
+
+
+        default:
+
+          return jsonResponse({
+            success:false,
+            message:`Invalid action: ${action}`,
+          });
       }
 
-      case "getcurrentstate":
-        return jsonResponse(
-          getCurrentState(
-            p.workspace_id,
-            p.email,
-            p.shift_id,
-            p.date,
-            p.options ? JSON.parse(p.options) : null,
-          ),
-        );
+    } catch(err){
 
-      default:
-        return jsonResponse({
-          success: false,
-          message: `Invalid action: ${action}`,
-        });
+      return jsonResponse({
+        success:false,
+        message:err.message || "Server error",
+      });
+
     }
-  } catch (err) {
-    return jsonResponse({
-      success: false,
-      message: err?.message || "Server error",
-    });
   }
-}
 
 /* =====================================================
    WEB APP ENTRY
