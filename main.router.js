@@ -1,4 +1,12 @@
-const ALLOWED_PAGES = ["home", "dashboard", "admin", "reports", "login", "settings", "debugger"];
+const ALLOWED_PAGES = [
+  "home",
+  "dashboard",
+  "admin",
+  "reports",
+  "login",
+  "settings",
+  "debugger",
+];
 
 /* =====================================================
    ROUTE NORMALIZATION
@@ -8,10 +16,6 @@ function normalizePage(page) {
   if (!page || typeof page !== "string") return "home";
   return page.toLowerCase().trim();
 }
-
-console.log("router loaded");
-
-console.log(typeof getUsers);
 
 function isAllowedPage(page) {
   return ALLOWED_PAGES.includes(page);
@@ -47,7 +51,6 @@ function handleInviteFlow(token) {
 
 /* =====================================================
    MAIN ROUTER ENTRY (GET)
-   - used by WebApp URL
 ===================================================== */
 
 function routeRequest(e) {
@@ -75,58 +78,49 @@ function routeRequest(e) {
 
 function doPost(e) {
   try {
-    let p = {};
+    const p = e?.parameter || {};
 
-    if (e?.parameter) {
-      p = e.parameter;
-    }
-
-    const action = String(p.action || "").toLowerCase();
-
-    if (!action) {
-      return jsonResponse({
-        success: false,
-        message: "Missing action",
-      });
-    }
-
+    const action = String(p.action || "")
+      .trim()
+      .toLowerCase();
+      
     switch (action) {
-      // -------------------------------------------------
-      // AUTH
-      // -------------------------------------------------
-      case "authentication":
-        return jsonResponse(auth(p.email, p.sid));
-
-      case "createpassword":
-        return jsonResponse(createPassword(p.email, p.password));
-
       case "logingoogle":
         return jsonResponse(loginWithGoogle(p.workspaceSlug, p.credential));
 
-      // -------------------------------------------------
-      // ATTENDANCE
-      // -------------------------------------------------
-      case "logattendance":
+      case "timelogs": {
+        const payload = {
+          user_id: p.user_id,
+          email: p.email,
+          shift_id: p.shift_id,
+          action: p.action_type,
+          device_info: p.device_info,
+          location: p.location ? JSON.parse(p.location) : null,
+          location_status: p.location_status,
+          location_message: p.location_message,
+          timestamp: p.timestamp,
+        };
+
         return jsonResponse(
-          logAttendanceByEmail(
-            p.sheetUrl,
+          submitTimeLogAction(p.workspace_id, payload),
+        );
+      }
+
+      case "getcurrentstate":
+        return jsonResponse(
+          getCurrentState(
+            p.workspace_id,
             p.email,
-            p.actiontype,
-            p.date || null,
-            p.time || null,
+            p.shift_id,
+            p.date,
+            p.options ? JSON.parse(p.options) : null,
           ),
         );
-
-      // -------------------------------------------------
-      // EMPLOYEES
-      // -------------------------------------------------
-      case "employees":
-        return jsonResponse(employeeManagement(p.email, p.sheetUrl));
 
       default:
         return jsonResponse({
           success: false,
-          message: "Invalid action",
+          message: `Invalid action: ${action}`,
         });
     }
   } catch (err) {
@@ -137,6 +131,10 @@ function doPost(e) {
   }
 }
 
+/* =====================================================
+   WEB APP ENTRY
+===================================================== */
+
 function doGet(e) {
   const template = HtmlService.createTemplateFromFile("frontend/index");
 
@@ -145,13 +143,19 @@ function doGet(e) {
     email: e?.parameter?.email || "",
   };
 
-  return template.evaluate().setTitle("Attendance Payroll");
+  return template
+    .evaluate()
+    .setTitle("Attendance Payroll");
 }
 
+/* =====================================================
+   HELPERS
+===================================================== */
+
 function jsonResponse(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj || {})).setMimeType(
-    ContentService.MimeType.JSON,
-  );
+  return ContentService.createTextOutput(
+    JSON.stringify(obj || {}),
+  ).setMimeType(ContentService.MimeType.JSON);
 }
 
 function include(filename) {
